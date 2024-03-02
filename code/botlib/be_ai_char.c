@@ -297,7 +297,7 @@ static bot_character_t *BotLoadCharacterFromFile(const char *charfile, int skill
 	source_t *source;
 	token_t token;
 
-	foundcharacter = qfalse;
+	foundcharacter = false;
 	//a bot character is parsed in two phases
 	PC_SetBaseFolder(BOTFILESBASEFOLDER);
 	source = LoadSourceFile(charfile);
@@ -331,7 +331,7 @@ static bot_character_t *BotLoadCharacterFromFile(const char *charfile, int skill
 			//if it's the correct skill
 			if (skill < 0 || (int)token.intvalue == skill)
 			{
-				foundcharacter = qtrue;
+				foundcharacter = true;
 				ch->skill = token.intvalue;
 				while(PC_ExpectAnyToken(source, &token))
 				{
@@ -586,7 +586,7 @@ static int BotLoadCharacterSkill(const char *charfile, float skill)
 {
 	int ch, defaultch;
 
-	defaultch = BotLoadCachedCharacter( DEFAULT_CHARACTER, skill, qfalse );
+	defaultch = BotLoadCachedCharacter( DEFAULT_CHARACTER, skill, false );
 	BotReferenceHandle( defaultch, 1 );
 	ch = BotLoadCachedCharacter( charfile, skill, LibVarGetValue( "bot_reloadcharacters" ) );
 	BotReferenceHandle( ch, 1 );
@@ -729,18 +729,18 @@ static int CheckCharacteristicIndex(int character, int index)
 	bot_character_t *ch;
 
 	ch = BotCharacterFromHandle(character);
-	if (!ch) return qfalse;
+	if (!ch) return false;
 	if (index < 0 || index >= MAX_CHARACTERISTICS)
 	{
 		botimport.Print(PRT_ERROR, "characteristic %d does not exist\n", index);
-		return qfalse;
+		return false;
 	} //end if
 	if (!ch->c[index].type)
 	{
 		botimport.Print(PRT_ERROR, "characteristic %d is not initialized\n", index);
-		return qfalse;
+		return false;
 	} //end if
-	return qtrue;
+	return true;
 } //end of the function CheckCharacteristicIndex
 //===========================================================================
 //

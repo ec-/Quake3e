@@ -151,7 +151,7 @@ static void ClipSkyPolygon (int nump, vec3_t vecs, int stage)
 {
 	const float *norm;
 	float	*v;
-	qboolean	front, back;
+	bool	front, back;
 	float	d, e;
 	float	dists[MAX_CLIP_VERTS];
 	int		sides[MAX_CLIP_VERTS];
@@ -167,19 +167,19 @@ static void ClipSkyPolygon (int nump, vec3_t vecs, int stage)
 		return;
 	}
 
-	front = back = qfalse;
+	front = back = false;
 	norm = sky_clip[stage];
 	for (i=0, v = vecs ; i<nump ; i++, v+=3)
 	{
 		d = DotProduct (v, norm);
 		if (d > ON_EPSILON)
 		{
-			front = qtrue;
+			front = true;
 			sides[i] = SIDE_FRONT;
 		}
 		else if (d < -ON_EPSILON)
 		{
-			back = qtrue;
+			back = true;
 			sides[i] = SIDE_BACK;
 		}
 		else
@@ -338,7 +338,7 @@ static float	s_skyTexCoords[SKY_SUBDIVISIONS+1][SKY_SUBDIVISIONS+1][2];
 CullPoints
 =================
 */
-static qboolean CullPoints( vec4_t v[], const int count )
+static bool CullPoints( vec4_t v[], const int count )
 {
 	const cplane_t *frust;
 	int i, j;
@@ -354,21 +354,21 @@ static qboolean CullPoints( vec4_t v[], const int count )
 		}
 		// all points are completely behind at least of one frustum plane
 		if ( j == count ) {
-			return qtrue;
+			return true;
 		}
 	}
 
-	return qfalse;
+	return false;
 }
 
 
-static qboolean CullSkySide( const int mins[2], const int maxs[2] )
+static bool CullSkySide( const int mins[2], const int maxs[2] )
 {
 	int s, t;
 	vec4_t v[4];
 
 	if ( r_nocull->integer )
-		return qfalse;
+		return false;
 
 	s = mins[0] + HALF_SKY_SUBDIVISIONS;
 	t = mins[1] + HALF_SKY_SUBDIVISIONS;
@@ -387,9 +387,9 @@ static qboolean CullSkySide( const int mins[2], const int maxs[2] )
 	VectorAdd( s_skyPoints[t][s], backEnd.viewParms.or.origin, v[3] );
 
 	if ( CullPoints( v, 4 ) )
-		return qtrue;
+		return true;
 
-	return qfalse;
+	return false;
 }
 
 
@@ -461,7 +461,7 @@ static void DrawSkySide( image_t *image, const int mins[2], const int maxs[2] )
 		vk_bind_pipeline( vk.skybox_pipeline );
 		vk_bind_index();
 		vk_bind_geometry( TESS_XYZ | TESS_ST0 );
-		vk_draw_geometry( r_showsky->integer ? DEPTH_RANGE_ZERO : DEPTH_RANGE_ONE, qtrue );
+		vk_draw_geometry( r_showsky->integer ? DEPTH_RANGE_ZERO : DEPTH_RANGE_ONE, true );
 		tess.numVertexes = 0;
 		tess.numIndexes = 0;
 	}
@@ -847,5 +847,5 @@ void RB_StageIteratorSky( void ) {
 	tess.depthRange = DEPTH_RANGE_NORMAL;
 
 	// note that sky was drawn so we will draw a sun later
-	backEnd.skyRenderedThisView = qtrue;
+	backEnd.skyRenderedThisView = true;
 }

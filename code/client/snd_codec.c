@@ -40,7 +40,7 @@ static void *S_CodecGetSound( const char *filename, snd_info_t *info )
 {
 	snd_codec_t *codec;
 	snd_codec_t *orgCodec = NULL;
-	qboolean	orgNameFailed = qfalse;
+	bool	orgNameFailed = qfalse;
 	char		localName[ MAX_QPATH ];
 	const char	*ext;
 	char		altName[ MAX_QPATH ];
@@ -73,7 +73,7 @@ static void *S_CodecGetSound( const char *filename, snd_info_t *info )
 			{
 				// Loader failed, most likely because the file isn't there;
 				// try again without the extension
-				orgNameFailed = qtrue;
+				orgNameFailed = true;
 				orgCodec = codec;
 				COM_StripExtension( filename, localName, MAX_QPATH );
 			}
@@ -218,7 +218,7 @@ snd_stream_t *S_CodecUtilOpen( const char *filename, snd_codec_t *codec )
 	int length;
 
 	// Try to open the file
-	length = FS_FOpenFileRead( filename, &hnd, qtrue );
+	length = FS_FOpenFileRead( filename, &hnd, true );
 	if ( hnd == FS_INVALID_HANDLE )
 	{
 		Com_DPrintf( "Can't read sound file %s\n", filename );

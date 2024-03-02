@@ -86,9 +86,9 @@ static void SV_EmitPacketEntities( const clientSnapshot_t *from, const clientSna
 
 		if ( newnum == oldnum ) {
 			// delta update from old position
-			// because the force parm is qfalse, this will not result
+			// because the force parm is false, this will not result
 			// in any bytes being emitted if the entity has not changed at all
-			MSG_WriteDeltaEntity (msg, oldent, newent, qfalse );
+			MSG_WriteDeltaEntity (msg, oldent, newent, false );
 			oldindex++;
 			newindex++;
 			continue;
@@ -96,14 +96,14 @@ static void SV_EmitPacketEntities( const clientSnapshot_t *from, const clientSna
 
 		if ( newnum < oldnum ) {
 			// this is a new entity, send it from the baseline
-			MSG_WriteDeltaEntity (msg, &sv.svEntities[newnum].baseline, newent, qtrue );
+			MSG_WriteDeltaEntity (msg, &sv.svEntities[newnum].baseline, newent, true );
 			newindex++;
 			continue;
 		}
 
 		if ( newnum > oldnum ) {
 			// the old entity isn't present in the new message
-			MSG_WriteDeltaEntity (msg, oldent, NULL, qtrue );
+			MSG_WriteDeltaEntity (msg, oldent, NULL, true );
 			oldindex++;
 			continue;
 		}
@@ -254,7 +254,7 @@ typedef int entityNum_t;
 typedef struct {
 	int		numSnapshotEntities;
 	entityNum_t	snapshotEntities[ MAX_SNAPSHOT_ENTITIES ];
-	qboolean unordered;
+	bool unordered;
 } snapshotEntityNumbers_t;
 
 
@@ -313,7 +313,7 @@ SV_AddEntitiesVisibleFromPoint
 ===============
 */
 static void SV_AddEntitiesVisibleFromPoint( const vec3_t origin, clientSnapshot_t *frame,
-									snapshotEntityNumbers_t *eNums, qboolean portal ) {
+									snapshotEntityNumbers_t *eNums, bool portal ) {
 	int		e, i;
 	sharedEntity_t *ent;
 	svEntity_t	*svEnt;
@@ -430,7 +430,7 @@ static void SV_AddEntitiesVisibleFromPoint( const vec3_t origin, clientSnapshot_
 					continue;
 				}
 			}
-			eNums->unordered = qtrue;
+			eNums->unordered = true;
 			SV_AddEntitiesVisibleFromPoint( ent->s.origin2, frame, eNums, portal );
 		}
 	}
@@ -438,8 +438,8 @@ static void SV_AddEntitiesVisibleFromPoint( const vec3_t origin, clientSnapshot_
 	ent = SV_GentityNum( frame->ps.clientNum );
 	// extension: merge second PVS at ent->r.s.origin2
 	if ( ent->r.svFlags & SVF_SELF_PORTAL2 && !portal ) {
-		SV_AddEntitiesVisibleFromPoint( ent->r.s.origin2, frame, eNums, qtrue );
-		eNums->unordered = qtrue;
+		SV_AddEntitiesVisibleFromPoint( ent->r.s.origin2, frame, eNums, true );
+		eNums->unordered = true;
 	}
 }
 
@@ -653,8 +653,8 @@ static void SV_BuildClientSnapshot( client_t *client ) {
 
 	// add all the entities directly visible to the eye, which
 	// may include portal entities that merge other viewpoints
-	entityNumbers.unordered = qfalse;
-	SV_AddEntitiesVisibleFromPoint( org, frame, &entityNumbers, qfalse );
+	entityNumbers.unordered = false;
+	SV_AddEntitiesVisibleFromPoint( org, frame, &entityNumbers, false );
 
 	// if there were portals visible, there may be out of order entities
 	// in the list which will need to be resorted for the delta compression
@@ -720,7 +720,7 @@ void SV_SendClientSnapshot( client_t *client ) {
 	}
 
 	MSG_Init( &msg, msg_buf, MAX_MSGLEN );
-	msg.allowoverflow = qtrue;
+	msg.allowoverflow = true;
 
 	// NOTE, MRE: all server->client messages now acknowledge
 	// let the client know which reliable clientCommands we have received
@@ -774,20 +774,20 @@ void SV_SendClientMessages( void )
 
 		if ( c->netchan.unsentFragments || c->netchan_start_queue )
 		{
-			c->rateDelayed = qtrue;
+			c->rateDelayed = true;
 			continue;		// Drop this snapshot if the packet queue is still full or delta compression will break
 		}
 	
 		if ( SV_RateMsec( c ) > 0 )
 		{
 			// Not enough time since last packet passed through the line
-			c->rateDelayed = qtrue;
+			c->rateDelayed = true;
 			continue;
 		}
 
 		// generate and send a new message
 		SV_SendClientSnapshot( c );
 		c->lastSnapshotTime = svs.time;
-		c->rateDelayed = qfalse;
+		c->rateDelayed = false;
 	}
 }

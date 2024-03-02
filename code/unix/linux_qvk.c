@@ -54,7 +54,7 @@ static PFN_vkCreateXlibSurfaceKHR qvkCreateXlibSurfaceKHR;
 **
 ** Unloads the specified DLL then nulls out all the proc pointers.
 */
-void QVK_Shutdown( qboolean unloadDLL )
+void QVK_Shutdown( bool unloadDLL )
 {
 	Com_Printf( "...shutting down QVK\n" );
 
@@ -77,13 +77,13 @@ void *VK_GetInstanceProcAddr( VkInstance instance, const char *name )
 }
 
 
-qboolean VK_CreateSurface( VkInstance instance, VkSurfaceKHR *surface )
+bool VK_CreateSurface( VkInstance instance, VkSurfaceKHR *surface )
 {
 	VkXlibSurfaceCreateInfoKHR desc;
 
 	qvkCreateXlibSurfaceKHR = (PFN_vkCreateXlibSurfaceKHR) VK_GetInstanceProcAddr( instance, "vkCreateXlibSurfaceKHR" );
 	if ( !qvkCreateXlibSurfaceKHR )
-		return qfalse;
+		return false;
 
 	desc.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
 	desc.pNext = NULL;
@@ -92,9 +92,9 @@ qboolean VK_CreateSurface( VkInstance instance, VkSurfaceKHR *surface )
 	desc.window = win;
 
 	if ( qvkCreateXlibSurfaceKHR( instance, &desc, NULL, surface ) == VK_SUCCESS )
-		return qtrue;
+		return true;
 	else
-		return qfalse;
+		return false;
 }
 
 
@@ -121,7 +121,7 @@ static void *load_vulkan_library( const char *dllname )
 ** QVK_Init
 **
 */
-qboolean QVK_Init( void )
+bool QVK_Init( void )
 {
 
 	Com_Printf( "...initializing QVK\n" );
@@ -144,11 +144,11 @@ qboolean QVK_Init( void )
 
 		if ( !glw_state.VulkanLib )
 		{
-			return qfalse;
+			return false;
 		}
 	}
 
 	Sys_LoadFunctionErrors(); // reset error counter
 
-	return qtrue;
+	return true;
 }

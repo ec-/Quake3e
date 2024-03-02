@@ -421,7 +421,7 @@ static void CM_PositionTest( traceWork_t *tw ) {
 	ll.list = leafs;
 	ll.storeLeafs = CM_StoreLeafs;
 	ll.lastLeaf = 0;
-	ll.overflowed = qfalse;
+	ll.overflowed = false;
 
 	cm.checkcount++;
 
@@ -480,7 +480,7 @@ static void CM_TraceThroughBrush( traceWork_t *tw, const cbrush_t *brush ) {
 	double		dist;
 	float		enterFrac, leaveFrac;
 	double		d1, d2;
-	qboolean	getout, startout;
+	bool		getout, startout;
 	float		f;
 	cbrushside_t	*side, *leadside;
 	double		t;
@@ -497,8 +497,8 @@ static void CM_TraceThroughBrush( traceWork_t *tw, const cbrush_t *brush ) {
 
 	c_brush_traces++;
 
-	getout = qfalse;
-	startout = qfalse;
+	getout = false;
+	startout = false;
 
 	leadside = NULL;
 
@@ -532,10 +532,10 @@ static void CM_TraceThroughBrush( traceWork_t *tw, const cbrush_t *brush ) {
 			d2 = DotProductDP( endp, plane->normal ) - dist;
 
 			if (d2 > 0) {
-				getout = qtrue;	// endpoint is not in solid
+				getout = true;	// endpoint is not in solid
 			}
 			if (d1 > 0) {
-				startout = qtrue;
+				startout = true;
 			}
 
 			// if completely in front of face, no intersection with the entire brush
@@ -630,9 +630,9 @@ static void CM_TraceThroughBrush( traceWork_t *tw, const cbrush_t *brush ) {
 	// completely outside the brush
 	//
 	if (!startout) {	// original point was inside brush
-		tw->trace.startsolid = qtrue;
+		tw->trace.startsolid = true;
 		if (!getout) {
-			tw->trace.allsolid = qtrue;
+			tw->trace.allsolid = true;
 			tw->trace.fraction = 0;
 			tw->trace.contents = brush->contents;
 		}
@@ -1142,7 +1142,7 @@ CM_Trace
 ==================
 */
 static void CM_Trace( trace_t *results, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs,
-						clipHandle_t model, const vec3_t origin, int brushmask, qboolean capsule, const sphere_t *sphere ) {
+						clipHandle_t model, const vec3_t origin, int brushmask, bool capsule, const sphere_t *sphere ) {
 	int			i;
 	traceWork_t	tw;
 	vec3_t		offset;
@@ -1295,10 +1295,10 @@ static void CM_Trace( trace_t *results, const vec3_t start, const vec3_t end, co
 		// check for point special case
 		//
 		if ( tw.size[0][0] == 0 && tw.size[0][1] == 0 && tw.size[0][2] == 0 ) {
-			tw.isPoint = qtrue;
+			tw.isPoint = true;
 			VectorClear( tw.extents );
 		} else {
-			tw.isPoint = qfalse;
+			tw.isPoint = false;
 			tw.extents[0] = tw.size[1][0];
 			tw.extents[1] = tw.size[1][1];
 			tw.extents[2] = tw.size[1][2];
@@ -1362,7 +1362,7 @@ CM_BoxTrace
 */
 void CM_BoxTrace( trace_t *results, const vec3_t start, const vec3_t end,
 						const vec3_t mins, const vec3_t maxs,
-						clipHandle_t model, int brushmask, qboolean capsule ) {
+						clipHandle_t model, int brushmask, bool capsule ) {
 	CM_Trace( results, start, end, mins, maxs, model, vec3_origin, brushmask, capsule, NULL );
 }
 
@@ -1378,10 +1378,10 @@ rotating entities
 void CM_TransformedBoxTrace( trace_t *results, const vec3_t start, const vec3_t end,
 						const vec3_t mins, const vec3_t maxs,
 						clipHandle_t model, int brushmask,
-						const vec3_t origin, const vec3_t angles, qboolean capsule ) {
+						const vec3_t origin, const vec3_t angles, bool capsule ) {
 	trace_t		trace;
 	vec3_t		start_l, end_l;
-	qboolean	rotated;
+	bool		rotated;
 	vec3_t		offset;
 	vec3_t		symetricSize[2];
 	vec3_t		matrix[3], transpose[3];
@@ -1416,9 +1416,9 @@ void CM_TransformedBoxTrace( trace_t *results, const vec3_t start, const vec3_t 
 	// rotate start and end into the models frame of reference
 	if ( model != BOX_MODEL_HANDLE &&
 		(angles[0] || angles[1] || angles[2]) ) {
-		rotated = qtrue;
+		rotated = true;
 	} else {
-		rotated = qfalse;
+		rotated = false;
 	}
 
 	halfwidth = symetricSize[ 1 ][ 0 ];

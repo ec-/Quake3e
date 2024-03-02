@@ -92,7 +92,7 @@ static vbo_t world_vbo;
 
 void VBO_Cleanup( void );
 
-static qboolean isStaticRGBgen( colorGen_t cgen )
+static bool isStaticRGBgen( colorGen_t cgen )
 {
 	switch ( cgen )
 	{
@@ -108,14 +108,14 @@ static qboolean isStaticRGBgen( colorGen_t cgen )
 		case CGEN_LIGHTING_DIFFUSE:
 		//case CGEN_FOG:				// standard fog
 		case CGEN_CONST:				// fixed color
-			return qtrue;
+			return true;
 		default:
-			return qfalse;
+			return false;
 	}
 }
 
 
-static qboolean isStaticTCgen( const shaderStage_t *stage, int bundle )
+static bool isStaticTCgen( const shaderStage_t *stage, int bundle )
 {
 	switch ( stage->bundle[bundle].tcGen )
 	{
@@ -127,19 +127,19 @@ static qboolean isStaticTCgen( const shaderStage_t *stage, int bundle )
 		//case TCGEN_ENVIRONMENT_MAPPED_FP:
 		//case TCGEN_FOG:
 		case TCGEN_VECTOR:		// S and T from world coordinates
-			return qtrue;
+			return true;
 		case TCGEN_ENVIRONMENT_MAPPED:
 			if ( bundle == 0 && (stage->tessFlags & TESS_ENV) )
-				return qtrue;
+				return true;
 			else
-				return qfalse;
+				return false;
 		default:
-			return qfalse;
+			return false;
 	}
 }
 
 
-static qboolean isStaticTCmod( const textureBundle_t *bundle )
+static bool isStaticTCmod( const textureBundle_t *bundle )
 {
 	int i;
 
@@ -153,15 +153,15 @@ static qboolean isStaticTCmod( const textureBundle_t *bundle )
 			case TMOD_OFFSET_SCALE:
 				break;
 			default:
-				return qfalse;
+				return false;
 		}
 	}
 
-	return qtrue;
+	return true;
 }
 
 
-static qboolean isStaticAgen( alphaGen_t agen )
+static bool isStaticAgen( alphaGen_t agen )
 {
 	switch ( agen )
 	{
@@ -175,9 +175,9 @@ static qboolean isStaticAgen( alphaGen_t agen )
 		//case AGEN_WAVEFORM:
 		//case AGEN_PORTAL:
 		case AGEN_CONST:
-			return qtrue;
+			return true;
 		default:
-			return qfalse;
+			return false;
 	}
 }
 
@@ -189,19 +189,19 @@ isStaticShader
 Decide if we can put surface in static vbo
 =============
 */
-static qboolean isStaticShader( shader_t *shader )
+static bool isStaticShader( shader_t *shader )
 {
 	const shaderStage_t* stage;
 	int i, b, svarsSize;
 
 	if ( shader->isStaticShader )
-		return qtrue;
+		return true;
 
 	if ( shader->isSky || shader->remappedShader )
-		return qfalse;
+		return false;
 
 	if ( shader->numDeforms || shader->numUnfoggedPasses > MAX_VBO_STAGES )
-		return qfalse;
+		return false;
 
 	svarsSize = 0;
 
@@ -211,18 +211,18 @@ static qboolean isStaticShader( shader_t *shader )
 		if ( !stage || !stage->active )
 			break;
 		if ( stage->depthFragment )
-			return qfalse;
+			return false;
 		for ( b = 0; b < NUM_TEXTURE_BUNDLES; b++ ) {
 			if ( !isStaticTCmod( &stage->bundle[b] ) )
-				return qfalse;
+				return false;
 			if ( !isStaticTCgen( stage, b ) )
-				return qfalse;
+				return false;
 			if ( stage->bundle[b].adjustColorsForFog != ACFF_NONE )
-				return qfalse;
+				return false;
 			if ( !isStaticRGBgen( stage->bundle[b].rgbGen ) )
-				return qfalse;
+				return false;
 			if ( !isStaticAgen( stage->bundle[b].alphaGen ) )
-				return qfalse;
+				return false;
 		}
 		if ( stage->tessFlags & TESS_RGBA0 )
 			svarsSize += sizeof( color4ub_t );
@@ -239,9 +239,9 @@ static qboolean isStaticShader( shader_t *shader )
 	}
 
 	if ( i == 0 )
-		return qfalse;
+		return false;
 
-	shader->isStaticShader = qtrue;
+	shader->isStaticShader = true;
 
 	// TODO: alloc separate structure?
 	shader->svarsSize = svarsSize;
@@ -252,7 +252,7 @@ static qboolean isStaticShader( shader_t *shader )
 	shader->numIndexes = 0;
 	shader->numVertexes = 0;
 
-	return qtrue;
+	return true;
 }
 
 
@@ -636,12 +636,12 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 		}
 		initItem( vbo->items + i + 1 );
 		RB_BeginSurface( sf->shader, 0 );
-		tess.allowVBO = qfalse; // block execution of VBO path as we need to tesselate geometry
+		tess.allowVBO = false; // block execution of VBO path as we need to tesselate geometry
 #ifdef USE_TESS_NEEDS_NORMAL
-		tess.needsNormal = qtrue;
+		tess.needsNormal = true;
 #endif
 #ifdef USE_TESS_NEEDS_ST2
-		tess.needsST2 = qtrue;
+		tess.needsST2 = true;
 #endif
 		// tesselate
 		rb_surfaceTable[ *sf->data ]( sf->data ); // VBO_PushData() may be called multiple times there
@@ -704,7 +704,7 @@ void VBO_Cleanup( void )
 
 	for ( i = 0; i < tr.numShaders; i++ )
 	{
-		tr.shaders[ i ]->isStaticShader = qfalse;
+		tr.shaders[ i ]->isStaticShader = false;
 		tr.shaders[ i ]->iboOffset = -1;
 		tr.shaders[ i ]->vboOffset = -1;
 	}

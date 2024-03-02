@@ -168,8 +168,8 @@ typedef struct {
 	usercmd_t	cmd;
 	int			tracemask;			// collide against these types of surfaces
 	int			debugLevel;			// if set, diagnostic output will be printed
-	qboolean	noFootsteps;		// if the game is setup for no footsteps by the server
-	qboolean	gauntletHit;		// true if a gauntlet attack would actually hit something
+	bool		noFootsteps;		// if the game is setup for no footsteps by the server
+	bool		gauntletHit;		// true if a gauntlet attack would actually hit something
 
 	int			framecount;
 
@@ -653,7 +653,7 @@ gitem_t	*BG_FindItemForPowerup( powerup_t pw );
 gitem_t	*BG_FindItemForHoldable( holdable_t pw );
 #define	ITEM_INDEX(x) ((x)-bg_itemlist)
 
-qboolean	BG_CanItemBeGrabbed( int gametype, const entityState_t *ent, const playerState_t *ps );
+bool	BG_CanItemBeGrabbed( int gametype, const entityState_t *ent, const playerState_t *ps );
 
 
 // g_dmflags->integer flags
@@ -703,10 +703,10 @@ void	BG_AddPredictableEventToPlayerstate( int newEvent, int eventParm, playerSta
 
 void	BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad );
 
-void	BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s, qboolean snap );
-void	BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s, int time, qboolean snap );
+void	BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s, bool snap );
+void	BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s, int time, bool snap );
 
-qboolean	BG_PlayerTouchesItem( playerState_t *ps, entityState_t *item, int atTime );
+bool	BG_PlayerTouchesItem( playerState_t *ps, entityState_t *item, int atTime );
 
 
 #define ARENAS_PER_TIER		4

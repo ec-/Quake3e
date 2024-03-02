@@ -39,7 +39,7 @@ typedef enum {
 
 typedef struct {
 	// called before the library is unloaded
-	// if the system is just reconfiguring, pass destroyWindow = qfalse,
+	// if the system is just reconfiguring, pass destroyWindow = false,
 	// which will keep the screen from flashing to the desktop.
 	void	(*Shutdown)( refShutdownCode_t code );
 
@@ -70,7 +70,7 @@ typedef struct {
 	// a scene is built up by calls to R_ClearScene and the various R_Add functions.
 	// Nothing is drawn until R_RenderScene is called.
 	void	(*ClearScene)( void );
-	void	(*AddRefEntityToScene)( const refEntity_t *re, qboolean intShaderTime );
+	void	(*AddRefEntityToScene)( const refEntity_t *re, bool intShaderTime );
 	void	(*AddPolyToScene)( qhandle_t hShader , int numVerts, const polyVert_t *verts, int num );
 	int		(*LightForPoint)( vec3_t point, vec3_t ambientLight, vec3_t directedLight, vec3_t lightDir );
 	void	(*AddLightToScene)( const vec3_t org, float intensity, float r, float g, float b );
@@ -83,8 +83,8 @@ typedef struct {
 		float s1, float t1, float s2, float t2, qhandle_t hShader );	// 0 = white
 
 	// Draw images for cinematic rendering, pass as 32 bit rgba
-	void	(*DrawStretchRaw)( int x, int y, int w, int h, int cols, int rows, byte *data, int client, qboolean dirty );
-	void	(*UploadCinematic)( int w, int h, int cols, int rows, byte *data, int client, qboolean dirty );
+	void	(*DrawStretchRaw)( int x, int y, int w, int h, int cols, int rows, byte *data, int client, bool dirty );
+	void	(*UploadCinematic)( int w, int h, int cols, int rows, byte *data, int client, bool dirty );
 
 	void	(*BeginFrame)( stereoFrame_t stereoFrame );
 
@@ -104,21 +104,21 @@ typedef struct {
 #endif
 	void	(*RegisterFont)(const char *fontName, int pointSize, fontInfo_t *font);
 	void	(*RemapShader)(const char *oldShader, const char *newShader, const char *offsetTime);
-	qboolean (*GetEntityToken)( char *buffer, int size );
-	qboolean (*inPVS)( const vec3_t p1, const vec3_t p2 );
+	bool (*GetEntityToken)( char *buffer, int size );
+	bool (*inPVS)( const vec3_t p1, const vec3_t p2 );
 
-	void	(*TakeVideoFrame)( int h, int w, byte* captureBuffer, byte *encodeBuffer, qboolean motionJpeg );
+	void	(*TakeVideoFrame)( int h, int w, byte* captureBuffer, byte *encodeBuffer, bool motionJpeg );
 
 	void	(*ThrottleBackend)( void );
 	void	(*FinishBloom)( void );
 
 	void	(*SetColorMappings)( void );
 
-	qboolean (*CanMinimize)( void ); // == fbo enabled
+	bool (*CanMinimize)( void ); // == fbo enabled
 
 	const glconfig_t *(*GetConfig)( void );
 
-	void	(*VertexLighting)( qboolean allowed );
+	void	(*VertexLighting)( bool allowed );
 	void	(*SyncRender)( void );
 
 
@@ -163,7 +163,7 @@ typedef struct {
 
 	void	(*Cvar_SetGroup)( cvar_t *var, cvarGroup_t group );
 	int		(*Cvar_CheckGroup)( cvarGroup_t group );
-	void	(*Cvar_ResetGroup)( cvarGroup_t group, qboolean resetModifiedFlags );
+	void	(*Cvar_ResetGroup)( cvarGroup_t group, bool resetModifiedFlags );
 
 	void	(*Cvar_VariableStringBuffer)( const char *var_name, char *buffer, int bufsize );
 	const char *(*Cvar_VariableString)( const char *var_name );
@@ -182,7 +182,7 @@ typedef struct {
 	// visualization for debugging collision detection
 	void	(*CM_DrawDebugSurface)( void (*drawPoly)(int color, int numPoints, float *points) );
 
-	// a qfalse return means the file does not exist
+	// a false return means the file does not exist
 	// NULL can be passed for buf to just determine existence
 	//int		(*FS_FileIsInPAK)( const char *name, int *pCheckSum );
 	int		(*FS_ReadFile)( const char *name, void **buf );
@@ -190,7 +190,7 @@ typedef struct {
 	char **	(*FS_ListFiles)( const char *name, const char *extension, int *numfilesfound );
 	void	(*FS_FreeFileList)( char **filelist );
 	void	(*FS_WriteFile)( const char *qpath, const void *buffer, int size );
-	qboolean (*FS_FileExists)( const char *file );
+	bool 	(*FS_FileExists)( const char *file );
 
 	// cinematic stuff
 	void	(*CIN_UploadCinematic)( int handle );
@@ -203,11 +203,11 @@ typedef struct {
 	void	(*CL_SaveJPG)( const char *filename, int quality, int image_width, int image_height, byte *image_buffer, int padding );
 	void	(*CL_LoadJPG)( const char *filename, unsigned char **pic, int *width, int *height );
 
-	qboolean (*CL_IsMinimized)( void );
+	bool 	(*CL_IsMinimized)( void );
 	void	(*CL_SetScaling)( float factor, int captureWidth, int captureHeight );
 
 	void	(*Sys_SetClipboardBitmap)( const byte *bitmap, int size );
-	qboolean(*Sys_LowPhysicalMemory)( void );
+	bool	(*Sys_LowPhysicalMemory)( void );
 
 	int		(*Com_RealTime)( qtime_t *qtime );
 
@@ -217,15 +217,15 @@ typedef struct {
 
 	// OpenGL
 	void	(*GLimp_Init)( glconfig_t *config );
-	void	(*GLimp_Shutdown)( qboolean unloadDLL );
+	void	(*GLimp_Shutdown)( bool unloadDLL );
 	void	(*GLimp_EndFrame)( void );
 	void*	(*GL_GetProcAddress)( const char *name );
 
 	// Vulkan
 	void	(*VKimp_Init)( glconfig_t *config );
-	void	(*VKimp_Shutdown)( qboolean unloadDLL );
+	void	(*VKimp_Shutdown)( bool unloadDLL );
 	void*	(*VK_GetInstanceProcAddr)( VkInstance instance, const char *name );
-	qboolean (*VK_CreateSurface)( VkInstance instance, VkSurfaceKHR *pSurface );
+	bool 	(*VK_CreateSurface)( VkInstance instance, VkSurfaceKHR *pSurface );
 
 } refimport_t;
 

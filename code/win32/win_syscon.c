@@ -86,14 +86,14 @@ typedef struct
 	char		returnedText[512];
 
 	int			visLevel;
-	qboolean	quitOnClose;
+	bool	quitOnClose;
 	int			windowWidth, windowHeight;
 
 	LONG_PTR	SysInputLineWndProc;
 	LONG_PTR	SysStatusWndProc;
 	LONG_PTR	SysBufferWndProc;
 
-	qboolean	newline;
+	bool	newline;
 
 } WinConData;
 
@@ -115,7 +115,7 @@ static void ConClear( void )
 	//SendMessage( s_wcd.hwndBuffer, EM_REPLACESEL, FALSE, ( LPARAM ) "" );
 	SetWindowText( s_wcd.hwndBuffer, T("") );
 	UpdateWindow( s_wcd.hwndBuffer );
-	s_wcd.newline = qfalse;
+	s_wcd.newline = false;
 	curConSize = 0;
 	conBufPos = 0;
 }
@@ -161,7 +161,7 @@ static int GetTimerMsec( void )
 static LRESULT WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	char *cmdString;
-	static qboolean s_timePolarity;
+	static bool s_timePolarity;
 	static UINT conTimerID;
 	int v;
 
@@ -221,7 +221,7 @@ static LRESULT WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 		}
 		else
 		{
-			Sys_ShowConsole( 0, qfalse );
+			Sys_ShowConsole( 0, false );
 			Cvar_Set( "viewlog", "0" );
 		}
 		return 0;
@@ -359,7 +359,7 @@ static LRESULT WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 		else if ( wParam == CON_TIMER_ID && conTimerID != 0 && !com_errorEntered )
 		{
 #ifdef DEDICATED
-			Com_Frame( qfalse );
+			Com_Frame( false );
 #else
 			//Com_Frame( CL_NoDelay() );
 #endif
@@ -450,7 +450,7 @@ static LRESULT WINAPI BufferWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 		if ( wParam == BUF_TIMER_ID && bufTimerID != 0 && !com_errorEntered )
 		{
 #ifdef DEDICATED
-			Com_Frame( qfalse );
+			Com_Frame( false );
 #else
 			//Com_Frame( CL_NoDelay() );
 #endif
@@ -681,7 +681,7 @@ static LRESULT WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 /*
 ** Sys_CreateConsole
 */
-void Sys_CreateConsole( const char *title, int xPos, int yPos, qboolean useXYpos )
+void Sys_CreateConsole( const char *title, int xPos, int yPos, bool useXYpos )
 {
 	HDC hDC;
 	WNDCLASS wc;
@@ -903,7 +903,7 @@ void Sys_DestroyConsole( void )
 /*
 ** Sys_ShowConsole
 */
-void Sys_ShowConsole( int visLevel, qboolean quitOnClose )
+void Sys_ShowConsole( int visLevel, bool quitOnClose )
 {
 	s_wcd.quitOnClose = quitOnClose;
 
@@ -1000,7 +1000,7 @@ void Conbuf_AppendText( const char *msg )
 
 	// insert skipped newline from previous message
 	if ( s_wcd.newline ) {
-		s_wcd.newline = qfalse;
+		s_wcd.newline = false;
 		*b++ = '\r';
 		*b++ = '\n';
 	}
@@ -1034,7 +1034,7 @@ void Conbuf_AppendText( const char *msg )
 
 	// try to skip ending newline to avoid inserting empty line in edit control
 	if ( b - buffer >= 2 && *(b-1) == '\n' && *(b-2) == '\r' ) {
-		s_wcd.newline = qtrue;
+		s_wcd.newline = true;
 		b -= 2;
 	}
 

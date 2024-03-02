@@ -25,8 +25,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 extern cvar_t *s_khz;
 
-static qboolean	dsound_init;
-static qboolean SNDDMA_InitDS( void );
+static bool	dsound_init;
+static bool SNDDMA_InitDS( void );
 
 // Visual Studio 2012+ or MINGW
 #if ( _MSC_VER >= 1700 ) || defined(MINGW)
@@ -36,7 +36,7 @@ static qboolean SNDDMA_InitDS( void );
 #endif
 
 #if USE_WASAPI
-static qboolean wasapi_init;
+static bool wasapi_init;
 
 #include <mmreg.h>
 #include <mmdeviceapi.h>
@@ -45,27 +45,27 @@ static qboolean wasapi_init;
 // Ugly hack to detect Win10 without manifest
 // http://www.codeproject.com/Articles/678606/Part-Overcoming-Windows-s-deprecation-of-GetVe?msg=5080848#xx5080848xx
 typedef LONG( WINAPI *RtlGetVersionPtr )( RTL_OSVERSIONINFOEXW* );
-static qboolean IsWindows7OrGreater( void ) {
+static bool IsWindows7OrGreater( void ) {
 	RtlGetVersionPtr rtl_get_version_f = NULL;
 	HMODULE ntdll = GetModuleHandle( T( "ntdll" ) );
 	RTL_OSVERSIONINFOEXW osver;
 
 	if ( !ntdll )
-		return qfalse; // will never happen
+		return false; // will never happen
 
 	rtl_get_version_f = (RtlGetVersionPtr)GetProcAddress( ntdll, "RtlGetVersion" );
 
 	if ( !rtl_get_version_f )
-		return qfalse; // will never happen
+		return false; // will never happen
 
 	osver.dwOSVersionInfoSize = sizeof( RTL_OSVERSIONINFOEXW );
 
 	if ( rtl_get_version_f( &osver ) == 0 ) {
 		if ( osver.dwMajorVersion >= 7 )
-			return qtrue;
+			return true;
 	}
 
-	return qfalse;
+	return false;
 }
 
 
@@ -93,7 +93,7 @@ const GUID PcmSubformatGuid = { 0x00000001, 0x0000, 0x0010, { 0x80, 0x00, 0x00, 
 const GUID FloatSubformatGuid = { 0x00000003, 0x0000, 0x0010, { 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71 } };
 
 static LPWSTR DeviceID = NULL;
-static qboolean doSndRestart = qfalse;
+static bool doSndRestart = false;
 
 static IAudioRenderClient	*iAudioRenderClient = NULL;
 static IAudioClient			*iAudioClient = NULL; 
@@ -326,7 +326,7 @@ static HRESULT STDMETHODCALLTYPE OnDefaultDeviceChanged( IMMNotificationClient *
 {
 	if ( flow == eRender && role == eMultimedia )
 	{
-		doSndRestart = qtrue;
+		doSndRestart = true;
 	}
 	return S_OK;
 }
@@ -347,7 +347,7 @@ static HRESULT STDMETHODCALLTYPE OnDeviceStateChanged( IMMNotificationClient *th
 	{
 		if ( dwNewState == DEVICE_STATE_ACTIVE )
 		{
-			doSndRestart = qtrue;
+			doSndRestart = true;
 		}
 		else // DEVICE_STATE_DISABLED, DEVICE_STATE_NOTPRESENT, DEVICE_STATE_UNPLUGGED
 		{
@@ -377,7 +377,7 @@ static const IMMNotificationClientVtbl notification_client_vtbl = {
 static NotificationClient_t notification_client = { &notification_client_vtbl, 1 };
 
 
-static qboolean SNDDMA_InitWASAPI( void )
+static bool SNDDMA_InitWASAPI( void )
 {
 	static byte				buffer[ 64 * 1024 ];
 	DWORD					dwStreamFlags = AUDCLNT_STREAMFLAGS_EVENTCALLBACK;
@@ -385,7 +385,7 @@ static qboolean SNDDMA_InitWASAPI( void )
 	WAVEFORMATEXTENSIBLE	*closest = NULL;
 	DWORD					dwThreadID;
 	HANDLE					hInited;
-	qboolean				isfloat;
+	bool				isfloat;
 	HRESULT					hr;
 
 	InitializeCriticalSection( &cs );
@@ -484,7 +484,7 @@ static qboolean SNDDMA_InitWASAPI( void )
 				Com_Printf( S_COLOR_YELLOW "WASAPI: unsupported format for %i-bit samples\n", desiredFormat.Format.wBitsPerSample );
 				goto error3;
 			}
-			isfloat = qfalse;
+			isfloat = false;
 			break;
 		case 32:
 			if ( !ValidFormat( &desiredFormat, WAVE_FORMAT_IEEE_FLOAT, &FloatSubformatGuid ) )
@@ -492,7 +492,7 @@ static qboolean SNDDMA_InitWASAPI( void )
 				Com_Printf( S_COLOR_YELLOW "WASAPI: unsupported format for %i-bit samples\n", desiredFormat.Format.wBitsPerSample );
 				goto error3;
 			}
-			isfloat = qtrue;
+			isfloat = true;
 			break;
 		default:
 			Com_Printf( S_COLOR_YELLOW "WASAPI: unsupported sample count %i\n", desiredFormat.Format.wBitsPerSample );
@@ -601,7 +601,7 @@ static qboolean SNDDMA_InitWASAPI( void )
 	CloseHandle( hInited ); hInited = NULL;
 
 	if ( inPlay )
-		return qtrue;
+		return true;
 
 	Com_Printf( S_COLOR_YELLOW "WASAPI: mixer thread startup failed\n" );
 
@@ -640,7 +640,7 @@ error1:
 
 	dma.channels = 1; // to avoid division-by-zero in S_GetSoundtime()
 
-	return qfalse;
+	return false;
 }
 
 
@@ -755,9 +755,9 @@ void SNDDMA_Shutdown( void ) {
 	pDSBuf = NULL;
 	pDSPBuf = NULL;
 
-	dsound_init = qfalse;
+	dsound_init = false;
 #if USE_WASAPI
-	wasapi_init = qfalse;
+	wasapi_init = false;
 #endif
 	memset( &dma, 0, sizeof( dma ) );
 
@@ -773,7 +773,7 @@ Initialize direct sound
 Returns false if failed
 ==================
 */
-qboolean SNDDMA_Init( void ) {
+bool SNDDMA_Init( void ) {
 
 #if USE_WASAPI
 	const char *defdrv;
@@ -793,31 +793,31 @@ qboolean SNDDMA_Init( void ) {
 
 	memset( &dma, 0, sizeof( dma ) );
 
-	dsound_init = qfalse;
+	dsound_init = false;
 #if USE_WASAPI
-	wasapi_init = qfalse;
+	wasapi_init = false;
 #endif
 	if ( CoInitialize( NULL ) != S_OK ) {
-		return qfalse;
+		return false;
 	}
 #if USE_WASAPI
 	if ( Q_stricmp( s_driver->string, "wasapi" ) == 0 && SNDDMA_InitWASAPI() ) {
 		dma.driver = "WASAPI";
-		wasapi_init = qtrue;
-		return qtrue;
+		wasapi_init = true;
+		return true;
 	}
 #endif
 	if ( SNDDMA_InitDS() ) {
 		dma.driver = "DirectSound";
-		dsound_init = qtrue;
-		return qtrue;
+		dsound_init = true;
+		return true;
 	} else {
 		dma.channels = 1; // to avoid division-by-zero in S_GetSoundTime()
 	}
 
 	Com_DPrintf( "Failed\n" );
 
-	return qfalse;
+	return false;
 }
 
 
@@ -837,7 +837,7 @@ DEFINE_GUID(IID_IDirectSound8, 0xC50A7E93, 0xF395, 0x4834, 0x9E, 0xF6, 0x7F, 0xA
 DEFINE_GUID(IID_IDirectSound, 0x279AFA83, 0x4981, 0x11CE, 0xA5, 0x21, 0x00, 0x20, 0xAF, 0x0B, 0xE5, 0x60);
 
 
-static qboolean SNDDMA_InitDS( void )
+static bool SNDDMA_InitDS( void )
 {
 	HRESULT			hresult;
 	DSBUFFERDESC	dsbuf;
@@ -854,7 +854,7 @@ static qboolean SNDDMA_InitDS( void )
 		if( FAILED( hresult = CoCreateInstance(&CLSID_DirectSound, NULL, CLSCTX_INPROC_SERVER, &IID_IDirectSound, (void **)&pDS))) {
 			Com_Printf ("failed\n");
 			SNDDMA_Shutdown();
-			return qfalse;
+			return false;
 		}
 	}
 
@@ -867,7 +867,7 @@ static qboolean SNDDMA_InitDS( void )
 	if ( DS_OK != pDS->lpVtbl->SetCooperativeLevel( pDS, g_wv.hWnd, DSSCL_PRIORITY ) )	{
 		Com_Printf ("failed\n");
 		SNDDMA_Shutdown();
-		return qfalse;
+		return false;
 	}
 	Com_DPrintf("ok\n" );
 
@@ -919,7 +919,7 @@ static qboolean SNDDMA_InitDS( void )
 		if (DS_OK != pDS->lpVtbl->CreateSoundBuffer(pDS, &dsbuf, &pDSBuf, NULL)) {
 			Com_Printf( "failed\n" );
 			SNDDMA_Shutdown();
-			return qfalse;
+			return false;
 		}
 		Com_DPrintf( "forced to software.  ok\n" );
 	}
@@ -928,19 +928,19 @@ static qboolean SNDDMA_InitDS( void )
 	if ( DS_OK != pDSBuf->lpVtbl->Play(pDSBuf, 0, 0, DSBPLAY_LOOPING) ) {
 		Com_Printf ("*** Looped sound play failed ***\n");
 		SNDDMA_Shutdown();
-		return qfalse;
+		return false;
 	}
 
 	// get the returned buffer size
 	if ( DS_OK != pDSBuf->lpVtbl->GetCaps (pDSBuf, &dsbcaps) ) {
 		Com_Printf ("*** GetCaps failed ***\n");
 		SNDDMA_Shutdown();
-		return qfalse;
+		return false;
 	}
 	
 	gSndBufSize = dsbcaps.dwBufferBytes;
 
-	dma.isfloat = qfalse;
+	dma.isfloat = false;
 	dma.channels = format.nChannels;
 	dma.samplebits = format.wBitsPerSample;
 	dma.speed = format.nSamplesPerSec;
@@ -958,7 +958,7 @@ static qboolean SNDDMA_InitDS( void )
 	
 	SNDDMA_Submit();
 
-	return qtrue;
+	return true;
 }
 
 
@@ -979,7 +979,7 @@ int SNDDMA_GetDMAPos( void ) {
 			Done_WASAPI();
 			Com_DPrintf( "WASAPI: restart due to device configuration changes\n" );
 			wasapi_init = SNDDMA_InitWASAPI();
-			doSndRestart = qfalse;
+			doSndRestart = false;
 		}
 		return ( bufferPosition * dma.channels ) & ( dma.samples - 1 );
 	}
@@ -1089,7 +1089,7 @@ void SNDDMA_Activate( void ) {
 #if USE_WASAPI
 	if ( wasapi_init ) {
 		if ( inPlay == 0 ) {
-			doSndRestart = qtrue;
+			doSndRestart = true;
 		}
 		return;
 	}

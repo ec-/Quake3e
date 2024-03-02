@@ -61,7 +61,7 @@ cvar_t *in_nograb;
 GLimp_Shutdown
 ===============
 */
-void GLimp_Shutdown( qboolean unloadDLL )
+void GLimp_Shutdown( bool unloadDLL )
 {
 	IN_Shutdown();
 
@@ -184,7 +184,7 @@ static SDL_HitTestResult SDL_HitTestFunc( SDL_Window *win, const SDL_Point *area
 GLimp_SetMode
 ===============
 */
-static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vulkan )
+static int GLW_SetMode( int mode, const char *modeFS, bool fullscreen, bool vulkan )
 {
 	glconfig_t *config = glw_state.config;
 	int perChannelColorBits;
@@ -267,8 +267,8 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 		SDL_window = NULL;
 	}
 
-	gw_active = qfalse;
-	gw_minimized = qtrue;
+	gw_active = false;
+	gw_minimized = true;
 
 	if ( fullscreen )
 	{
@@ -391,12 +391,12 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 
 			if ( r_stereoEnabled->integer )
 			{
-				config->stereoEnabled = qtrue;
+				config->stereoEnabled = true;
 				SDL_GL_SetAttribute( SDL_GL_STEREO, 1 );
 			}
 			else
 			{
-				config->stereoEnabled = qfalse;
+				config->stereoEnabled = false;
 				SDL_GL_SetAttribute( SDL_GL_STEREO, 0 );
 			}
 		
@@ -536,7 +536,7 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 GLimp_StartDriverAndSetMode
 ===============
 */
-static rserr_t GLimp_StartDriverAndSetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vulkan )
+static rserr_t GLimp_StartDriverAndSetMode( int mode, const char *modeFS, bool fullscreen, bool vulkan )
 {
 	rserr_t err;
 
@@ -544,8 +544,8 @@ static rserr_t GLimp_StartDriverAndSetMode( int mode, const char *modeFS, qboole
 	{
 		Com_Printf( "Fullscreen not allowed with \\in_nograb 1\n");
 		Cvar_Set( "r_fullscreen", "0" );
-		r_fullscreen->modified = qfalse;
-		fullscreen = qfalse;
+		r_fullscreen->modified = false;
+		fullscreen = false;
 	}
 
 	if ( !SDL_WasInit( SDL_INIT_VIDEO ) )
@@ -611,7 +611,7 @@ void GLimp_Init( glconfig_t *config )
 	Cvar_SetDescription( r_stereoEnabled, "Enable stereo rendering for techniques like shutter glasses." );
 
 	// Create the window and set up the context
-	err = GLimp_StartDriverAndSetMode( r_mode->integer, r_modeFullscreen->string, r_fullscreen->integer, qfalse );
+	err = GLimp_StartDriverAndSetMode( r_mode->integer, r_modeFullscreen->string, r_fullscreen->integer, false );
 	if ( err != RSERR_OK )
 	{
 		if ( err == RSERR_FATAL_ERROR )
@@ -623,7 +623,7 @@ void GLimp_Init( glconfig_t *config )
 		if ( r_mode->integer != 3 || ( r_fullscreen->integer && atoi( r_modeFullscreen->string ) != 3 ) )
 		{
 			Com_Printf( "Setting \\r_mode %d failed, falling back on \\r_mode %d\n", r_mode->integer, 3 );
-			if ( GLimp_StartDriverAndSetMode( 3, "", r_fullscreen->integer, qfalse ) != RSERR_OK )
+			if ( GLimp_StartDriverAndSetMode( 3, "", r_fullscreen->integer, false ) != RSERR_OK )
 			{
 				// Nothing worked, give up
 				Com_Error( ERR_FATAL, "GLimp_Init() - could not load OpenGL subsystem" );
@@ -705,7 +705,7 @@ void VKimp_Init( glconfig_t *config )
 	glw_state.config = config;
 
 	// Create the window and set up the context
-	err = GLimp_StartDriverAndSetMode( r_mode->integer, r_modeFullscreen->string, r_fullscreen->integer, qtrue /* Vulkan */ );
+	err = GLimp_StartDriverAndSetMode( r_mode->integer, r_modeFullscreen->string, r_fullscreen->integer, true /* Vulkan */ );
 	if ( err != RSERR_OK )
 	{
 		if ( err == RSERR_FATAL_ERROR )
@@ -716,7 +716,7 @@ void VKimp_Init( glconfig_t *config )
 
 		Com_Printf( "Setting r_mode %d failed, falling back on r_mode %d\n", r_mode->integer, 3 );
 
-		err = GLimp_StartDriverAndSetMode( 3, "", r_fullscreen->integer, qtrue /* Vulkan */ );
+		err = GLimp_StartDriverAndSetMode( 3, "", r_fullscreen->integer, true /* Vulkan */ );
 		if( err != RSERR_OK )
 		{
 			// Nothing worked, give up
@@ -762,12 +762,12 @@ void *VK_GetInstanceProcAddr( VkInstance instance, const char *name )
 VK_CreateSurface
 ===============
 */
-qboolean VK_CreateSurface( VkInstance instance, VkSurfaceKHR *surface )
+bool VK_CreateSurface( VkInstance instance, VkSurfaceKHR *surface )
 {
 	if ( SDL_Vulkan_CreateSurface( SDL_window, instance, surface ) == SDL_TRUE )
-		return qtrue;
+		return true;
 	else
-		return qfalse;
+		return false;
 }
 
 
@@ -776,7 +776,7 @@ qboolean VK_CreateSurface( VkInstance instance, VkSurfaceKHR *surface )
 VKimp_Shutdown
 ===============
 */
-void VKimp_Shutdown( qboolean unloadDLL )
+void VKimp_Shutdown( bool unloadDLL )
 {
 	IN_Shutdown();
 

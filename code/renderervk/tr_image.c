@@ -98,7 +98,7 @@ void TextureMode( const char *string ) {
 	for ( i = 0 ; i < tr.numImages ; i++ ) {
 		img = tr.images[i];
 		if ( img->flags & IMGFLAG_MIPMAP ) {
-			vk_update_descriptor_set( img, qtrue );
+			vk_update_descriptor_set( img, true );
 		}
 	}
 }
@@ -277,7 +277,7 @@ Scale up the pixel values in a texture to increase the
 lighting range
 ================
 */
-static void R_LightScaleTexture( byte *in, int inwidth, int inheight, qboolean only_gamma )
+static void R_LightScaleTexture( byte *in, int inwidth, int inheight, bool only_gamma )
 {
 	if ( in == NULL )
 		return;
@@ -487,22 +487,22 @@ static void R_BlendOverTexture( byte *data, int pixelCount, int mipLevel ) {
 }
 
 
-static qboolean RawImage_HasAlpha( const byte *scan, const int numPixels )
+static bool RawImage_HasAlpha( const byte *scan, const int numPixels )
 {
 	int i;
 
 	if ( !scan )
-		return qtrue;
+		return true;
 
 	for ( i = 0; i < numPixels; i++ )
 	{
 		if ( scan[i*4 + 3] != 255 )
 		{
-			return qtrue;
+			return true;
 		}
 	}
 
-	return qfalse;
+	return false;
 }
 
 typedef struct {
@@ -515,8 +515,8 @@ typedef struct {
 
 static void generate_image_upload_data( image_t *image, byte *data, Image_Upload_Data *upload_data ) {
 	
-	qboolean mipmap = image->flags & IMGFLAG_MIPMAP;
-	qboolean picmip = image->flags & IMGFLAG_PICMIP;
+	bool mipmap = image->flags & IMGFLAG_MIPMAP;
+	bool picmip = image->flags & IMGFLAG_PICMIP;
 	byte* resampled_buffer = NULL;
 	int scaled_width, scaled_height;
 	int width = image->width;
@@ -580,7 +580,7 @@ static void generate_image_upload_data( image_t *image, byte *data, Image_Upload
 			byte *p = data;
 			int i, n = width * height;
 			for ( i = 0; i < n; i++, p+=4 ) {
-				R_ColorShiftLightingBytes( p, p, qfalse );
+				R_ColorShiftLightingBytes( p, p, false );
 			}
 		}
 	}
@@ -694,7 +694,7 @@ static void upload_vk_image( image_t *image, byte *pic ) {
 		image->internalFormat = VK_FORMAT_R8G8B8A8_UNORM;
 		//image->internalFormat = VK_FORMAT_B8G8R8A8_UNORM;
 	} else {
-		qboolean has_alpha = RawImage_HasAlpha( upload_data.buffer, w * h );
+		bool has_alpha = RawImage_HasAlpha( upload_data.buffer, w * h );
 		image->internalFormat = has_alpha ? VK_FORMAT_B4G4R4A4_UNORM_PACK16 : VK_FORMAT_A1R5G5B5_UNORM_PACK16;
 	}
 
@@ -706,7 +706,7 @@ static void upload_vk_image( image_t *image, byte *pic ) {
 	image->uploadHeight = h;
 
 	vk_create_image( image, w, h, upload_data.mip_levels );
-	vk_upload_image_data( image, 0, 0, w, h, upload_data.mip_levels, upload_data.buffer, upload_data.buffer_size, qfalse );
+	vk_upload_image_data( image, 0, 0, w, h, upload_data.mip_levels, upload_data.buffer, upload_data.buffer_size, false );
 
 	ri.Hunk_FreeTempMemory( upload_data.buffer );
 }
@@ -813,7 +813,7 @@ static const char *R_LoadImage( const char *name, byte **pic, int *width, int *h
 {
 	static char localName[ MAX_QPATH ];
 	const char *altName, *ext;
-	//qboolean orgNameFailed = qfalse;
+	//bool orgNameFailed = false;
 	int orgLoader = -1;
 	int i;
 
@@ -844,7 +844,7 @@ static const char *R_LoadImage( const char *name, byte **pic, int *width, int *h
 			{
 				// Loader failed, most likely because the file isn't there;
 				// try again without the extension
-				//orgNameFailed = qtrue;
+				//orgNameFailed = true;
 				orgLoader = i;
 				COM_StripExtension( name, localName, MAX_QPATH );
 			}
@@ -1117,25 +1117,25 @@ Create solid color texture from following input formats (hex):
 ==================
 */
 #define	DEFAULT_SIZE 16
-static qboolean R_BuildDefaultImage( const char *format ) {
+static bool R_BuildDefaultImage( const char *format ) {
 	byte data[DEFAULT_SIZE][DEFAULT_SIZE][4];
 	byte color[4];
 	int i, len, hex[6];
 	int x, y;
 
 	if ( *format++ != '#' ) {
-		return qfalse;
+		return false;
 	}
 
 	len = (int)strlen( format );
 	if ( len <= 0 || len > 6 ) {
-		return qfalse;
+		return false;
 	}
 
 	for ( i = 0; i < len; i++ ) {
 		hex[i] = Hex( format[i] );
 		if ( hex[i] == -1 ) {
-			return qfalse;
+			return false;
 		}
 	}
 
@@ -1153,7 +1153,7 @@ static qboolean R_BuildDefaultImage( const char *format ) {
 			color[3] = 255;
 			break;
 		default: // unsupported format
-			return qfalse;
+			return false;
 	}
 
 	for ( y = 0; y < DEFAULT_SIZE; y++ ) {
@@ -1167,7 +1167,7 @@ static qboolean R_BuildDefaultImage( const char *format ) {
 
 	tr.defaultImage = R_CreateImage( "*default", NULL, (byte *)data, DEFAULT_SIZE, DEFAULT_SIZE, IMGFLAG_MIPMAP );
 
-	return qtrue;
+	return true;
 }
 
 
@@ -1271,7 +1271,7 @@ void R_SetColorMappings( void ) {
 	float	g;
 	int		inf;
 	int		shift;
-	qboolean applyGamma;
+	bool applyGamma;
 
 	if ( !tr.inited ) {
 		// it may be called from window handling functions where gamma flags is now yet known/set
@@ -1285,13 +1285,13 @@ void R_SetColorMappings( void ) {
 	// never overbright in windowed mode
 	if ( !glConfig.isFullscreen && r_overBrightBits->integer >= 0 && !vk.fboActive ) {
 		tr.overbrightBits = 0;
-		applyGamma = qfalse;
+		applyGamma = false;
 	} else {
 		if ( !glConfig.deviceSupportsGamma && !vk.fboActive ) {
 			tr.overbrightBits = 0; // need hardware gamma for overbright
-			applyGamma = qfalse;
+			applyGamma = false;
 		} else {
-			applyGamma = qtrue;
+			applyGamma = true;
 		}
 	}
 
@@ -1576,7 +1576,7 @@ qhandle_t RE_RegisterSkin( const char *name ) {
 	if ( strcmp( name + strlen( name ) - 5, ".skin" ) ) {
 		skin->numSurfaces = 1;
 		skin->surfaces = ri.Hunk_Alloc( sizeof( skinSurface_t ), h_low );
-		skin->surfaces[0].shader = R_FindShader( name, LIGHTMAP_NONE, qtrue );
+		skin->surfaces[0].shader = R_FindShader( name, LIGHTMAP_NONE, true );
 		return hSkin;
 	}
 
@@ -1613,7 +1613,7 @@ qhandle_t RE_RegisterSkin( const char *name ) {
 		if ( skin->numSurfaces < MAX_SKIN_SURFACES ) {
 			surf = &parseSurfaces[skin->numSurfaces];
 			Q_strncpyz( surf->name, surfName, sizeof( surf->name ) );
-			surf->shader = R_FindShader( token, LIGHTMAP_NONE, qtrue );
+			surf->shader = R_FindShader( token, LIGHTMAP_NONE, true );
 			skin->numSurfaces++;
 		}
 

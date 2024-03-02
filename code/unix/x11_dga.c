@@ -20,13 +20,13 @@ static sym_t d_list[] =
 	{ (void**)&_XF86DGADirectVideo, "XF86DGADirectVideo" }
 };
 
-qboolean DGA_Init( Display *_dpy )
+bool DGA_Init( Display *_dpy )
 {
 	int event_base, error_base;
 	int ver_major = 0, ver_minor = 0;
 	int i;
 
-	glw_state.dga_ext = qfalse;
+	glw_state.dga_ext = false;
 
 	if ( d_lib == NULL )
 	{
@@ -62,13 +62,13 @@ qboolean DGA_Init( Display *_dpy )
 
 	Com_Printf( "...DGA extension version %i.%i detected.\n", ver_major, ver_minor );
 
-	glw_state.dga_ext = qtrue;
+	glw_state.dga_ext = true;
 
-	return qtrue;
+	return true;
 
 __fail:
 	DGA_Done();
-	return qfalse;
+	return false;
 }
 
 
@@ -79,10 +79,10 @@ void DGA_Done( void )
 		Sys_UnloadLibrary( d_lib );
 		d_lib = NULL;
 	}
-	glw_state.dga_ext = qfalse;
+	glw_state.dga_ext = false;
 }
 
-void DGA_Mouse( qboolean enable )
+void DGA_Mouse( bool enable )
 {
 	if ( !glw_state.dga_ext )
 		return;

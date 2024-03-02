@@ -623,12 +623,12 @@ WindingOnPlaneSide
 */
 int WindingOnPlaneSide( const winding_t *w, vec3_t normal, vec_t dist )
 {
-	qboolean	front, back;
+	bool		front, back;
 	int			i;
 	vec_t		d;
 
-	front = qfalse;
-	back = qfalse;
+	front = false;
+	back = false;
 	for (i=0 ; i<w->numpoints ; i++)
 	{
 		d = DotProduct (w->p[i], normal) - dist;
@@ -636,14 +636,14 @@ int WindingOnPlaneSide( const winding_t *w, vec3_t normal, vec_t dist )
 		{
 			if (front)
 				return SIDE_CROSS;
-			back = qtrue;
+			back = true;
 			continue;
 		}
 		if (d > ON_EPSILON)
 		{
 			if (back)
 				return SIDE_CROSS;
-			front = qtrue;
+			front = true;
 			continue;
 		}
 	}
@@ -673,8 +673,8 @@ void	AddWindingToConvexHull( winding_t *w, winding_t **hull, vec3_t normal ) {
 	vec3_t		hullPoints[MAX_HULL_POINTS];
 	vec3_t		newHullPoints[MAX_HULL_POINTS];
 	vec3_t		hullDirs[MAX_HULL_POINTS];
-	qboolean	hullSide[MAX_HULL_POINTS];
-	qboolean	outside;
+	bool		hullSide[MAX_HULL_POINTS];
+	bool		outside;
 
 	if ( !*hull ) {
 		*hull = CopyWinding( w );
@@ -696,17 +696,17 @@ void	AddWindingToConvexHull( winding_t *w, winding_t **hull, vec3_t normal ) {
 			CrossProduct( normal, dir, hullDirs[j] );
 		}
 
-		outside = qfalse;
+		outside = false;
 		for ( j = 0 ; j < numHullPoints ; j++ ) {
 			VectorSubtract( p, hullPoints[j], dir );
 			d = DotProduct( dir, hullDirs[j] );
 			if ( d >= ON_EPSILON ) {
-				outside = qtrue;
+				outside = true;
 			}
 			if ( d >= -ON_EPSILON ) {
-				hullSide[j] = qtrue;
+				hullSide[j] = true;
 			} else {
-				hullSide[j] = qfalse;
+				hullSide[j] = false;
 			}
 		}
 

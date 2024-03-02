@@ -100,11 +100,11 @@ const char *WtoA( const LPWSTR s );
 #define WtoA(S) (S)
 #endif
 
-qboolean IN_MouseActive( void );
+bool IN_MouseActive( void );
 void	IN_Win32MouseEvent( int x, int y, int mstate );
 void	IN_RawMouseEvent( LPARAM lParam );
 
-void	Sys_CreateConsole( const char *title, int xPos, int yPos, qboolean usePos );
+void	Sys_CreateConsole( const char *title, int xPos, int yPos, bool usePos );
 void	Sys_DestroyConsole( void );
 
 // Input subsystem
@@ -113,10 +113,10 @@ void	IN_Init (void);
 void	IN_Shutdown (void);
 void	IN_JoystickCommands (void);
 
-void	IN_Activate( qboolean active );
+void	IN_Activate( bool active );
 void	IN_Frame( void );
 
-void	IN_UpdateWindow( RECT *window_rect, qboolean updateClipRegion );
+void	IN_UpdateWindow( RECT *window_rect, bool updateClipRegion );
 void	UpdateMonitorInfo( const RECT *target );
 
 // window procedure
@@ -142,7 +142,7 @@ typedef struct
 	// Multi-monitor tracking
 	RECT			conRect;
 	RECT			winRect;
-	qboolean		winRectValid;
+	bool		winRectValid;
 
 	int raw_mx;
 	int raw_my;

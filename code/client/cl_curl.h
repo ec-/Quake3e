@@ -93,7 +93,7 @@ extern const char *(*qcurl_multi_strerror)(CURLMcode);
 #define qcurl_multi_strerror curl_multi_strerror
 #endif
 
-qboolean CL_cURL_Init( void );
+bool CL_cURL_Init( void );
 void CL_cURL_Shutdown( void );
 void CL_cURL_BeginDownload( const char *localName, const char *remoteURL );
 void CL_cURL_PerformDownload( void );
@@ -110,8 +110,8 @@ typedef struct download_s {
 	fileHandle_t fHandle;
 	int			Size;
 	int			Count;
-	qboolean	headerCheck;
-	qboolean	mapAutoDownload;
+	bool	headerCheck;
+	bool	mapAutoDownload;
 
 	struct func_s {
 		char*		(*version)(void);

@@ -22,13 +22,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "keycodes.h"
 
 typedef struct {
-	qboolean	down;
-	qboolean	bound;
-	int			repeats;		// if > 1, it is autorepeating
-	char		*binding;
+	bool	down;
+	bool	bound;
+	int 	repeats;		// if > 1, it is autorepeating
+	char 	*binding;
 } qkey_t;
 
-extern	qboolean	key_overstrikeMode;
+extern	bool	key_overstrikeMode;
 extern	qkey_t		keys[MAX_KEYS];
 
 extern  int         anykeydown;
@@ -38,16 +38,16 @@ extern  int         anykeydown;
 void Key_WriteBindings( fileHandle_t f );
 void Key_SetBinding( int keynum, const char *binding );
 const char *Key_GetBinding( int keynum );
-void Key_ParseBinding( int key, qboolean down, unsigned time );
+void Key_ParseBinding( int key, bool down, unsigned time );
 
 int Key_GetKey( const char *binding );
 const char *Key_KeynumToString( int keynum );
 int Key_StringToKeynum( const char *str );
 
-qboolean Key_IsDown( int keynum );
+bool Key_IsDown( int keynum );
 void Key_ClearStates( void );
 
-qboolean Key_GetOverstrikeMode( void );
-void Key_SetOverstrikeMode( qboolean state );
+bool Key_GetOverstrikeMode( void );
+void Key_SetOverstrikeMode( bool state );
 
 void Com_InitKeyCommands( void );

@@ -50,8 +50,8 @@ typedef struct {
 	int			down[2];		// key nums holding it down
 	unsigned	downtime;		// msec timestamp
 	unsigned	msec;			// msec down this frame if both a down and up happened
-	qboolean	active;			// current state
-	qboolean	wasPressed;		// set when down, not cleared when up
+	bool	active;			// current state
+	bool	wasPressed;		// set when down, not cleared when up
 } kbutton_t;
 
 static kbutton_t in_left, in_right, in_forward, in_back;
@@ -86,14 +86,14 @@ static cvar_t *m_forward;
 static cvar_t *m_side;
 static cvar_t *m_filter;
 
-static qboolean in_mlooking;
+static bool in_mlooking;
 
 static void IN_CenterView( void ) {
 	cl.viewangles[PITCH] = -SHORT2ANGLE(cl.snap.ps.delta_angles[PITCH]);
 }
 
 static void IN_MLookDown( void ) {
-	in_mlooking = qtrue;
+	in_mlooking = true;
 }
 
 
@@ -137,8 +137,8 @@ static void IN_KeyDown( kbutton_t *b ) {
 	c = Cmd_Argv(2);
 	b->downtime = atoi(c);
 
-	b->active = qtrue;
-	b->wasPressed = qtrue;
+	b->active = true;
+	b->wasPressed = true;
 }
 
 
@@ -681,7 +681,7 @@ delivered in the next packet, but saving a header and
 getting more delta compression will reduce total bandwidth.
 =================
 */
-static qboolean CL_ReadyToSendPacket( void ) {
+static bool CL_ReadyToSendPacket( void ) {
 	int		oldPacketNum;
 	int		delta;
 
@@ -706,12 +706,12 @@ static qboolean CL_ReadyToSendPacket( void ) {
 
 	// send every frame for loopbacks
 	if ( clc.netchan.remoteAddress.type == NA_LOOPBACK ) {
-		return qtrue;
+		return true;
 	}
 
 	// send every frame for LAN
 	if ( cl_lanForcePackets->integer && clc.netchan.isLANAddress ) {
-		return qtrue;
+		return true;
 	}
 
 	oldPacketNum = (clc.netchan.outgoingSequence - 1) & PACKET_MASK;
@@ -721,7 +721,7 @@ static qboolean CL_ReadyToSendPacket( void ) {
 		return qfalse;
 	}
 
-	return qtrue;
+	return true;
 }
 
 

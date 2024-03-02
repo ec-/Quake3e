@@ -30,7 +30,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../client/snd_local.h"
 #include "../client/client.h"
 
-qboolean snd_inited = qfalse;
+bool snd_inited = false;
 
 extern cvar_t *s_khz;
 cvar_t *s_sdlBits;
@@ -195,7 +195,7 @@ static int SNDDMA_KHzToHz( int khz )
 SNDDMA_Init
 ===============
 */
-qboolean SNDDMA_Init( void )
+bool SNDDMA_Init( void )
 {
 	SDL_AudioSpec desired;
 	SDL_AudioSpec obtained;

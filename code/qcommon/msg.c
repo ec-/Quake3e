@@ -45,33 +45,33 @@ void MSG_InitOOB( msg_t *buf, byte *data, int length ) {
 	buf->data = data;
 	buf->maxsize = length;
 	buf->maxbits = length * 8;
-	buf->oob = qtrue;
+	buf->oob = true;
 }
 
 
 void MSG_Clear( msg_t *buf ) {
 	buf->cursize = 0;
-	buf->overflowed = qfalse;
+	buf->overflowed = false;
 	buf->bit = 0;					//<- in bits
 }
 
 
 void MSG_Bitstream( msg_t *buf ) {
-	buf->oob = qfalse;
+	buf->oob = false;
 }
 
 
 void MSG_BeginReading( msg_t *msg ) {
 	msg->readcount = 0;
 	msg->bit = 0;
-	msg->oob = qfalse;
+	msg->oob = false;
 }
 
 
 void MSG_BeginReadingOOB( msg_t *msg ) {
 	msg->readcount = 0;
 	msg->bit = 0;
-	msg->oob = qtrue;
+	msg->oob = true;
 }
 
 
@@ -101,7 +101,7 @@ void MSG_WriteBits( msg_t *msg, int value, int bits ) {
 		Com_Error( ERR_DROP, "MSG_WriteBits: bad bits %i", bits );
 	}
 
-	if ( msg->overflowed != qfalse )
+	if ( msg->overflowed != false )
 		return;
 
 	if ( bits < 0 ) {
@@ -147,14 +147,14 @@ void MSG_WriteBits( msg_t *msg, int value, int bits ) {
 	}
 
 	if ( msg->bit > msg->maxbits ) {
-		msg->overflowed = qtrue;
+		msg->overflowed = true;
 	}
 }
 
 
 static int MSG_ReadBits( msg_t *msg, int bits ) {
 	int		value;
-	qboolean	sgn;
+	bool	sgn;
 	int		i;
 	unsigned int	sym;
 	const byte *buffer = msg->data; // dereference optimization
@@ -166,9 +166,9 @@ static int MSG_ReadBits( msg_t *msg, int bits ) {
 
 	if ( bits < 0 ) {
 		bits = -bits; // always greater than zero
-		sgn = qtrue;
+		sgn = true;
 	} else {
-		sgn = qfalse;
+		sgn = false;
 	}
 
 	if ( msg->oob ) {
@@ -412,7 +412,7 @@ const char *MSG_ReadString( msg_t *msg ) {
 			c = '.';
 		}
 		string[ l++ ] = c;
-	} while ( qtrue );
+	} while ( true );
 	
 	string[ l ] = '\0';
 	
@@ -439,7 +439,7 @@ const char *MSG_ReadBigString( msg_t *msg ) {
 			c = '.';
 		}
 		string[ l++ ] = c;
-	} while ( qtrue );
+	} while ( true );
 	
 	string[ l ] = '\0';
 	
@@ -466,7 +466,7 @@ const char *MSG_ReadStringLine( msg_t *msg ) {
 			c = '.';
 		}
 		string[ l++ ] = c;
-	} while ( qtrue );
+	} while ( true );
 	
 	string[ l ] = '\0';
 	
@@ -749,7 +749,7 @@ If force is not set, then nothing at all will be generated if the entity is
 identical, under the assumption that the in-order delta code will catch it.
 ==================
 */
-void MSG_WriteDeltaEntity( msg_t *msg, const entityState_t *from, const entityState_t *to, qboolean force ) {
+void MSG_WriteDeltaEntity( msg_t *msg, const entityState_t *from, const entityState_t *to, bool force ) {
 	int			i, lc;
 	int			numFields;
 	const netField_t *field;

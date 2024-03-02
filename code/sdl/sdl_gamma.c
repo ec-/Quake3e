@@ -35,11 +35,11 @@ static Uint16 b[256];
 
 void GLimp_InitGamma( glconfig_t *config )
 {
-	config->deviceSupportsGamma = qfalse;
+	config->deviceSupportsGamma = false;
 
 	if ( SDL_GetWindowGammaRamp( SDL_window, r, g, b ) == 0 )
 	{
-		config->deviceSupportsGamma = SDL_SetWindowBrightness( SDL_window, 1.0f ) >= 0 ? qtrue : qfalse;
+		config->deviceSupportsGamma = SDL_SetWindowBrightness( SDL_window, 1.0f ) >= 0 ? true : false;
 	}
 }
 
@@ -71,7 +71,7 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 		//GetVersionEx( &vinfo );
 		//if( vinfo.dwMajorVersion >= 5 && vinfo.dwPlatformId == VER_PLATFORM_WIN32_NT )
 		{
-			qboolean clamped = qfalse;
+			bool clamped = false;
 			for( j = 0 ; j < 3 ; j++ )
 			{
 				for( i = 0 ; i < 128 ; i++ )
@@ -79,14 +79,14 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 					if( table[ j ] [ i] > ( ( 128 + i ) << 8 ) )
 					{
 						table[ j ][ i ] = ( 128 + i ) << 8;
-						clamped = qtrue;
+						clamped = true;
 					}
 				}
 
 				if( table[ j ] [127 ] > 254 << 8 )
 				{
 					table[ j ][ 127 ] = 254 << 8;
-					clamped = qtrue;
+					clamped = true;
 				}
 			}
 			if ( clamped )

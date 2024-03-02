@@ -68,7 +68,7 @@ cvar_t	*com_timescale;
 static cvar_t *com_fixedtime;
 cvar_t	*com_journal;
 cvar_t	*com_protocol;
-qboolean com_protocolCompat;
+bool 	com_protocolCompat;
 #ifndef DEDICATED
 cvar_t	*com_maxfps;
 cvar_t	*com_maxfpsUnfocused;
@@ -110,13 +110,13 @@ static int	lastTime;
 int			com_frameTime;
 static int	com_frameNumber;
 
-qboolean	com_errorEntered = qfalse;
-qboolean	com_fullyInitialized = qfalse;
+bool		com_errorEntered = false;
+bool		com_fullyInitialized = false;
 
 // renderer window states
-qboolean	gw_minimized = qfalse; // this will be always true for dedicated servers
+bool		gw_minimized = false; // this will be always true for dedicated servers
 #ifndef DEDICATED
-qboolean	gw_active = qtrue;
+bool		gw_active = true;
 #endif
 
 static char com_errorMessage[ MAXPRINTMSG ];
@@ -129,7 +129,7 @@ void CIN_CloseAllVideos( void );
 
 static char	*rd_buffer;
 static int	rd_buffersize;
-static qboolean rd_flushing = qfalse;
+static bool rd_flushing = false;
 static void	(*rd_flush)( const char *buffer );
 
 void Com_BeginRedirect( char *buffer, int buffersize, void (*flush)(const char *) )
@@ -147,9 +147,9 @@ void Com_BeginRedirect( char *buffer, int buffersize, void (*flush)(const char *
 void Com_EndRedirect( void )
 {
 	if ( rd_flush ) {
-		rd_flushing = qtrue;
+		rd_flushing = true;
 		rd_flush( rd_buffer );
-		rd_flushing = qfalse;
+		rd_flushing = false;
 	}
 
 	rd_buffer = NULL;
@@ -169,7 +169,7 @@ A raw string should NEVER be passed as fmt, because of "%f" type crashers.
 =============
 */
 void FORMAT_PRINTF(1, 2) QDECL Com_Printf( const char *fmt, ... ) {
-	static qboolean opening_qconsole = qfalse;
+	static bool opening_qconsole = false;
 	va_list		argptr;
 	char		msg[MAXPRINTMSG];
 	int			len;
@@ -180,9 +180,9 @@ void FORMAT_PRINTF(1, 2) QDECL Com_Printf( const char *fmt, ... ) {
 
 	if ( rd_buffer && !rd_flushing ) {
 		if ( len + (int)strlen( rd_buffer ) > ( rd_buffersize - 1 ) ) {
-			rd_flushing = qtrue;
+			rd_flushing = true;
 			rd_flush( rd_buffer );
-			rd_flushing = qfalse;
+			rd_flushing = false;
 			*rd_buffer = '\0';
 		}
 		Q_strcat( rd_buffer, rd_buffersize, msg );
@@ -210,7 +210,7 @@ void FORMAT_PRINTF(1, 2) QDECL Com_Printf( const char *fmt, ... ) {
 			const char *logName = "qconsole.log";
 			int mode;
 
-			opening_qconsole = qtrue;
+			opening_qconsole = true;
 
 			mode = com_logfile->integer - 1;
 
@@ -240,7 +240,7 @@ void FORMAT_PRINTF(1, 2) QDECL Com_Printf( const char *fmt, ... ) {
 				Cvar_Set( "logfile", "0" );
 			}
 
-			opening_qconsole = qfalse;
+			opening_qconsole = false;
 		}
 		if ( logfile != FS_INVALID_HANDLE && FS_Initialized() ) {
 			FS_Write( msg, len, logfile );
@@ -284,7 +284,7 @@ void NORETURN FORMAT_PRINTF(2, 3) QDECL Com_Error( errorParm_t code, const char 
 	va_list		argptr;
 	static int	lastErrorTime;
 	static int	errorCount;
-	static qboolean	calledSysError = qfalse;
+	static bool	calledSysError = false;
 	int			currentTime;
 
 #if defined(_WIN32) && defined(_DEBUG)
@@ -297,12 +297,12 @@ void NORETURN FORMAT_PRINTF(2, 3) QDECL Com_Error( errorParm_t code, const char 
 
 	if ( com_errorEntered ) {
 		if ( !calledSysError ) {
-			calledSysError = qtrue;
+			calledSysError = true;
 			Sys_Error( "recursive error after: %s", com_errorMessage );
 		}
 	}
 
-	com_errorEntered = qtrue;
+	com_errorEntered = true;
 
 	Cvar_Set( "com_errorCode", va( "%i", code ) );
 
@@ -343,14 +343,14 @@ void NORETURN FORMAT_PRINTF(2, 3) QDECL Com_Error( errorParm_t code, const char 
 		SV_Shutdown( "Server disconnected" );
 		Com_EndRedirect();
 #ifndef DEDICATED
-		CL_Disconnect( qfalse );
+		CL_Disconnect( false );
 		CL_FlushMemory();
 #endif
 		VM_Forced_Unload_Done();
 
 		// make sure we can get at our local stuff
 		FS_PureServerSetLoadedPaks( "", "" );
-		com_errorEntered = qfalse;
+		com_errorEntered = false;
 
 		Q_longjmp( abortframe, 1 );
 	} else if ( code == ERR_DROP ) {
@@ -360,13 +360,13 @@ void NORETURN FORMAT_PRINTF(2, 3) QDECL Com_Error( errorParm_t code, const char 
 		SV_Shutdown( va( "Server crashed: %s",  com_errorMessage ) );
 		Com_EndRedirect();
 #ifndef DEDICATED
-		CL_Disconnect( qfalse );
+		CL_Disconnect( false );
 		CL_FlushMemory();
 #endif
 		VM_Forced_Unload_Done();
 
 		FS_PureServerSetLoadedPaks( "", "" );
-		com_errorEntered = qfalse;
+		com_errorEntered = false;
 
 		Q_longjmp( abortframe, 1 );
 	} else if ( code == ERR_NEED_CD ) {
@@ -374,7 +374,7 @@ void NORETURN FORMAT_PRINTF(2, 3) QDECL Com_Error( errorParm_t code, const char 
 		Com_EndRedirect();
 #ifndef DEDICATED
 		if ( com_cl_running && com_cl_running->integer ) {
-			CL_Disconnect( qfalse );
+			CL_Disconnect( false );
 			VM_Forced_Unload_Start();
 			CL_FlushMemory();
 			VM_Forced_Unload_Done();
@@ -384,13 +384,13 @@ void NORETURN FORMAT_PRINTF(2, 3) QDECL Com_Error( errorParm_t code, const char 
 		}
 #endif
 		FS_PureServerSetLoadedPaks( "", "" );
-		com_errorEntered = qfalse;
+		com_errorEntered = false;
 
 		Q_longjmp( abortframe, 1 );
 	} else {
 		VM_Forced_Unload_Start();
 #ifndef DEDICATED
-		CL_Shutdown( va( "Server fatal crashed: %s", com_errorMessage ), qtrue );
+		CL_Shutdown( va( "Server fatal crashed: %s", com_errorMessage ), true );
 #endif
 		SV_Shutdown( va( "Server fatal crashed: %s", com_errorMessage ) );
 		Com_EndRedirect();
@@ -399,7 +399,7 @@ void NORETURN FORMAT_PRINTF(2, 3) QDECL Com_Error( errorParm_t code, const char 
 
 	Com_Shutdown();
 
-	calledSysError = qtrue;
+	calledSysError = true;
 	Sys_Error( "%s", com_errorMessage );
 }
 
@@ -423,11 +423,11 @@ void Com_Quit_f( void ) {
 		VM_Forced_Unload_Start();
 		SV_Shutdown( p[0] ? p : "Server quit" );
 #ifndef DEDICATED
-		CL_Shutdown( p[0] ? p : "Client quit", qtrue );
+		CL_Shutdown( p[0] ? p : "Client quit", true );
 #endif
 		VM_Forced_Unload_Done();
 		Com_Shutdown();
-		FS_Shutdown( qtrue );
+		FS_Shutdown( true );
 	}
 	Sys_Quit();
 }
@@ -500,10 +500,10 @@ char cl_title[ MAX_CVAR_VALUE_STRING ] = CLIENT_WINDOW_TITLE;
 ===================
 Com_EarlyParseCmdLine
 
-returns qtrue if both vid_xpos and vid_ypos was set
+returns true if both vid_xpos and vid_ypos was set
 ===================
 */
-qboolean Com_EarlyParseCmdLine( char *commandLine, char *con_title, int title_size, int *vid_xpos, int *vid_ypos )
+bool Com_EarlyParseCmdLine( char *commandLine, char *con_title, int title_size, int *vid_xpos, int *vid_ypos )
 {
 	int		flags = 0;
 	int		i;
@@ -560,7 +560,7 @@ qboolean Com_EarlyParseCmdLine( char *commandLine, char *con_title, int title_si
 		}
 	}
 
-	return (flags == 3) ? qtrue : qfalse ;
+	return (flags == 3) ? true : false ;
 }
 
 
@@ -572,7 +572,7 @@ Check for "safe" on the command line, which will
 skip loading of q3config.cfg
 ===================
 */
-qboolean Com_SafeMode( void ) {
+bool Com_SafeMode( void ) {
 	int		i;
 
 	for ( i = 0 ; i < com_numConsoleLines ; i++ ) {
@@ -580,10 +580,10 @@ qboolean Com_SafeMode( void ) {
 		if ( !Q_stricmp( Cmd_Argv(0), "safe" )
 			|| !Q_stricmp( Cmd_Argv(0), "cvar_restart" ) ) {
 			com_consoleLines[i][0] = '\0';
-			return qtrue;
+			return true;
 		}
 	}
-	return qfalse;
+	return false;
 }
 
 
@@ -613,7 +613,7 @@ void Com_StartupVariable( const char *match ) {
 			if ( Cvar_Flags( name ) == CVAR_NONEXISTENT )
 				Cvar_Get( name, Cmd_ArgsFrom( 2 ), CVAR_USER_CREATED );
 			else
-				Cvar_Set2( name, Cmd_ArgsFrom( 2 ), qfalse );
+				Cvar_Set2( name, Cmd_ArgsFrom( 2 ), false );
 		}
 	}
 }
@@ -626,15 +626,15 @@ Com_AddStartupCommands
 Adds command line parameters as script statements
 Commands are separated by + signs
 
-Returns qtrue if any late commands were added, which
+Returns true if any late commands were added, which
 will keep the demoloop from immediately starting
 =================
 */
-static qboolean Com_AddStartupCommands( void ) {
+static bool Com_AddStartupCommands( void ) {
 	int		i;
-	qboolean	added;
+	bool	added;
 
-	added = qfalse;
+	added = false;
 	// quote every token, so args with semicolons can work
 	for (i=0 ; i < com_numConsoleLines ; i++) {
 		if ( !com_consoleLines[i] || !com_consoleLines[i][0] ) {
@@ -646,7 +646,7 @@ static qboolean Com_AddStartupCommands( void ) {
 			continue;
 		}
 
-		added = qtrue;
+		added = true;
 		Cbuf_AddText( com_consoleLines[i] );
 		Cbuf_AddText( "\n" );
 	}
@@ -703,11 +703,12 @@ static const char *Com_StringContains( const char *str1, const char *str2, int l
 Com_Filter
 ============
 */
-int Com_Filter( const char *filter, const char *name )
+bool Com_Filter( const char *filter, const char *name )
 {
 	char buf[ MAX_TOKEN_CHARS ];
 	const char *ptr;
-	int i, found;
+	int i; 
+	bool found = false;
 
 	while(*filter) {
 		if (*filter == '*') {
@@ -722,7 +723,7 @@ int Com_Filter( const char *filter, const char *name )
 			if ( i ) {
 				ptr = Com_StringContains( name, buf, i );
 				if ( !ptr )
-					return qfalse;
+					return false;
 				name = ptr + i;
 			}
 		}
@@ -735,22 +736,22 @@ int Com_Filter( const char *filter, const char *name )
 		}
 		else if (*filter == '[') {
 			filter++;
-			found = qfalse;
+			found = false;
 			while(*filter && !found) {
 				if (*filter == ']' && *(filter+1) != ']') break;
 				if (*(filter+1) == '-' && *(filter+2) && (*(filter+2) != ']' || *(filter+3) == ']')) {
 					if (locase[(byte)*name] >= locase[(byte)*filter] &&
 						locase[(byte)*name] <= locase[(byte)*(filter+2)])
-							found = qtrue;
+							found = true;
 					filter += 3;
 				}
 				else {
 					if (locase[(byte)*filter] == locase[(byte)*name])
-						found = qtrue;
+						found = true;
 					filter++;
 				}
 			}
-			if (!found) return qfalse;
+			if (!found) return false;
 			while(*filter) {
 				if (*filter == ']' && *(filter+1) != ']') break;
 				filter++;
@@ -760,12 +761,12 @@ int Com_Filter( const char *filter, const char *name )
 		}
 		else {
 			if (locase[(byte)*filter] != locase[(byte)*name])
-				return qfalse;
+				return false;
 			filter++;
 			name++;
 		}
 	}
-	return qtrue;
+	return true;
 }
 
 
@@ -774,7 +775,7 @@ int Com_Filter( const char *filter, const char *name )
 Com_FilterExt
 ============
 */
-qboolean Com_FilterExt( const char *filter, const char *name )
+bool Com_FilterExt( const char *filter, const char *name )
 {
 	char buf[ MAX_TOKEN_CHARS ];
 	const char *ptr;
@@ -792,29 +793,29 @@ qboolean Com_FilterExt( const char *filter, const char *name )
 			if ( i ) {
 				ptr = Com_StringContains( name, buf, i );
 				if ( !ptr )
-					return qfalse;
+					return false;
 				name = ptr + i;
 			} else if ( *filter == '\0' ) {
-				return qtrue;
+				return true;
 			}
 		}
 		else if ( *filter == '?' ) {
 			if ( *name == '\0' )
-				return qfalse;
+				return false;
 			filter++;
 			name++;
 		}
 		else {
 			if ( locase[(byte)*filter] != locase[(byte)*name] )
-				return qfalse;
+				return false;
 			filter++;
 			name++;
 		}
 	}
 	if ( *name ) {
-		return qfalse;
+		return false;
 	}
-	return qtrue;
+	return true;
 }
 
 
@@ -823,7 +824,7 @@ qboolean Com_FilterExt( const char *filter, const char *name )
 Com_HasPatterns
 ============
 */
-qboolean Com_HasPatterns( const char *str )
+bool Com_HasPatterns( const char *str )
 {
 	int c;
 
@@ -831,11 +832,11 @@ qboolean Com_HasPatterns( const char *str )
 	{
 		if ( c == '*' || c == '?' )
 		{
-			return qtrue;
+			return true;
 		}
 	}
 
-	return qfalse;
+	return false;
 }
 
 
@@ -844,7 +845,7 @@ qboolean Com_HasPatterns( const char *str )
 Com_FilterPath
 ============
 */
-int Com_FilterPath( const char *filter, const char *name )
+bool Com_FilterPath( const char *filter, const char *name )
 {
 	int i;
 	char new_filter[MAX_QPATH];
@@ -908,7 +909,7 @@ Sys_Microseconds
 int64_t Sys_Microseconds( void )
 {
 #ifdef _WIN32
-	static qboolean inited = qfalse;
+	static bool inited = false;
 	static LARGE_INTEGER base;
 	static LARGE_INTEGER freq;
 	LARGE_INTEGER curr;
@@ -921,7 +922,7 @@ int64_t Sys_Microseconds( void )
 		{
 			return (int64_t)Sys_Milliseconds() * 1000LL; // fallback
 		}
-		inited = qtrue;
+		inited = true;
 		return 0;
 	}
 
@@ -1841,11 +1842,11 @@ typedef struct zone_stats_s {
 } zone_stats_t;
 
 
-static void Zone_Stats( const char *name, const memzone_t *z, qboolean printDetails, zone_stats_t *stats )
+static void Zone_Stats( const char *name, const memzone_t *z, bool printDetails, zone_stats_t *stats )
 {
-	const memblock_t *block;
-	const memzone_t *zone;
-	zone_stats_t st;
+	const memblock_t 	*block;
+	const memzone_t 	*zone;
+	zone_stats_t 		st;
 
 	memset( &st, 0, sizeof( st ) );
 	zone = z;
@@ -2120,7 +2121,7 @@ void Hunk_SmallLog( void ) {
 		return;
 
 	for (block = hunkblocks ; block; block = block->next) {
-		block->printed = qfalse;
+		block->printed = false;
 	}
 	size = 0;
 	numBlocks = 0;
@@ -2140,7 +2141,7 @@ void Hunk_SmallLog( void ) {
 			}
 			size += block2->size;
 			locsize += block2->size;
-			block2->printed = qtrue;
+			block2->printed = true;
 		}
 		Com_sprintf(buf, sizeof(buf), "size = %8d: %s, line: %d (%s)\r\n", locsize, block->file, block->line, block->label);
 		FS_Write(buf, strlen(buf), logfile);
@@ -2244,11 +2245,11 @@ void Hunk_ClearToMark( void ) {
 Hunk_CheckMark
 =================
 */
-qboolean Hunk_CheckMark( void ) {
+bool Hunk_CheckMark( void ) {
 	if( hunk_low.mark || hunk_high.mark ) {
-		return qtrue;
+		return true;
 	}
-	return qfalse;
+	return false;
 }
 
 void CL_ShutdownCGame( void );
@@ -2533,8 +2534,8 @@ static void Com_InitJournaling( void ) {
 		com_journalDataFile = FS_FOpenFileWrite( "journaldata.dat" );
 	} else if ( com_journal->integer == 2 ) {
 		Com_Printf( "Replaying journaled events\n" );
-		FS_FOpenFileRead( "journal.dat", &com_journalFile, qtrue );
-		FS_FOpenFileRead( "journaldata.dat", &com_journalDataFile, qtrue );
+		FS_FOpenFileRead( "journal.dat", &com_journalFile, true );
+		FS_FOpenFileRead( "journaldata.dat", &com_journalDataFile, true );
 	}
 
 	if ( com_journalFile == FS_INVALID_HANDLE || com_journalDataFile == FS_INVALID_HANDLE ) {
@@ -2765,7 +2766,7 @@ static void Com_PushEvent( const sysEvent_t *event ) {
 
 		// don't print the warning constantly, or it can give time for more...
 		if ( !printedWarning ) {
-			printedWarning = qtrue;
+			printedWarning = true;
 			Com_Printf( "WARNING: Com_PushEvent overflow\n" );
 		}
 
@@ -2774,7 +2775,7 @@ static void Com_PushEvent( const sysEvent_t *event ) {
 		}
 		com_pushedEventsTail++;
 	} else {
-		printedWarning = qfalse;
+		printedWarning = false;
 	}
 
 	*ev = *event;
@@ -3005,18 +3006,18 @@ Com_GameRestart
 Change to a new mod properly with cleaning up cvars before switching.
 ==================
 */
-void Com_GameRestart( int checksumFeed, qboolean clientRestart )
+void Com_GameRestart( int checksumFeed, bool clientRestart )
 {
-	static qboolean com_gameRestarting = qfalse;
+	static bool com_gameRestarting = false;
 
 	// make sure no recursion can be triggered
 	if ( !com_gameRestarting && com_fullyInitialized )
 	{
-		com_gameRestarting = qtrue;
+		com_gameRestarting = true;
 #ifndef DEDICATED
 		if ( clientRestart )
 		{
-			CL_Disconnect( qfalse );
+			CL_Disconnect( false );
 			CL_ShutdownAll();
 			CL_ClearMemory(); // Hunk_Clear(); // -EC-
 		}
@@ -3030,15 +3031,15 @@ void Com_GameRestart( int checksumFeed, qboolean clientRestart )
 		Con_ResetHistory();
 
 		// Shutdown FS early so Cvar_Restart will not reset old game cvars
-		FS_Shutdown( qtrue );
+		FS_Shutdown( true );
 
 		// Clean out any user and VM created cvars
-		Cvar_Restart( qtrue );
+		Cvar_Restart( true );
 
 #ifndef DEDICATED
 		// Reparse pure paks and update cvars before FS startup
 		if ( CL_GameSwitch() )
-			CL_SystemInfoChanged( qfalse );
+			CL_SystemInfoChanged( false );
 #endif
 
 		FS_Restart( checksumFeed );
@@ -3051,7 +3052,7 @@ void Com_GameRestart( int checksumFeed, qboolean clientRestart )
 			CL_StartHunkUsers();
 #endif
 
-		com_gameRestarting = qfalse;
+		com_gameRestarting = false;
 	}
 }
 
@@ -3067,7 +3068,7 @@ static void Com_GameRestart_f( void )
 {
 	Cvar_Set( "fs_game", Cmd_Argv( 1 ) );
 
-	Com_GameRestart( 0, qtrue );
+	Com_GameRestart( 0, true );
 }
 
 
@@ -3085,22 +3086,22 @@ char	cl_cdkey[34] = "123456789";
 bool CL_CDKeyValidate
 =================
 */
-qboolean Com_CDKeyValidate( const char *key, const char *checksum ) {
+bool Com_CDKeyValidate( const char *key, const char *checksum ) {
 #ifdef STANDALONE
-	return qtrue;
+	return true;
 #else
 	char	ch;
 	byte	sum;
 	char	chs[10];
-	int i, len;
+	int 	i, len;
 
 	len = strlen(key);
 	if( len != CDKEY_LEN ) {
-		return qfalse;
+		return false;
 	}
 
 	if( checksum && strlen( checksum ) != CDCHKSUM_LEN ) {
-		return qfalse;
+		return false;
 	}
 
 	sum = 0;
@@ -3130,21 +3131,21 @@ qboolean Com_CDKeyValidate( const char *key, const char *checksum ) {
 			sum += ch;
 			continue;
 		default:
-			return qfalse;
+			return false;
 		}
 	}
 
 	sprintf(chs, "%02x", sum);
 
 	if (checksum && !Q_stricmp(chs, checksum)) {
-		return qtrue;
+		return true;
 	}
 
 	if (!checksum) {
-		return qtrue;
+		return true;
 	}
 
-	return qfalse;
+	return false;
 #endif
 }
 
@@ -3806,11 +3807,11 @@ void Com_Init( char *commandLine ) {
 	Cvar_SetDescription( com_protocol, "Specify network protocol version number, use -compat suffix for OpenArena compatibility.");
 	if ( Q_stristr( com_protocol->string, "-compat" ) > com_protocol->string ) {
 		// strip -compat suffix
-		Cvar_Set2( "protocol", va( "%i", com_protocol->integer ), qtrue );
+		Cvar_Set2( "protocol", va( "%i", com_protocol->integer ), true );
 		// enforce legacy stream encoding but with new challenge format
-		com_protocolCompat = qtrue;
+		com_protocolCompat = true;
 	} else {
-		com_protocolCompat = qfalse;
+		com_protocolCompat = false;
 	}
 
 	Cvar_CheckRange( com_protocol, "0", NULL, CV_INTEGER );
@@ -3872,7 +3873,7 @@ void Com_Init( char *commandLine ) {
 #ifdef USE_AFFINITY_MASK
 	com_affinityMask = Cvar_Get( "com_affinityMask", "", CVAR_ARCHIVE_ND );
 	Cvar_SetDescription( com_affinityMask, "Bind game process to bitmask-specified CPU core(s), special characters:\n A or a - all default cores\n P or p - performance cores\n E or e - efficiency cores\n 0x<value> - use hexadecimal notation\n + or - can be used to add or exclude particular cores" );
-	com_affinityMask->modified = qfalse;
+	com_affinityMask->modified = false;
 #endif
 
 	// com_blood = Cvar_Get( "com_blood", "1", CVAR_ARCHIVE_ND );
@@ -3924,9 +3925,9 @@ void Com_Init( char *commandLine ) {
 		if ( !com_viewlog->integer ) {
 			Cvar_Set( "viewlog", "1" );
 		}
-		gw_minimized = qtrue;
+		gw_minimized = true;
 	} else {
-		gw_minimized = qfalse;
+		gw_minimized = false;
 	}
 
 	if ( com_developer->integer ) {
@@ -3968,7 +3969,7 @@ void Com_Init( char *commandLine ) {
 #endif
 	if ( com_affinityMask->string[0] != '\0' ) {
 		Com_SetAffinityMask( com_affinityMask->string );
-		com_affinityMask->modified = qfalse;
+		com_affinityMask->modified = false;
 	}
 #endif
 
@@ -3979,12 +3980,12 @@ void Com_Init( char *commandLine ) {
 	VM_Init();
 	SV_Init();
 
-	com_dedicated->modified = qfalse;
+	com_dedicated->modified = false;
 
 #ifndef DEDICATED
 	if ( !com_dedicated->integer ) {
 		CL_Init();
-		// Sys_ShowConsole( com_viewlog->integer, qfalse ); // moved down
+		// Sys_ShowConsole( com_viewlog->integer, false ); // moved down
 	}
 #endif
 
@@ -4013,14 +4014,14 @@ void Com_Init( char *commandLine ) {
 	lastTime = com_frameTime = Com_Milliseconds();
 
 	if ( !com_errorEntered )
-		Sys_ShowConsole( com_viewlog->integer, qfalse );
+		Sys_ShowConsole( com_viewlog->integer, false );
 
 #ifndef DEDICATED
 	// make sure single player is off by default
 	Cvar_Set( "ui_singlePlayerActive", "0" );
 #endif
 
-	com_fullyInitialized = qtrue;
+	com_fullyInitialized = true;
 
 	Com_Printf( "--- Common Initialization Complete ---\n" );
 }
@@ -4104,7 +4105,7 @@ static void Com_WriteConfig_f( void ) {
 	Q_strncpyz( filename, Cmd_Argv(1), sizeof( filename ) );
 	COM_DefaultExtension( filename, sizeof( filename ), ".cfg" );
 
-	if ( !FS_AllowedExtension( filename, qfalse, &ext ) ) {
+	if ( !FS_AllowedExtension( filename, false, &ext ) ) {
 		Com_Printf( "%s: Invalid filename extension: '%s'.\n", __func__, ext );
 		return;
 	}
@@ -4191,7 +4192,7 @@ static int Com_TimeVal( int minMsec )
 Com_Frame
 =================
 */
-void Com_Frame( qboolean noDelay ) {
+void Com_Frame( bool noDelay ) {
 
 #ifndef DEDICATED
 	static int bias = 0;
@@ -4229,15 +4230,15 @@ void Com_Frame( qboolean noDelay ) {
 	// if "viewlog" has been modified, show or hide the log console
 	if ( com_viewlog->modified ) {
 		if ( !com_dedicated->integer ) {
-			Sys_ShowConsole( com_viewlog->integer, qfalse );
+			Sys_ShowConsole( com_viewlog->integer, false );
 		}
-		com_viewlog->modified = qfalse;
+		com_viewlog->modified = false;
 	}
 
 #ifdef USE_AFFINITY_MASK
 	if ( com_affinityMask->modified ) {
 		Com_SetAffinityMask( com_affinityMask->string );
-		com_affinityMask->modified = qfalse;
+		com_affinityMask->modified = false;
 	}
 #endif
 
@@ -4282,7 +4283,7 @@ void Com_Frame( qboolean noDelay ) {
 	}
 
 	// waiting for incoming packets
-	if ( noDelay == qfalse )
+	if ( noDelay == false )
 	do {
 		if ( com_sv_running->integer ) {
 			timeValSV = SV_SendQueuedPackets();
@@ -4327,26 +4328,26 @@ void Com_Frame( qboolean noDelay ) {
 	if ( com_dedicated->modified ) {
 		// get the latched value
 		Cvar_Get( "dedicated", "0", 0 );
-		com_dedicated->modified = qfalse;
+		com_dedicated->modified = false;
 		if ( !com_dedicated->integer ) {
 			SV_Shutdown( "dedicated set to 0" );
 			SV_RemoveDedicatedCommands();
 #ifndef DEDICATED
 			CL_Init();
 #endif
-			Sys_ShowConsole( com_viewlog->integer, qfalse );
+			Sys_ShowConsole( com_viewlog->integer, false );
 #ifndef DEDICATED
-			gw_minimized = qfalse;
+			gw_minimized = false;
 			CL_StartHunkUsers();
 #endif
 		} else {
 #ifndef DEDICATED
-			CL_Shutdown( "", qfalse );
+			CL_Shutdown( "", false );
 			CL_ClearMemory();
 #endif
-			Sys_ShowConsole( 1, qtrue );
+			Sys_ShowConsole( 1, true );
 			SV_AddDedicatedCommands();
-			gw_minimized = qtrue;
+			gw_minimized = true;
 		}
 	}
 
@@ -4570,12 +4571,12 @@ static void Field_AddSpace( void )
 Field_Complete
 ===============
 */
-static qboolean Field_Complete( void )
+static bool Field_Complete( void )
 {
 	int completionOffset;
 
 	if( matchCount == 0 )
-		return qtrue;
+		return true;
 
 	completionOffset = strlen( completionField->buffer ) - strlen( completionString );
 
@@ -4587,12 +4588,12 @@ static qboolean Field_Complete( void )
 	if( matchCount == 1 )
 	{
 		Field_AddSpace();
-		return qtrue;
+		return true;
 	}
 
 	Com_Printf( "]%s\n", completionField->buffer );
 
-	return qfalse;
+	return false;
 }
 
 
@@ -4709,7 +4710,7 @@ static void Field_CompleteCvarValue( const char *value, const char *current )
 Field_CompleteFilename
 ===============
 */
-void Field_CompleteFilename( const char *dir, const char *ext, qboolean stripExt, int flags )
+void Field_CompleteFilename( const char *dir, const char *ext, bool stripExt, int flags )
 {
 	matchCount = 0;
 	shortestMatch[ 0 ] = '\0';
@@ -4726,7 +4727,7 @@ void Field_CompleteFilename( const char *dir, const char *ext, qboolean stripExt
 Field_CompleteCommand
 ===============
 */
-void Field_CompleteCommand( const char *cmd, qboolean doCommands, qboolean doCvars )
+void Field_CompleteCommand( const char *cmd, bool doCommands, bool doCvars )
 {
 	int	completionArgument;
 
@@ -4778,11 +4779,11 @@ void Field_CompleteCommand( const char *cmd, qboolean doCommands, qboolean doCva
 
 		if( ( p = Field_FindFirstSeparator( cmd ) ) != NULL )
 		{
- 			Field_CompleteCommand( p + 1, qtrue, qtrue ); // Compound command
+ 			Field_CompleteCommand( p + 1, true, true ); // Compound command
 		}
 		else
 		{
-			qboolean argumentCompleted = Cmd_CompleteArgument( baseCmd, cmd, completionArgument );
+			bool argumentCompleted = Cmd_CompleteArgument( baseCmd, cmd, completionArgument );
 			if ( ( matchCount == 1 || argumentCompleted ) && doCvars )
 			{
 				if ( cmd[0] == '/' || cmd[0] == '\\' )
@@ -4834,7 +4835,7 @@ void Field_AutoComplete( field_t *field )
 {
 	completionField = field;
 
-	Field_CompleteCommand( completionField->buffer, qtrue, qtrue );
+	Field_CompleteCommand( completionField->buffer, true, true );
 }
 
 
@@ -4859,7 +4860,7 @@ void Com_RandomBytes( byte *string, int len )
 }
 
 
-static qboolean strgtr(const char *s0, const char *s1) {
+static bool strgtr(const char *s0, const char *s1) {
 	int l0, l1, i;
 
 	l0 = strlen( s0 );
@@ -4871,13 +4872,13 @@ static qboolean strgtr(const char *s0, const char *s1) {
 
 	for( i = 0; i < l0; i++ ) {
 		if ( s1[i] > s0[i] ) {
-			return qtrue;
+			return true;
 		}
 		if ( s1[i] < s0[i] ) {
-			return qfalse;
+			return false;
 		}
 	}
-	return qfalse;
+	return false;
 }
 
 

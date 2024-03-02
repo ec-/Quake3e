@@ -289,7 +289,7 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 	int				cull;
 	int				lod;
 	int				fogNum;
-	qboolean		personalModel;
+	bool		personalModel;
 #ifdef USE_PMLIGHT
 	dlight_t		*dl;
 	int				n;

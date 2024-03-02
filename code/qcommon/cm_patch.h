@@ -29,7 +29,7 @@ This file does not reference any globals, and has these entry points:
 void CM_ClearLevelPatches( void );
 struct patchCollide_s	*CM_GeneratePatchCollide( int width, int height, const vec3_t *points );
 void CM_TraceThroughPatchCollide( traceWork_t *tw, const struct patchCollide_s *pc );
-qboolean CM_PositionTestInPatchCollide( traceWork_t *tw, const struct patchCollide_s *pc );
+bool CM_PositionTestInPatchCollide( traceWork_t *tw, const struct patchCollide_s *pc );
 void CM_DrawDebugSurface( void (*drawPoly)(int color, int numPoints, flaot *points) );
 
 
@@ -73,15 +73,15 @@ typedef struct {
 	int			numBorders;		// 3 or four + 6 axial bevels + 4 or 3 * 4 edge bevels
 	int			borderPlanes[4+6+16];
 	int			borderInward[4+6+16];
-	qboolean	borderNoAdjust[4+6+16];
+	bool		borderNoAdjust[4+6+16];
 } facet_t;
 
 typedef struct patchCollide_s {
-	vec3_t	bounds[2];
-	int		numPlanes;			// surface planes plus edge planes
+	vec3_t			bounds[2];
+	int				numPlanes;			// surface planes plus edge planes
 	patchPlane_t	*planes;
-	int		numFacets;
-	facet_t	*facets;
+	int				numFacets;
+	facet_t			*facets;
 } patchCollide_t;
 
 
@@ -90,9 +90,9 @@ typedef struct patchCollide_s {
 typedef struct {
 	int			width;
 	int			height;
-	qboolean	wrapWidth;
-	qboolean	wrapHeight;
-	vec3_t	points[MAX_GRID_SIZE][MAX_GRID_SIZE];	// [width][height]
+	bool		wrapWidth;
+	bool		wrapHeight;
+	vec3_t		points[MAX_GRID_SIZE][MAX_GRID_SIZE];	// [width][height]
 } cGrid_t;
 
 #define	SUBDIVIDE_DISTANCE	16	//4	// never more than this units away from curve

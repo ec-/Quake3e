@@ -44,10 +44,10 @@ WinVars_t	g_wv;
 Sys_LowPhysicalMemory
 ==================
 */
-qboolean Sys_LowPhysicalMemory( void ) {
+bool Sys_LowPhysicalMemory( void ) {
 	MEMORYSTATUS stat;
 	GlobalMemoryStatus( &stat );
-	return (stat.dwTotalPhys <= MEM_THRESHOLD) ? qtrue : qfalse;
+	return (stat.dwTotalPhys <= MEM_THRESHOLD) ? true : false;
 }
 
 
@@ -78,14 +78,14 @@ void NORETURN FORMAT_PRINTF(1, 2) QDECL Sys_Error( const char *error, ... ) {
 	va_end( argptr );
 
 #ifndef DEDICATED
-	CL_Shutdown( text, qtrue );
+	CL_Shutdown( text, true );
 #endif
 
 	Conbuf_AppendText( text );
 	Conbuf_AppendText( "\n" );
 
 	Sys_SetErrorText( text );
-	Sys_ShowConsole( 1, qtrue );
+	Sys_ShowConsole( 1, true );
 
 	timeEndPeriod( 1 );
 
@@ -135,15 +135,15 @@ void Sys_Print( const char *msg )
 Sys_Mkdir
 ==============
 */
-qboolean Sys_Mkdir( const char *path )
+bool Sys_Mkdir( const char *path )
 {
 	if ( _mkdir( path ) == 0 ) {
-		return qtrue;
+		return true;
 	} else {
 		if ( errno == EEXIST ) {
-			return qtrue;
+			return true;
 		} else {
-			return qfalse;
+			return false;
 		}
 	}
 }
@@ -173,19 +173,19 @@ FILE *Sys_FOpen( const char *ospath, const char *mode )
 Sys_ResetReadOnlyAttribute
 ==============
 */
-qboolean Sys_ResetReadOnlyAttribute( const char *ospath ) {
+bool Sys_ResetReadOnlyAttribute( const char *ospath ) {
 	DWORD dwAttr;
 
 	dwAttr = GetFileAttributesA( ospath );
 	if ( dwAttr & FILE_ATTRIBUTE_READONLY ) {
 		dwAttr &= ~FILE_ATTRIBUTE_READONLY;
 		if ( SetFileAttributesA( ospath, dwAttr ) ) {
-			return qtrue;
+			return true;
 		} else {
-			return qfalse;
+			return false;
 		}
 	} else {
-		return qfalse;
+		return false;
 	}
 }
 
@@ -320,7 +320,7 @@ void Sys_Sleep( int msec ) {
 Sys_ListFiles
 =============
 */
-char **Sys_ListFiles( const char *directory, const char *extension, const char *filter, int *numfiles, qboolean wantsubs ) {
+char **Sys_ListFiles( const char *directory, const char *extension, const char *filter, int *numfiles, bool wantsubs ) {
 	char		search[MAX_OSPATH*2+MAX_QPATH+1];
 	int			nfiles;
 	char		**listCopy;
@@ -332,7 +332,7 @@ char **Sys_ListFiles( const char *directory, const char *extension, const char *
 	int			length;
 	int			i;
 	const char	*x;
-	qboolean	hasPatterns;
+	bool		hasPatterns;
 
 	if ( filter ) {
 
@@ -454,18 +454,18 @@ void Sys_FreeFileList( char **list ) {
 Sys_GetFileStats
 =============
 */
-qboolean Sys_GetFileStats( const char *filename, fileOffset_t *size, fileTime_t *mtime, fileTime_t *ctime ) {
+bool Sys_GetFileStats( const char *filename, fileOffset_t *size, fileTime_t *mtime, fileTime_t *ctime ) {
 	struct _stat s;
 
 	if ( _stat( filename, &s ) == 0 ) {
 		*size = (fileOffset_t)s.st_size;
 		*mtime = (fileTime_t)s.st_mtime;
 		*ctime = (fileTime_t)s.st_ctime;
-		return qtrue;
+		return true;
 	} else {
 		*size = 0;
 		*mtime = *ctime = 0;
-		return qfalse;
+		return false;
 	}
 }
 
@@ -494,7 +494,7 @@ void *Sys_LoadLibrary( const char *name )
 	if ( !name || !*name )
 		return NULL;
 
-	if ( FS_AllowedExtension( name, qfalse, &ext ) )
+	if ( FS_AllowedExtension( name, false, &ext ) )
 	{
 		Com_Error( ERR_FATAL, "Sys_LoadLibrary: Unable to load library with '%s' extension", ext );
 	}
@@ -775,11 +775,12 @@ WinMain
 int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow ) 
 {
 	static char	sys_cmdline[ MAX_STRING_CHARS ];
-	char con_title[ MAX_CVAR_VALUE_STRING ];
-	int xpos, ypos;
-	qboolean useXYpos;
-	HANDLE hProcess;
-	DWORD dwPriority;
+	
+	char 	con_title[ MAX_CVAR_VALUE_STRING ];
+	int 	xpos, ypos;
+	bool 	useXYpos;
+	HANDLE 	hProcess;
+	DWORD 	dwPriority;
 
 	// should never get a previous instance in Win32
 	if ( hPrevInstance ) {
@@ -819,7 +820,7 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	// hide the early console since we've reached the point where we
 	// have a working graphics subsystems
 	if ( !com_dedicated->integer && !com_viewlog->integer ) {
-		Sys_ShowConsole( 0, qfalse );
+		Sys_ShowConsole( 0, false );
 	}
 
 	// main game loop
@@ -831,7 +832,7 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 
 #ifdef DEDICATED
 		// run the game
-		Com_Frame( qfalse );
+		Com_Frame( false );
 #else
 		// make sure mouse and joystick are only called once a frame
 		IN_Frame();

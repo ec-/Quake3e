@@ -3,7 +3,7 @@
 #include "q_shared.h"
 #include "qcommon.h"
 
-static      qboolean historyLoaded = qfalse;
+static      bool historyLoaded = false;
 
 #define     COMMAND_HISTORY 32
 
@@ -26,7 +26,7 @@ Con_ResetHistory
 */
 void Con_ResetHistory( void )
 {
-	historyLoaded = qfalse;
+	historyLoaded = false;
 	nextHistoryLine = 0;
 	historyLine = 0;
 }
@@ -44,8 +44,8 @@ void Con_SaveField( const field_t *field )
 	if ( !field || field->buffer[0] == '\0' )
 		return;
 
-	if ( historyLoaded == qfalse ) {
-		historyLoaded = qtrue;
+	if ( historyLoaded == false ) {
+		historyLoaded = true;
 		Con_LoadHistory();
 	}
 
@@ -70,23 +70,23 @@ void Con_SaveField( const field_t *field )
 ================
 Con_HistoryGetPrev
 
-returns qtrue if previously returned edit field needs to be updated
+returns true if previously returned edit field needs to be updated
 ================
 */
-qboolean Con_HistoryGetPrev( field_t *field )
+bool Con_HistoryGetPrev( field_t *field )
 {
-	qboolean bresult;
+	bool bresult;
 
-	if ( historyLoaded == qfalse ) {
-		historyLoaded = qtrue;
+	if ( historyLoaded == false ) {
+		historyLoaded = true;
 		Con_LoadHistory();
 	}
 
 	if ( nextHistoryLine - historyLine < COMMAND_HISTORY && historyLine > 0 ) {
-		bresult = qtrue;
+		bresult = true;
 		historyLine--;
 	} else {
-		bresult = qfalse;
+		bresult = false;
 	}
 
 	*field = historyEditLines[ historyLine % COMMAND_HISTORY ];
@@ -99,15 +99,15 @@ qboolean Con_HistoryGetPrev( field_t *field )
 ================
 Con_HistoryGetNext
 
-returns qtrue if previously returned edit field needs to be updated
+returns true if previously returned edit field needs to be updated
 ================
 */
-qboolean Con_HistoryGetNext( field_t *field )
+bool Con_HistoryGetNext( field_t *field )
 {
-	qboolean bresult;
+	bool bresult;
 
-	if ( historyLoaded == qfalse ) {
-		historyLoaded = qtrue;
+	if ( historyLoaded == false ) {
+		historyLoaded = true;
 		Con_LoadHistory();
 	}
 
@@ -115,9 +115,9 @@ qboolean Con_HistoryGetNext( field_t *field )
 
 	if ( historyLine >= nextHistoryLine ) {
 		if ( historyLine == nextHistoryLine )
-			bresult = qtrue;
+			bresult = true;
 		else
-			bresult = qfalse;
+			bresult = false;
 		historyLine = nextHistoryLine;
 		Field_Clear( field );
 		return bresult;
@@ -125,7 +125,7 @@ qboolean Con_HistoryGetNext( field_t *field )
 
 	*field = historyEditLines[ historyLine % COMMAND_HISTORY ];
 
-	return qtrue;
+	return true;
 }
 
 

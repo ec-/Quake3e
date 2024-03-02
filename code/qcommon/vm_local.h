@@ -188,9 +188,9 @@ struct vm_s {
 	void (*destroy)(vm_t* self);
 
 	// for interpreted modules
-	//qboolean	currentlyInterpreting;
+	//bool	currentlyInterpreting;
 
-	qboolean	compiled;
+	bool	compiled;
 
 	vmFunc_t	codeBase;
 	unsigned int codeSize;			// code + jump targets, needed for proper munmap()
@@ -216,15 +216,15 @@ struct vm_s {
 
 	uint32_t	crc32sum;
 
-	qboolean	forceDataMask;
+	bool	forceDataMask;
 
 	int			privateFlag;
 };
 
-qboolean VM_Compile( vm_t *vm, vmHeader_t *header );
+bool VM_Compile( vm_t *vm, vmHeader_t *header );
 int32_t VM_CallCompiled( vm_t *vm, int nargs, int32_t *args );
 
-qboolean VM_PrepareInterpreter2( vm_t *vm, vmHeader_t *header );
+bool VM_PrepareInterpreter2( vm_t *vm, vmHeader_t *header );
 int32_t VM_CallInterpreted2( vm_t *vm, int nargs, int32_t *args );
 
 vmSymbol_t *VM_ValueToFunctionSymbol( vm_t *vm, int value );

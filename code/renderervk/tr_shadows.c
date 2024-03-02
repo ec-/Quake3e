@@ -60,7 +60,7 @@ static void R_AddEdgeDef( int i1, int i2, int f ) {
 
 
 static void R_CalcShadowEdges( void ) {
-	qboolean sil_edge;
+	bool sil_edge;
 	int		i;
 	int		c, c2;
 	int		j, k;
@@ -80,12 +80,12 @@ static void R_CalcShadowEdges( void ) {
 				continue;
 			}
 
-			sil_edge = qtrue;
+			sil_edge = true;
 			i2 = edgeDefs[ i ][ j ].i2;
 			c2 = numEdgeDefs[ i2 ];
 			for ( k = 0 ; k < c2 ; k++ ) {
 				if ( edgeDefs[ i2 ][ k ].i2 == i && edgeDefs[ i2 ][ k ].facing ) {
-					sil_edge = qfalse;
+					sil_edge = false;
 					break;
 				}
 			}
@@ -210,13 +210,13 @@ void RB_ShadowTessEnd( void ) {
 	vk_bind_pipeline( pipeline[0] ); // back-sided
 	vk_bind_index();
 	vk_bind_geometry( TESS_XYZ | TESS_RGBA0 );
-	vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
+	vk_draw_geometry( DEPTH_RANGE_NORMAL, true );
 	vk_bind_pipeline( pipeline[1] ); // front-sided
-	vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
+	vk_draw_geometry( DEPTH_RANGE_NORMAL, true );
 
 	tess.numVertexes /= 2;
 
-	backEnd.doneShadows = qtrue;
+	backEnd.doneShadows = true;
 
 	tess.numIndexes = 0;
 }
@@ -246,7 +246,7 @@ void RB_ShadowFinish( void ) {
 		return;
 	}
 
-	backEnd.doneShadows = qfalse;
+	backEnd.doneShadows = false;
 
 	if ( r_shadows->integer != 2 ) {
 		return;
@@ -278,7 +278,7 @@ void RB_ShadowFinish( void ) {
 	vk_update_mvp( NULL );
 
 	vk_bind_geometry( TESS_XYZ | TESS_RGBA0 /*| TESS_ST0 */ );
-	vk_draw_geometry( DEPTH_RANGE_NORMAL, qfalse );
+	vk_draw_geometry( DEPTH_RANGE_NORMAL, false );
 
 	Com_Memcpy( vk_world.modelview_transform, tmp, 64 );
 

@@ -210,7 +210,7 @@ static int isnan_fp( const float *f )
 RE_AddRefEntityToScene
 =====================
 */
-void RE_AddRefEntityToScene( const refEntity_t *ent, qboolean intShaderTime ) {
+void RE_AddRefEntityToScene( const refEntity_t *ent, bool intShaderTime ) {
 	if ( !tr.registered ) {
 		return;
 	}
@@ -219,9 +219,9 @@ void RE_AddRefEntityToScene( const refEntity_t *ent, qboolean intShaderTime ) {
 		return;
 	}
 	if ( isnan_fp( &ent->origin[0] ) || isnan_fp( &ent->origin[1] ) || isnan_fp( &ent->origin[2] ) ) {
-		static qboolean first_time = qtrue;
+		static bool first_time = true;
 		if ( first_time ) {
-			first_time = qfalse;
+			first_time = false;
 			ri.Printf( PRINT_WARNING, "RE_AddRefEntityToScene passed a refEntity which has an origin with a NaN component\n" );
 		}
 		return;
@@ -231,7 +231,7 @@ void RE_AddRefEntityToScene( const refEntity_t *ent, qboolean intShaderTime ) {
 	}
 
 	backEndData->entities[r_numentities].e = *ent;
-	backEndData->entities[r_numentities].lightingCalculated = qfalse;
+	backEndData->entities[r_numentities].lightingCalculated = false;
 	backEndData->entities[r_numentities].intShaderTime = intShaderTime;
 
 	r_numentities++;
@@ -283,7 +283,7 @@ static void RE_AddDynamicLightToScene( const vec3_t org, float intensity, float 
 	dl->color[1] = g;
 	dl->color[2] = b;
 	dl->additive = additive;
-	dl->linear = qfalse;
+	dl->linear = false;
 }
 
 
@@ -335,7 +335,7 @@ void RE_AddLinearLightToScene( const vec3_t start, const vec3_t end, float inten
 	dl->color[1] = g;
 	dl->color[2] = b;
 	dl->additive = 0;
-	dl->linear = qtrue;
+	dl->linear = true;
 }
 
 
@@ -347,7 +347,7 @@ RE_AddLightToScene
 =====================
 */
 void RE_AddLightToScene( const vec3_t org, float intensity, float r, float g, float b ) {
-	RE_AddDynamicLightToScene( org, intensity, r, g, b, qfalse );
+	RE_AddDynamicLightToScene( org, intensity, r, g, b, false );
 }
 
 
@@ -358,7 +358,7 @@ RE_AddAdditiveLightToScene
 =====================
 */
 void RE_AddAdditiveLightToScene( const vec3_t org, float intensity, float r, float g, float b ) {
-	RE_AddDynamicLightToScene( org, intensity, r, g, b, qtrue );
+	RE_AddDynamicLightToScene( org, intensity, r, g, b, true );
 }
 
 
@@ -413,7 +413,7 @@ void RE_RenderScene( const refdef_t *fd ) {
 
 	// copy the areamask data over and note if it has changed, which
 	// will force a reset of the visible leafs even if the view hasn't moved
-	tr.refdef.areamaskModified = qfalse;
+	tr.refdef.areamaskModified = false;
 	if ( ! (tr.refdef.rdflags & RDF_NOWORLDMODEL) ) {
 		int		areaDiff;
 		int		i;
@@ -427,7 +427,7 @@ void RE_RenderScene( const refdef_t *fd ) {
 
 		if ( areaDiff ) {
 			// a door just opened or something
-			tr.refdef.areamaskModified = qtrue;
+			tr.refdef.areamaskModified = true;
 		}
 	}
 
@@ -534,9 +534,9 @@ void RE_RenderScene( const refdef_t *fd ) {
 			if ( src )
 			{
 				// first drawsurface
-				tr.drawSurfCmd[0].refdef.needScreenMap = qtrue;
+				tr.drawSurfCmd[0].refdef.needScreenMap = true;
 				// last drawsurface
-				src->refdef.switchRenderPass = qtrue;
+				src->refdef.switchRenderPass = true;
 			}
 		}
 

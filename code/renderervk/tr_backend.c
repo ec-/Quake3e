@@ -107,7 +107,7 @@ static void RB_Hyperspace( void ) {
 	tess.numIndexes = 0;
 	tess.numVertexes = 0;
 
-	backEnd.isHyperspace = qtrue;
+	backEnd.isHyperspace = true;
 }
 
 
@@ -130,27 +130,27 @@ to actually render the visible surfaces for this view
 static void RB_BeginDrawingView( void ) {
 	// we will need to change the projection matrix before drawing
 	// 2D images again
-	backEnd.projection2D = qfalse;
+	backEnd.projection2D = false;
 
 	//
 	// set the modelview matrix for the viewer
 	//
 	SetViewportAndScissor();
 
-	vk_clear_depth( qtrue );
+	vk_clear_depth( true );
 
 	if ( backEnd.refdef.rdflags & RDF_HYPERSPACE ) {
 		RB_Hyperspace();
-		backEnd.projection2D = qfalse;
+		backEnd.projection2D = false;
 		SetViewportAndScissor();
 	} else {
-		backEnd.isHyperspace = qfalse;
+		backEnd.isHyperspace = false;
 	}
 
 	glState.faceCulling = -1;		// force face culling to set next time
 
 	// we will only draw a sun if there was sky rendered in this view
-	backEnd.skyRenderedThisView = qfalse;
+	backEnd.skyRenderedThisView = false;
 }
 
 #ifdef USE_PMLIGHT
@@ -167,7 +167,7 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	int				fogNum;
 	int				entityNum, oldEntityNum;
 	int				dlighted;
-	qboolean		depthRange, isCrosshair;
+	bool		depthRange, isCrosshair;
 	int				i;
 	drawSurf_t		*drawSurf;
 	unsigned int	oldSort;
@@ -187,7 +187,7 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 #ifdef USE_PMLIGHT
 	oldShaderSort = -1;
 #endif
-	depthRange = qfalse;
+	depthRange = false;
 
 	backEnd.pc.c_surfaces += numDrawSurfs;
 
@@ -229,7 +229,7 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 		// change the modelview matrix if needed
 		//
 		if ( entityNum != oldEntityNum ) {
-			depthRange = isCrosshair = qfalse;
+			depthRange = isCrosshair = false;
 
 			if ( entityNum != REFENTITYNUM_WORLD ) {
 				backEnd.currentEntity = &backEnd.refdef.entities[entityNum];
@@ -251,10 +251,10 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 #endif // USE_LEGACY_DLIGHTS
 				if ( backEnd.currentEntity->e.renderfx & RF_DEPTHHACK ) {
 					// hack the depth range to prevent view model from poking into walls
-					depthRange = qtrue;
+					depthRange = true;
 
 					if(backEnd.currentEntity->e.renderfx & RF_CROSSHAIR)
-						isCrosshair = qtrue;
+						isCrosshair = true;
 				}
 			} else {
 				backEnd.currentEntity = &tr.worldEntity;
@@ -312,10 +312,10 @@ static void RB_BeginDrawingLitSurfs( void )
 {
 	// we will need to change the projection matrix before drawing
 	// 2D images again
-	backEnd.projection2D = qfalse;
+	backEnd.projection2D = false;
 
 	// we will only draw a sun if there was sky rendered in this view
-	backEnd.skyRenderedThisView = qfalse;
+	backEnd.skyRenderedThisView = false;
 
 	//
 	// set the modelview matrix for the viewer
@@ -335,7 +335,7 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 	shader_t		*shader, *oldShader;
 	int				fogNum;
 	int				entityNum, oldEntityNum;
-	qboolean		depthRange, isCrosshair;
+	bool		depthRange, isCrosshair;
 	const litSurf_t	*litSurf;
 	unsigned int	oldSort;
 	double			originalTime; // -EC-
@@ -348,9 +348,9 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 	backEnd.currentEntity = &tr.worldEntity;
 	oldShader = NULL;
 	oldSort = MAX_UINT;
-	depthRange = qfalse;
+	depthRange = false;
 
-	tess.dlightUpdateParams = qtrue;
+	tess.dlightUpdateParams = true;
 
 	for ( litSurf = dl->head; litSurf; litSurf = litSurf->next ) {
 		//if ( litSurf->sort == sort ) {
@@ -390,7 +390,7 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 		// change the modelview matrix if needed
 		//
 		if ( entityNum != oldEntityNum ) {
-			depthRange = isCrosshair = qfalse;
+			depthRange = isCrosshair = false;
 
 			if ( entityNum != REFENTITYNUM_WORLD ) {
 				backEnd.currentEntity = &backEnd.refdef.entities[entityNum];
@@ -405,10 +405,10 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 
 				if ( backEnd.currentEntity->e.renderfx & RF_DEPTHHACK ) {
 					// hack the depth range to prevent view model from poking into walls
-					depthRange = qtrue;
+					depthRange = true;
 
 					if(backEnd.currentEntity->e.renderfx & RF_CROSSHAIR)
-						isCrosshair = qtrue;
+						isCrosshair = true;
 				}
 			} else {
 				backEnd.currentEntity = &tr.worldEntity;
@@ -422,7 +422,7 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 
 			// set up the dynamic lighting
 			R_TransformDlights( 1, dl, &backEnd.or );
-			tess.dlightUpdateParams = qtrue;
+			tess.dlightUpdateParams = true;
 
 			tess.depthRange = depthRange ? DEPTH_RANGE_WEAPON : DEPTH_RANGE_NORMAL;
 			Com_Memcpy( vk_world.modelview_transform, backEnd.or.modelMatrix, 64 );
@@ -464,7 +464,7 @@ RB_SetGL2D
 ================
 */
 static void RB_SetGL2D( void ) {
-	backEnd.projection2D = qtrue;
+	backEnd.projection2D = true;
 
 	vk_update_mvp( NULL );
 
@@ -486,7 +486,7 @@ Stretches a raw 32 bit power of 2 bitmap image over the given screen rectangle.
 Used for cinematics.
 =============
 */
-void RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, byte *data, int client, qboolean dirty ) {
+void RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, byte *data, int client, bool dirty ) {
 	int			i, j;
 	int			start, end;
 
@@ -521,7 +521,7 @@ void RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, byte *data, 
 }
 
 
-void RE_UploadCinematic( int w, int h, int cols, int rows, byte *data, int client, qboolean dirty ) {
+void RE_UploadCinematic( int w, int h, int cols, int rows, byte *data, int client, bool dirty ) {
 
 	image_t *image;
 
@@ -538,11 +538,11 @@ void RE_UploadCinematic( int w, int h, int cols, int rows, byte *data, int clien
 		image->width = image->uploadWidth = cols;
 		image->height = image->uploadHeight = rows;
 		vk_create_image( image, cols, rows, 1 );
-		vk_upload_image_data( image, 0, 0, cols, rows, 1, data, cols * rows * 4, qfalse );
+		vk_upload_image_data( image, 0, 0, cols, rows, 1, data, cols * rows * 4, false );
 	} else if ( dirty ) {
 		// otherwise, just subimage upload it so that drivers can tell we are going to be changing
 		// it and don't try and do a texture compression
-		vk_upload_image_data( image, 0, 0, cols, rows, 1, data, cols * rows * 4, qtrue );
+		vk_upload_image_data( image, 0, 0, cols, rows, 1, data, cols * rows * 4, true );
 	}
 }
 
@@ -612,10 +612,10 @@ static void RB_LightingPass( void )
 
 #ifdef USE_VBO
 	//VBO_Flush();
-	//tess.allowVBO = qfalse; // for now
+	//tess.allowVBO = false; // for now
 #endif
 
-	tess.dlightPass = qtrue;
+	tess.dlightPass = true;
 
 	for ( i = 0; i < backEnd.viewParms.num_dlights; i++ )
 	{
@@ -627,7 +627,7 @@ static void RB_LightingPass( void )
 		}
 	}
 
-	tess.dlightPass = qfalse;
+	tess.dlightPass = false;
 
 	backEnd.viewParms.num_dlights = 0;
 }
@@ -699,7 +699,7 @@ static void RB_DebugPolygon( int color, int numPoints, float *points ) {
 	vk_bind_index();
 	vk_bind_pipeline( vk.surface_debug_pipeline_solid );
 	vk_bind_geometry( TESS_XYZ | TESS_RGBA0 | TESS_ST0 );
-	vk_draw_geometry( DEPTH_RANGE_NORMAL, qtrue );
+	vk_draw_geometry( DEPTH_RANGE_NORMAL, true );
 
 	// Outline.
 	Com_Memset( tess.svars.colors[0], tr.identityLightByte, numPoints * 2 * sizeof( color4ub_t ) );
@@ -713,7 +713,7 @@ static void RB_DebugPolygon( int color, int numPoints, float *points ) {
 
 	vk_bind_pipeline( vk.surface_debug_pipeline_outline );
 	vk_bind_geometry( TESS_XYZ | TESS_RGBA0 );
-	vk_draw_geometry( DEPTH_RANGE_ZERO, qfalse );
+	vk_draw_geometry( DEPTH_RANGE_ZERO, false );
 	tess.numVertexes = 0;
 }
 
@@ -789,11 +789,11 @@ static const void *RB_DrawSurfs( const void *data ) {
 	if ( cmd->refdef.switchRenderPass ) {
 		vk_end_render_pass();
 		vk_begin_main_render_pass();
-		backEnd.screenMapDone = qtrue;
+		backEnd.screenMapDone = true;
 	}
 
 	//TODO Maybe check for rdf_noworld stuff but q3mme has full 3d ui
-	backEnd.doneSurfaces = qtrue; // for bloom
+	backEnd.doneSurfaces = true; // for bloom
 
 	return (const void *)(cmd + 1);
 }
@@ -818,9 +818,9 @@ static const void *RB_DrawBuffer( const void *data ) {
 
 	if ( r_clear->integer ) {
 		const vec4_t color = {1, 0, 0.5, 1};
-		backEnd.projection2D = qtrue; // to ensure we have viewport that occupies entire window
+		backEnd.projection2D = true; // to ensure we have viewport that occupies entire window
 		vk_clear_color( color );
-		backEnd.projection2D = qfalse;
+		backEnd.projection2D = false;
 	}
 	
 	return (const void *)(cmd + 1);
@@ -894,7 +894,7 @@ void RB_ShowImages( void )
 
 		vk_bind_pipeline( vk.images_debug_pipeline );
 		vk_bind_geometry( TESS_XYZ | TESS_RGBA0 | TESS_ST0 );
-		vk_draw_geometry( DEPTH_RANGE_NORMAL, qfalse );
+		vk_draw_geometry( DEPTH_RANGE_NORMAL, false );
 	}
 
 	tess.numIndexes = 0;
@@ -926,7 +926,7 @@ static const void *RB_ClearDepth( const void *data )
 
 	RB_EndSurface();
 
-	vk_clear_depth( r_shadows->integer == 2 ? qtrue : qfalse );
+	vk_clear_depth( r_shadows->integer == 2 ? true : false );
 
 	return (const void *)(cmd + 1);
 }
@@ -941,9 +941,9 @@ static const void *RB_ClearColor( const void *data )
 {
 	const clearColorCommand_t *cmd = data;
 
-	backEnd.projection2D = qtrue;
+	backEnd.projection2D = true;
 	vk_clear_color( colorBlack );
-	backEnd.projection2D = qfalse;
+	backEnd.projection2D = false;
 
 	return (const void *)(cmd + 1);
 }
@@ -969,7 +969,7 @@ static const void *RB_FinishBloom( const void *data )
 		RB_ShowImages();
 	}
 
-	backEnd.drawConsole = qtrue;
+	backEnd.drawConsole = true;
 
 	return (const void *)(cmd + 1);
 }
@@ -1024,10 +1024,10 @@ static const void *RB_SwapBuffers( const void *data ) {
 
 	vk_present_frame();
 
-	backEnd.projection2D = qfalse;
-	backEnd.doneSurfaces = qfalse;
-	backEnd.drawConsole = qfalse;
-	backEnd.doneBloom = qfalse;
+	backEnd.projection2D = false;
+	backEnd.doneSurfaces = false;
+	backEnd.drawConsole = false;
+	backEnd.doneBloom = false;
 
 	return (const void *)(cmd + 1);
 }

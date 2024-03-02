@@ -574,14 +574,14 @@ static void emit( uint32_t isn )
 #define VSTRi(St, Rn, imm12)     ( (0b10<<30) | (0b111<<27) | (1<<26) | (0b01<<24) | (0b00<<22) /*opc*/ | (imm12_scale(imm12,2) << 10) | (Rn<<5) | St )
 
 
-static qboolean can_encode_imm12( const uint32_t imm12, const uint32_t scale )
+static bool can_encode_imm12( const uint32_t imm12, const uint32_t scale )
 {
 	const uint32_t mask = (1<<scale) - 1;
 
 	if ( imm12 & mask || imm12 >= 4096 * (1 << scale) )
-		return qfalse;
+		return false;
 
-	return qtrue;
+	return true;
 }
 
 
@@ -596,19 +596,19 @@ static uint32_t imm12_scale( const uint32_t imm12, const uint32_t scale )
 }
 
 
-static qboolean encode_arith_imm( const uint32_t imm, uint32_t *res ) {
+static bool encode_arith_imm( const uint32_t imm, uint32_t *res ) {
 
 	if ( imm <= 0xFFF ) {
 		*res = imm;
-		return qtrue;
+		return true;
 	}
 
 	if ( (imm >> 12) <= 0xFFF && (imm & 0xFFF) == 0 ) {
 		*res = (1 << 12) | (imm >> 12);
-		return qtrue;
+		return true;
 	}
 
-	return qfalse;
+	return false;
 }
 
 
@@ -618,7 +618,7 @@ static int shifted_mask( const uint64_t v ) {
 }
 
 
-static qboolean encode_logic_imm( const uint64_t v, uint32_t reg_size, uint32_t *res ) {
+static bool encode_logic_imm( const uint64_t v, uint32_t reg_size, uint32_t *res ) {
 	uint64_t mask, imm;
 	uint32_t size, len;
 	uint32_t N, immr, imms;
@@ -629,7 +629,7 @@ static qboolean encode_logic_imm( const uint64_t v, uint32_t reg_size, uint32_t 
 		size = 32;
 	} else {
 		if ( v > 0xFFFFFFFF ) {
-			return qfalse;
+			return false;
 		}
 		mask = 0xFFFF;
 		size = 16;
@@ -648,7 +648,7 @@ static qboolean encode_logic_imm( const uint64_t v, uint32_t reg_size, uint32_t 
 
 	// early reject
 	if ( !shifted_mask( imm ) && !shifted_mask( ~( imm | ~mask ) ) ) {
-		return qfalse;
+		return false;
 	}
 
 	// rotate right to set leading zero and trailing one
@@ -662,7 +662,7 @@ static qboolean encode_logic_imm( const uint64_t v, uint32_t reg_size, uint32_t 
 
 	if ( immr == size ) {
 		// all ones/zeros, unsupported
-		return qfalse;
+		return false;
 	}
 
 	// count trailing bits set
@@ -673,29 +673,29 @@ static qboolean encode_logic_imm( const uint64_t v, uint32_t reg_size, uint32_t 
 	}
 
 	//if ( len == size || ( imm >> len ) != 0 ) {
-	//	return qfalse;
+	//	return false;
 	//}
 
 	N = ( size >> 6 ) & 1;
 	imms = (63 & (64 - size*2)) | (len - 1);
 	*res = ( N << 12 ) | ( (size - immr) << 6 ) | imms;
 
-	return qtrue;
+	return true;
 }
 
 
 // check if we can encode single-precision scalar immediate
-static qboolean can_encode_f32_imm( const uint32_t v )
+static bool can_encode_f32_imm( const uint32_t v )
 {
 	uint32_t exp3 = (v >> 25) & ((1<<6)-1);
 
 	if ( exp3 != 0x20 && exp3 != 0x1F )
-		return qfalse;
+		return false;
 
 	if ( v & ((1<<19)-1) )
-		return qfalse;
+		return false;
 
-	return qtrue;
+	return true;
 }
 
 
@@ -757,7 +757,7 @@ static void emit_MOVRi( uint32_t reg, uint32_t imm )
 
 static uint32_t alloc_rx( uint32_t pref );
 
-static qboolean find_rx_const( uint32_t imm );
+static bool find_rx_const( uint32_t imm );
 static uint32_t alloc_rx_const( uint32_t pref, uint32_t imm );
 static uint32_t alloc_rx_local( uint32_t pref, uint32_t imm );
 
@@ -881,31 +881,31 @@ static int32_t rx_mask[NUM_RX_REGS];
 static int32_t sx_mask[NUM_SX_REGS];
 
 
-static qboolean find_free_rx( void ) {
+static bool find_free_rx( void ) {
 	uint32_t i, n;
 
 	for ( i = 0; i < ARRAY_LEN( rx_list_alloc ); i++ ) {
 		n = rx_list_alloc[i];
 		if ( rx_regs[n].type_mask == RTYPE_UNUSED ) {
-			return qtrue;
+			return true;
 		}
 	}
 
-	return qfalse;
+	return false;
 }
 
 
-static qboolean find_free_sx( void ) {
+static bool find_free_sx( void ) {
 	uint32_t i, n;
 
 	for ( i = 0; i < ARRAY_LEN( sx_list_alloc ); i++ ) {
 		n = sx_list_alloc[i];
 		if ( sx_regs[n].type_mask == RTYPE_UNUSED ) {
-			return qtrue;
+			return true;
 		}
 	}
 
-	return qfalse;
+	return false;
 }
 
 
@@ -1034,7 +1034,7 @@ static reg_t *find_rx_var( uint32_t *reg, const var_addr_t *v ) {
 }
 
 
-static qboolean find_sx_var( uint32_t *reg, const var_addr_t *v ) {
+static bool find_sx_var( uint32_t *reg, const var_addr_t *v ) {
 #ifdef LOAD_OPTIMIZE
 	uint32_t i;
 	for ( i = 0; i < ARRAY_LEN( sx_regs ); i++ ) {
@@ -1046,13 +1046,13 @@ static qboolean find_sx_var( uint32_t *reg, const var_addr_t *v ) {
 					r->refcnt++;
 					r->ip = ip;
 					*reg = i;
-					return qtrue;
+					return true;
 				}
 			}
 		}
 	}
 #endif // LOAD_OPTIMIZE
-	return qfalse;
+	return false;
 }
 
 
@@ -1098,14 +1098,14 @@ static void wipe_vars( void )
 }
 
 
-static qboolean search_opstack( opstack_value_t type, uint32_t value ) {
+static bool search_opstack( opstack_value_t type, uint32_t value ) {
 	int i;
 	for ( i = 1; i <= opstack; i++ ) {
 		if ( opstackv[i].type == type && opstackv[i].value == value ) {
-			return qtrue;
+			return true;
 		}
 	}
-	return qfalse;
+	return false;
 }
 
 
@@ -1276,7 +1276,7 @@ static void init_opstack( void )
 }
 
 
-static qboolean scalar_on_top( void )
+static bool scalar_on_top( void )
 {
 #ifdef DEBUG_VM
 	if ( opstack >= PROC_OPSTACK_SIZE || opstack <= 0 )
@@ -1284,13 +1284,13 @@ static qboolean scalar_on_top( void )
 #endif
 #ifdef FPU_OPTIMIZE
 	if ( opstackv[ opstack ].type == TYPE_SX )
-		return qtrue;
+		return true;
 #endif
-	return qfalse;
+	return false;
 }
 
 
-static qboolean addr_on_top( var_addr_t *addr )
+static bool addr_on_top( var_addr_t *addr )
 {
 #ifdef DEBUG_VM
 	if ( opstack >= PROC_OPSTACK_SIZE || opstack <= 0 )
@@ -1301,16 +1301,16 @@ static qboolean addr_on_top( var_addr_t *addr )
 		addr->addr = opstackv[opstack].value;
 		addr->base = rDATABASE;
 		addr->size = 0;
-		return qtrue;
+		return true;
 	}
 	if ( opstackv[ opstack ].type == TYPE_LOCAL ) {
 		addr->addr = opstackv[opstack].value;
 		addr->base = rPROCBASE;
 		addr->size = 0;
-		return qtrue;
+		return true;
 	}
 #endif
-	return qfalse;
+	return false;
 }
 
 
@@ -1433,8 +1433,8 @@ static uint32_t alloc_rx_local( uint32_t pref, uint32_t imm )
 }
 
 
-// returns qtrue if specified constant is found or there is a free register to store it
-static qboolean find_rx_const( uint32_t imm )
+// returns true if specified constant is found or there is a free register to store it
+static bool find_rx_const( uint32_t imm )
 {
 #ifdef CONST_CACHE_RX
 	uint32_t mask = build_rx_mask() | build_opstack_mask( TYPE_RX );
@@ -1449,14 +1449,14 @@ static qboolean find_rx_const( uint32_t imm )
 		}
 		r = &rx_regs[ n ];
 		if ( r->type_mask & RTYPE_CONST && r->cnst.value == imm ) {
-			return qtrue;
+			return true;
 		}
 		if ( r->type_mask == RTYPE_UNUSED ) {
-			return qtrue;
+			return true;
 		}
 	}
 #endif
-	return qfalse;
+	return false;
 }
 
 
@@ -2504,7 +2504,7 @@ static void emitBlockCopy( vm_t *vm, const uint32_t count )
 
 
 #ifdef CONST_OPTIMIZE
-static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
+static bool ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 {
 	uint32_t immrs;
 	uint32_t rx[3];
@@ -2527,7 +2527,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 			}
 			store_rx_opstack( rx[1] );				// *opstack = r1
 			ip += 1; // OP_ADD | OP_SUB
-			return qtrue;
+			return true;
 		}
 		break;
 
@@ -2548,7 +2548,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 			}
 			store_rx_opstack( rx[1] );	// *opstack = r1
 			ip += 1; // OP_BAND | OP_BOR | OP_BXOR
-			return qtrue;
+			return true;
 		}
 		break;
 
@@ -2571,13 +2571,13 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 			store_rx_opstack( rx[1] );		// *opstack = r1
 		}
 		ip += 1; // OP_LSH | OP_RSHI | OP_RSHU
-		return qtrue;
+		return true;
 
 	case OP_JUMP:
 		flush_volatile();
 		emit(B(vm->instructionPointers[ ci->value ] - compiledOfs));
 		ip += 1; // OP_JUMP
-		return qtrue;
+		return true;
 
 	case OP_CALL:
 		inc_opstack(); // opstack += 4
@@ -2587,7 +2587,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 			emit(FSQRT(sx[0], sx[0]));        // s0 = sqrtf( s0 )
 			store_sx_opstack( sx[0] );        // *opstack = s0
 			ip += 1; // OP_CALL
-			return qtrue;
+			return true;
 		}
 		flush_volatile();
 		if ( ci->value == ~TRAP_SIN || ci->value == ~TRAP_COS ) {
@@ -2602,7 +2602,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 			unmask_rx( rx[0] );
 			store_sx_opstack( sx[0] );        // *opstack = s0
 			ip += 1; // OP_CALL
-			return qtrue;
+			return true;
 		}
 		if ( ci->value < 0 ) // syscall
 		{
@@ -2617,7 +2617,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 			}
 			ip += 1; // OP_CALL;
 			store_syscall_opstack();
-			return qtrue;
+			return true;
 		}
 		if ( opstack != 1 ) {
 			emit( ADD64i( rOPSTACK, rOPSTACK, ( opstack - 1 ) * sizeof( int32_t ) ) );
@@ -2627,7 +2627,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 			emit( BL( vm->instructionPointers[ci->value] - compiledOfs ) );
 		}
 		ip += 1; // OP_CALL;
-		return qtrue;
+		return true;
 
 	case OP_EQ:
 	case OP_NE:
@@ -2660,7 +2660,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 		}
 		unmask_rx( rx[0] );
 		ip += 1; // OP_cond
-		return qtrue;
+		return true;
 
 	case OP_EQF:
 	case OP_NEF:
@@ -2675,7 +2675,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 			emit( Bcond( comp, vm->instructionPointers[ni->value] - compiledOfs ) );
 			unmask_sx( sx[0] );
 			ip += 1; // OP_cond
-			return qtrue;
+			return true;
 		}
 		break;
 
@@ -2683,7 +2683,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 		break;
 	}
 
-	return qfalse;
+	return false;
 }
 #endif // CONST_OPTIMIZE
 
@@ -2704,7 +2704,7 @@ static void dump_code( const char *vmname, uint32_t *code, int32_t code_len )
 #endif
 
 
-qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
+bool VM_Compile( vm_t *vm, vmHeader_t *header )
 {
 	instruction_t *ci;
 	const char *errMsg;
@@ -2731,7 +2731,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 	if ( errMsg ) {
 		VM_FreeBuffers();
 		Com_Printf( S_COLOR_YELLOW "%s(%s) error: %s\n", __func__, vm->name, errMsg );
-		return qfalse;
+		return false;
 	}
 
 	if ( !vm->instructionPointers ) {
@@ -3422,14 +3422,14 @@ __recompile:
 		if ( !vm->codeBase.ptr ) {
 			VM_FreeBuffers();
 			Com_Printf( S_COLOR_YELLOW "%s(%s): VirtualAlloc failed\n", __func__, vm->name );
-			return qfalse;
+			return false;
 		}
 #else
 		vm->codeBase.ptr = mmap( NULL, allocSize, PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0 );
 		if ( vm->codeBase.ptr == MAP_FAILED ) {
 			VM_FreeBuffers();
 			Com_Printf( S_COLOR_YELLOW "%s(%s): mmap failed\n", __func__, vm->name );
-			return qfalse;
+			return false;
 		}
 #endif
 
@@ -3472,14 +3472,14 @@ __recompile:
 		if ( !VirtualProtect( vm->codeBase.ptr, vm->codeLength, PAGE_EXECUTE_READ, &oldProtect ) ) {
 			VM_Destroy_Compiled( vm );
 			Com_Printf( S_COLOR_YELLOW "%s(%s): VirtualProtect failed\n", __func__, vm->name );
-			return qfalse;
+			return false;
 		}
 	}
 #else
 	if ( mprotect( vm->codeBase.ptr, vm->codeLength, PROT_READ | PROT_EXEC ) ) {
 		VM_Destroy_Compiled( vm );
 		Com_Printf( S_COLOR_YELLOW "%s(%s): mprotect failed\n", __func__, vm->name );
-		return qfalse;
+		return false;
 	}
 
 	// clear icache, http://blogs.arm.com/software-enablement/141-caches-and-self-modifying-code/
@@ -3490,7 +3490,7 @@ __recompile:
 
 	Com_Printf( "VM file %s compiled to %i bytes of code\n", vm->name, vm->codeLength );
 
-	return qtrue;
+	return true;
 }
 
 

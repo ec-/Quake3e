@@ -50,7 +50,7 @@ static PFN_vkCreateWin32SurfaceKHR qvkCreateWin32SurfaceKHR;
 ** Unloads the specified DLL then nulls out all the proc pointers.  This
 ** is only called during a hard shutdown of the Vulkan subsystem (e.g. vid_restart).
 */
-void QVK_Shutdown( qboolean unloadDLL )
+void QVK_Shutdown( bool unloadDLL )
 {
 	Com_Printf( "...shutting down QVK\n" );
 
@@ -73,13 +73,13 @@ void *VK_GetInstanceProcAddr( VkInstance instance, const char *name )
 }
 
 
-qboolean VK_CreateSurface( VkInstance instance, VkSurfaceKHR *pSurface )
+bool VK_CreateSurface( VkInstance instance, VkSurfaceKHR *pSurface )
 {
 	VkWin32SurfaceCreateInfoKHR desc;
 
 	qvkCreateWin32SurfaceKHR = /*(PFN_vkCreateWin32SurfaceKHR)*/ VK_GetInstanceProcAddr( instance, "vkCreateWin32SurfaceKHR" );
 	if ( !qvkCreateWin32SurfaceKHR )
-		return qfalse;
+		return false;
 
 	desc.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
 	desc.pNext = NULL;
@@ -88,9 +88,9 @@ qboolean VK_CreateSurface( VkInstance instance, VkSurfaceKHR *pSurface )
 	desc.hwnd = g_wv.hWnd;
 
 	if ( qvkCreateWin32SurfaceKHR( instance, &desc, NULL, pSurface ) == VK_SUCCESS )
-		return qtrue;
+		return true;
 	else
-		return qfalse;
+		return false;
 }
 
 
@@ -123,7 +123,7 @@ static HINSTANCE load_vulkan_library( const char *dllname )
 ** operating systems we need to do the right thing, whatever that
 ** might be.
 */
-qboolean QVK_Init( void )
+bool QVK_Init( void )
 {
 	Com_Printf( "...initializing QVK\n" );
 
@@ -168,12 +168,12 @@ qboolean QVK_Init( void )
 
 		if ( !glw_state.VulkanLib )
 		{
-			return qfalse;
+			return false;
 		}
 	}
 
 	Sys_LoadFunctionErrors(); // reset error counter
 
-	return qtrue;
+	return true;
 }
 #endif // USE_VULKAN_API
