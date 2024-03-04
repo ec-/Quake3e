@@ -1220,6 +1220,8 @@ const void *RB_TakeVideoFrameCmd( const void *data )
 static void GL_SetDefaultState( void )
 {
 #ifdef USE_VULKAN
+	GL_TextureMode( r_textureMode->string );
+
 	glState.glStateBits = GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_TRUE;
 #else
 	int i;
