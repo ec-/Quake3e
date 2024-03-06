@@ -716,41 +716,55 @@ void VBO_Cleanup( void )
 qsort_int
 =============
 */
-static void qsort_int( int *a, const int n ) {
-	int temp, m;
-	int i, j;
+void qsort_int(int* arr, const int n) {
+    if (n < 32) { // CUTOFF
+        for (int i = 1; i < n; i++) {
+            int j = i;
+            while (j > 0 && arr[j] < arr[j - 1]) {
+                int temp = arr[j];
+                arr[j] = arr[j - 1];
+                arr[j - 1] = temp;
+                j--;
+            }
+        }
+        return;
+    }
 
-	if ( n < 32 ) { // CUTOFF
-		for ( i = 1 ; i < n + 1 ; i++ ) {
-			j = i;
-			while ( j > 0 && a[j] < a[j-1] ) {
-				temp = a[j];
-				a[j] = a[j-1];
-				a[j-1] = temp;
-				j--;
-			}
-		}
-		return;
-	}
+    int stack[2 * n];
+    int top = -1;
+    stack[++top] = 0;
+    stack[++top] = n - 1;
 
-	i = 0;
-	j = n;
-	m = a[ n>>1 ];
+    while (top >= 0) {
+        int high = stack[top--];
+        int low = stack[top--];
 
-	do {
-		while ( a[i] < m ) i++;
-		while ( a[j] > m ) j--;
-		if ( i <= j ) {
-			temp = a[i];
-			a[i] = a[j];
-			a[j] = temp;
-			i++;
-			j--;
-		}
-	} while ( i <= j );
+        int pivot = arr[high];
+        int i = low - 1;
 
-	if ( j > 0 ) qsort_int( a, j );
-	if ( n > i ) qsort_int( a+i, n-i );
+        for (int j = low; j <= high - 1; j++) {
+            if (arr[j] < pivot) {
+                i++;
+                int temp = arr[i];
+                arr[i] = arr[j];
+                arr[j] = temp;
+            }
+        }
+        int pi = i + 1;
+        int temp = arr[pi];
+        arr[pi] = arr[high];
+        arr[high] = temp;
+
+        if (pi - 1 > low) {
+            stack[++top] = low;
+            stack[++top] = pi - 1;
+        }
+
+        if (pi + 1 < high) {
+            stack[++top] = pi + 1;
+            stack[++top] = high;
+        }
+    }
 }
 
 

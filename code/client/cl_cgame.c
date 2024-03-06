@@ -114,19 +114,19 @@ static bool CL_GetSnapshot( int snapshotNumber, snapshot_t *snapshot ) {
 
 	// if the frame has fallen out of the circular buffer, we can't return it
 	if ( cl.snap.messageNum - snapshotNumber >= PACKET_BACKUP ) {
-		return qfalse;
+		return false;
 	}
 
 	// if the frame is not valid, we can't return it
 	clSnap = &cl.snapshots[snapshotNumber & PACKET_MASK];
 	if ( !clSnap->valid ) {
-		return qfalse;
+		return false;
 	}
 
 	// if the entities in the frame have fallen out of their
 	// circular buffer, we can't return it
 	if ( cl.parseEntitiesNum - clSnap->parseEntitiesNum >= MAX_PARSE_ENTITIES ) {
-		return qfalse;
+		return false;
 	}
 
 	// write the snapshot
@@ -230,7 +230,7 @@ static void CL_ConfigstringModified( void ) {
 
 	if ( index == CS_SYSTEMINFO ) {
 		// parse serverId and other cvars
-		CL_SystemInfoChanged( qfalse );
+		CL_SystemInfoChanged( false );
 	}
 }
 
@@ -254,15 +254,15 @@ static bool CL_GetServerCommand( int serverCommandNumber ) {
 		// reliable commands then the client never got those first reliable commands
 		if ( clc.demoplaying ) {
 			Cmd_Clear();
-			return qfalse;
+			return false;
 		}
 		Com_Error( ERR_DROP, "CL_GetServerCommand: a reliable command was cycled out" );
-		return qfalse;
+		return false;
 	}
 
 	if ( clc.serverCommandSequence - serverCommandNumber < 0 ) {
 		Com_Error( ERR_DROP, "CL_GetServerCommand: requested a command not received" );
-		return qfalse;
+		return false;
 	}
 
 	index = serverCommandNumber & ( MAX_RELIABLE_COMMANDS - 1 );
@@ -273,7 +273,7 @@ static bool CL_GetServerCommand( int serverCommandNumber ) {
 
 	if ( clc.serverCommandsIgnore[ index ] ) {
 		Cmd_Clear();
-		return qfalse;
+		return false;
 	}
 
 rescan:
@@ -292,7 +292,7 @@ rescan:
 
 	if ( !strcmp( cmd, "bcs0" ) ) {
 		Com_sprintf( bigConfigString, BIG_INFO_STRING, "cs %s \"%s", Cmd_Argv(1), Cmd_Argv(2) );
-		return qfalse;
+		return false;
 	}
 
 	if ( !strcmp( cmd, "bcs1" ) ) {
@@ -301,7 +301,7 @@ rescan:
 			Com_Error( ERR_DROP, "bcs exceeded BIG_INFO_STRING" );
 		}
 		strcat( bigConfigString, s );
-		return qfalse;
+		return false;
 	}
 
 	if ( !strcmp( cmd, "bcs2" ) ) {
@@ -343,7 +343,7 @@ rescan:
 		// otherwise malicious remote servers could overwrite
 		// the existing thumbnails
 		if ( !com_sv_running->integer ) {
-			return qfalse;
+			return false;
 		}
 		// close the console
 		Con_Close();
@@ -382,13 +382,13 @@ CL_ShutdonwCGame
 void CL_ShutdownCGame( void ) {
 
 	Key_SetCatcher( Key_GetCatcher( ) & ~KEYCATCH_CGAME );
-	cls.cgameStarted = qfalse;
+	cls.cgameStarted = false;
 
 	if ( !cgvm ) {
 		return;
 	}
 
-	re.VertexLighting( qfalse );
+	re.VertexLighting( false );
 
 	VM_Call( cgvm, 0, CG_SHUTDOWN );
 	VM_Free( cgvm );
@@ -438,7 +438,7 @@ static bool CL_GetValue( char* value, int valueSize, const char* key ) {
 		return true;
 	}
 
-	return qfalse;
+	return false;
 }
 
 
@@ -521,7 +521,7 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		Cmd_RemoveCommandSafe( VMA(1) );
 		return 0;
 	case CG_SENDCLIENTCOMMAND:
-		CL_AddReliableCommand( VMA(1), qfalse );
+		CL_AddReliableCommand( VMA(1), false );
 		return 0;
 	case CG_UPDATESCREEN:
 		// this is used during lengthy level loading, so pump message loop
@@ -539,7 +539,7 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 	case CG_CM_INLINEMODEL:
 		return CM_InlineModel( args[1] );
 	case CG_CM_TEMPBOXMODEL:
-		return CM_TempBoxModel( VMA(1), VMA(2), /*int capsule*/ qfalse );
+		return CM_TempBoxModel( VMA(1), VMA(2), /*int capsule*/ 0 );
 	case CG_CM_TEMPCAPSULEMODEL:
 		return CM_TempBoxModel( VMA(1), VMA(2), /*int capsule*/ true );
 	case CG_CM_POINTCONTENTS:
@@ -547,13 +547,13 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 	case CG_CM_TRANSFORMEDPOINTCONTENTS:
 		return CM_TransformedPointContents( VMA(1), args[2], VMA(3), VMA(4) );
 	case CG_CM_BOXTRACE:
-		CM_BoxTrace( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], /*int capsule*/ qfalse );
+		CM_BoxTrace( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], /*int capsule*/ 0 );
 		return 0;
 	case CG_CM_CAPSULETRACE:
 		CM_BoxTrace( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], /*int capsule*/ true );
 		return 0;
 	case CG_CM_TRANSFORMEDBOXTRACE:
-		CM_TransformedBoxTrace( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], VMA(8), VMA(9), /*int capsule*/ qfalse );
+		CM_TransformedBoxTrace( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], VMA(8), VMA(9), /*int capsule*/ false );
 		return 0;
 	case CG_CM_TRANSFORMEDCAPSULETRACE:
 		CM_TransformedBoxTrace( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], VMA(8), VMA(9), /*int capsule*/ true );
@@ -607,7 +607,7 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		re.ClearScene();
 		return 0;
 	case CG_R_ADDREFENTITYTOSCENE:
-		re.AddRefEntityToScene( VMA(1), qfalse );
+		re.AddRefEntityToScene( VMA(1), false );
 		return 0;
 	case CG_R_ADDPOLYTOSCENE:
 		re.AddPolyToScene( args[1], args[2], VMA(3), 1 );
@@ -903,7 +903,7 @@ See if the current console command is claimed by the cgame
 
 bool CL_GameCommand( void ) {
 	if ( !cgvm ) {
-		return qfalse;
+		return false;
 	}
 
 	bool bRes = (bool)VM_Call( cgvm, 0, CG_CONSOLE_COMMAND );
@@ -953,7 +953,7 @@ static void CL_AdjustTimeDelta( void ) {
 	int		newDelta;
 	int		deltaDelta;
 
-	cl.newSnapshots = qfalse;
+	cl.newSnapshots = false;
 
 	// the delta never drifts when replaying a demo
 	if ( clc.demoplaying ) {
@@ -984,7 +984,7 @@ static void CL_AdjustTimeDelta( void ) {
 		// the granularity of +1 / -2 is too high for timescale modified frametimes
 		if ( com_timescale->value == 0 || com_timescale->value == 1 ) {
 			if ( cl.extrapolatedSnapshot ) {
-				cl.extrapolatedSnapshot = qfalse;
+				cl.extrapolatedSnapshot = false;
 				cl.serverTimeDelta -= 2;
 			} else {
 				// otherwise, move our sense of time forward to minimize total latency
@@ -1118,7 +1118,7 @@ void CL_SetCGameTime( void ) {
 			CL_ReadDemoMessage();
 		}
 		if ( cl.newSnapshots ) {
-			cl.newSnapshots = qfalse;
+			cl.newSnapshots = false;
 			CL_FirstSnapshot();
 		}
 		if ( cls.state != CA_ACTIVE ) {

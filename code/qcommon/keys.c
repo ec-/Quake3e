@@ -281,7 +281,7 @@ bool Key_IsDown( int keynum )
 {
 	if ( keynum < 0 || keynum >= MAX_KEYS )
 	{
-		return qfalse;
+		return false;
 	}
 
 	return keys[keynum].down;
@@ -651,7 +651,7 @@ void Key_ParseBinding( int key, bool down, unsigned time )
 			Com_sprintf( cmd, sizeof( cmd ), "%c%s %d %d\n", ( down ) ? '+' : '-', p + 1, key, time );
 			Cbuf_AddText( cmd );
 			if ( down )
-				keys[ key ].bound = qtrue;
+				keys[ key ].bound = true;
 		}
 		else if ( down )
 		{

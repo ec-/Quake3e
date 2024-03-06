@@ -110,8 +110,8 @@ typedef struct download_s {
 	fileHandle_t fHandle;
 	int			Size;
 	int			Count;
-	bool	headerCheck;
-	bool	mapAutoDownload;
+	bool		headerCheck;
+	bool		mapAutoDownload;
 
 	struct func_s {
 		char*		(*version)(void);

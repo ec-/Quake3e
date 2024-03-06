@@ -112,18 +112,18 @@ static void Field_VariableSizeDraw( field_t *edit, int x, int y, int width, int 
 	// draw it
 	if ( size == smallchar_width ) {
 		SCR_DrawSmallStringExt( x, y, str, g_color_table[ ColorIndexFromChar( curColor ) ],
-			qfalse, noColorEscape );
+			false, noColorEscape );
 		if ( len > drawLen + prestep ) {
 			SCR_DrawSmallChar( x + ( edit->widthInChars - 1 ) * size, y, '>' );
 		}
 	} else {
 		if ( len > drawLen + prestep ) {
 			SCR_DrawStringExt( x + ( edit->widthInChars - 1 ) * BIGCHAR_WIDTH, y, size, ">",
-				g_color_table[ ColorIndex( COLOR_WHITE ) ], qfalse, noColorEscape );
+				g_color_table[ ColorIndex( COLOR_WHITE ) ], false, noColorEscape );
 		}
 		// draw big string with drop shadow
 		SCR_DrawStringExt( x, y, BIGCHAR_WIDTH, str, g_color_table[ ColorIndexFromChar( curColor ) ],
-			qfalse, noColorEscape );
+			false, noColorEscape );
 	}
 
 	// draw the cursor
@@ -145,7 +145,7 @@ static void Field_VariableSizeDraw( field_t *edit, int x, int y, int width, int 
 		} else {
 			str[0] = cursorChar;
 			str[1] = '\0';
-			SCR_DrawBigString( x + ( edit->cursor - prestep - i ) * BIGCHAR_WIDTH, y, str, 1.0, qfalse );
+			SCR_DrawBigString( x + ( edit->cursor - prestep - i ) * BIGCHAR_WIDTH, y, str, 1.0, false );
 		}
 	}
 }
@@ -523,7 +523,7 @@ static void Message_Key( int key ) {
 			else
 				Com_sprintf( buffer, sizeof( buffer ), "say \"%s\"\n", chatField.buffer );
 
-			CL_AddReliableCommand( buffer, qfalse );
+			CL_AddReliableCommand( buffer, false );
 		}
 		Key_SetCatcher( Key_GetCatcher( ) & ~KEYCATCH_MESSAGE );
 		Field_Clear( &chatField );
@@ -546,7 +546,7 @@ Called by CL_KeyEvent to handle a keypress
 static void CL_KeyDownEvent( int key, unsigned time )
 {
 	keys[key].down = true;
-	keys[key].bound = qfalse;
+	keys[key].bound = false;
 	keys[key].repeats++;
 
 	if ( keys[key].repeats == 1 ) {
@@ -626,7 +626,7 @@ static void CL_KeyDownEvent( int key, unsigned time )
 				Cvar_Set( "com_errorMessage", "" );
 				if ( cls.state == CA_CINEMATIC ) {
 					SCR_StopCinematic();
-				} else if ( !CL_Disconnect( qfalse ) ) { // restart client if not done already
+				} else if ( !CL_Disconnect( false ) ) { // restart client if not done already
 					CL_FlushMemory();
 				}
 #endif
@@ -673,8 +673,8 @@ static void CL_KeyUpEvent( int key, unsigned time )
 	const bool bound = keys[key].bound;
 
 	keys[key].repeats = 0;
-	keys[key].down = qfalse;
-	keys[key].bound = qfalse;
+	keys[key].down = false;
+	keys[key].bound = false;
 
 	if ( --anykeydown < 0 ) {
 		anykeydown = 0;
@@ -698,17 +698,17 @@ static void CL_KeyUpEvent( int key, unsigned time )
 	//
 	if ( cls.state != CA_DISCONNECTED ) {
 		if ( bound || ( Key_GetCatcher() & KEYCATCH_CGAME ) ) {
-			Key_ParseBinding( key, qfalse, time );
+			Key_ParseBinding( key, false, time );
 		}
 	}
 
 	if ( Key_GetCatcher() & KEYCATCH_UI ) {
 		if ( uivm ) {
-			VM_Call( uivm, 2, UI_KEY_EVENT, key, qfalse );
+			VM_Call( uivm, 2, UI_KEY_EVENT, key, false );
 		}
 	} else if ( Key_GetCatcher() & KEYCATCH_CGAME ) {
 		if ( cgvm ) {
-			VM_Call( cgvm, 2, CG_KEY_EVENT, key, qfalse );
+			VM_Call( cgvm, 2, CG_KEY_EVENT, key, false );
 		}
 	}
 }

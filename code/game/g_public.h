@@ -56,7 +56,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 typedef struct {
 	entityState_t	s;				// communicated by server to clients
 
-	bool		linked;				// qfalse if not in any good cluster
+	bool		linked;				// false if not in any good cluster
 	int			linkcount;
 
 	int			svFlags;			// SVF_NOCLIENT, SVF_BROADCAST, etc
@@ -433,7 +433,7 @@ typedef enum {
 	// ConsoleCommand will be called when a command has been issued
 	// that is not recognized as a builtin function.
 	// The game can issue trap_argc() / trap_argv() commands to get the command
-	// and parameters.  Return qfalse if the game doesn't recognize it as a command.
+	// and parameters.  Return false if the game doesn't recognize it as a command.
 
 	BOTAI_START_FRAME,				// ( int time );
 

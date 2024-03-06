@@ -202,7 +202,7 @@ bool SNDDMA_Init( void )
 	int tmp;
 
 	if ( snd_inited )
-		return qtrue;
+		return true;
 
 	//if ( !s_sdlBits )
 	{
@@ -225,7 +225,7 @@ bool SNDDMA_Init( void )
 	if ( SDL_Init( SDL_INIT_AUDIO ) != 0 )
 	{
 		Com_Printf( "FAILED (%s)\n", SDL_GetError() );
-		return qfalse;
+		return false;
 	}
 
 	Com_Printf( "OK\n" );
@@ -270,7 +270,7 @@ bool SNDDMA_Init( void )
 	{
 		Com_Printf( "SDL_OpenAudioDevice() failed: %s\n", SDL_GetError() );
 		SDL_QuitSubSystem( SDL_INIT_AUDIO );
-		return qfalse;
+		return false;
 	}
 
 	SNDDMA_PrintAudiospec( "SDL_AudioSpec", &obtained );
@@ -343,8 +343,8 @@ bool SNDDMA_Init( void )
 	// don't unpause the capture device; we'll do that in StartCapture.
 
 	Com_Printf("SDL audio initialized.\n");
-	snd_inited = qtrue;
-	return qtrue;
+	snd_inited = true;
+	return true;
 }
 
 
@@ -388,7 +388,7 @@ void SNDDMA_Shutdown( void )
 	free(dma.buffer);
 	dma.buffer = NULL;
 	dmapos = dmasize = 0;
-	snd_inited = qfalse;
+	snd_inited = false;
 	Com_Printf("SDL audio shut down.\n");
 }
 

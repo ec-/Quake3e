@@ -51,12 +51,11 @@ Also sets the clipped hint bit in tess
 =================
 */
 static bool	R_CullGrid( srfGridMesh_t *cv ) {
-	int 	boxCull;
-	int 	sphereCull;
-
 	if ( r_nocurves->integer ) {
 		return true;
 	}
+
+	int 	sphereCull;
 
 	if ( tr.currentEntityNum != REFENTITYNUM_WORLD ) {
 		sphereCull = R_CullLocalPointAndRadius( cv->localOrigin, cv->meshRadius );
@@ -75,7 +74,7 @@ static bool	R_CullGrid( srfGridMesh_t *cv ) {
 	{
 		tr.pc.c_sphere_cull_patch_clip++;
 
-		boxCull = R_CullLocalBox( cv->meshBounds );
+		int boxCull = R_CullLocalBox( cv->meshBounds );
 
 		if ( boxCull == CULL_OUT ) 
 		{

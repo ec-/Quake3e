@@ -92,7 +92,7 @@ void COM_StripExtension( const char *in, char *out, int destsize )
 ============
 COM_CompareExtension
 
-string compare the end of the strings and return qtrue if strings match
+string compare the end of the strings and return true if strings match
 ============
 */
 bool COM_CompareExtension(const char *in, const char *ext)
@@ -466,7 +466,7 @@ int COM_GetCurrentParseLine( void )
 
 const char *COM_Parse( const char **data_p )
 {
-	return COM_ParseExt( data_p, qtrue );
+	return COM_ParseExt( data_p, true );
 }
 
 
@@ -503,7 +503,7 @@ COM_Parse
 Parse a token out of a string
 Will never return NULL, just empty strings
 
-If "allowLineBreaks" is qtrue then an empty
+If "allowLineBreaks" is true then an empty
 string will be returned if the next token is
 a newline.
 ==============
@@ -960,7 +960,7 @@ bool SkipBracedSection( const char **program, int depth ) {
 	const char			*token;
 
 	do {
-		token = COM_ParseExt( program, qtrue );
+		token = COM_ParseExt( program, true );
 		if( token[1] == 0 ) {
 			if( token[0] == '{' ) {
 				depth++;
@@ -2103,33 +2103,33 @@ bool Info_SetValueForKey_s( char *s, int slen, const char *key, const char *valu
 
 	if ( len1 >= slen ) {
 		Com_Printf( S_COLOR_YELLOW "Info_SetValueForKey(%s): oversize infostring\n", key );
-		return qfalse;
+		return false;
 	}
 
 	if ( !key || !Info_ValidateKeyValue( key ) || *key == '\0' ) {
 		Com_Printf( S_COLOR_YELLOW "Invalid key name: '%s'\n", key );
-		return qfalse;
+		return false;
 	}
 
 	if ( value && !Info_ValidateKeyValue( value ) ) {
 		Com_Printf( S_COLOR_YELLOW "Invalid value name: '%s'\n", value );
-		return qfalse;
+		return false;
 	}
 
 	len1 -= Info_RemoveKey( s, key );
 	if ( value == NULL || *value == '\0' ) {
-		return qtrue;
+		return true;
 	}
 
 	len2 = Com_sprintf( newi, sizeof( newi ), "\\%s\\%s", key, value );
 
 	if ( len1 + len2 >= slen ) {
 		Com_Printf( S_COLOR_YELLOW "Info string length exceeded for key '%s'\n", key );
-		return qfalse;
+		return false;
 	}
 
 	strcpy( s + len1, newi );
-	return qtrue;
+	return true;
 }
 
 

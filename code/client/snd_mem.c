@@ -275,7 +275,7 @@ bool S_LoadSound( sfx_t *sfx )
 	// load it in
 	data = S_CodecLoad(sfx->soundName, &info);
 	if(!data)
-		return qfalse;
+		return false;
 
 	if ( info.width == 1 ) {
 		Com_DPrintf(S_COLOR_YELLOW "WARNING: %s is a 8 bit audio file\n", sfx->soundName);
@@ -315,7 +315,7 @@ bool S_LoadSound( sfx_t *sfx )
 	} else {
 		sfx->soundCompressionMethod = 0;
 		sfx->soundData = NULL;
-		sfx->soundLength = ResampleSfx( sfx, info.channels, info.rate, info.width, info.samples, data + info.dataofs, qfalse );
+		sfx->soundLength = ResampleSfx( sfx, info.channels, info.rate, info.width, info.samples, data + info.dataofs, false );
 	}
 
 	sfx->soundChannels = info.channels;

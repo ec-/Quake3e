@@ -51,7 +51,7 @@ static void CL_Netchan_Encode( msg_t *msg ) {
 
 	msg->bit = 0;
 	msg->readcount = 0;
-	msg->oob = qfalse;
+	msg->oob = false;
 
 	serverId = MSG_ReadLong(msg);
 	messageAcknowledge = MSG_ReadLong(msg);
@@ -101,7 +101,7 @@ static void CL_Netchan_Decode( msg_t *msg ) {
 	sbit = msg->bit;
 	soob = msg->oob;
 
-	msg->oob = qfalse;
+	msg->oob = false;
 
 	reliableAcknowledge = MSG_ReadLong( msg );
 
@@ -143,7 +143,7 @@ static bool CL_Netchan_TransmitNextFragment( netchan_t *chan )
 		return true;
 	}
 	
-	return qfalse;
+	return false;
 }
 
 
@@ -185,7 +185,7 @@ bool CL_Netchan_Process( netchan_t *chan, msg_t *msg ) {
 
 	ret = Netchan_Process( chan, msg );
 	if ( !ret )
-		return qfalse;
+		return false;
 
 	if ( chan->compat )
 		CL_Netchan_Decode( msg );

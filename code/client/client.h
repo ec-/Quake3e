@@ -208,9 +208,9 @@ typedef struct {
 	bool	downloadRestart;	// if true, we need to do another FS_Restart because we downloaded a pak
 
 #ifdef USE_CURL
-	bool	cURLEnabled;
-	bool	cURLUsed;
-	bool	cURLDisconnected;
+	bool		cURLEnabled;
+	bool		cURLUsed;
+	bool		cURLDisconnected;
 	char		downloadURL[MAX_OSPATH];
 	CURL		*downloadCURL;
 	CURLM		*downloadCURLM;

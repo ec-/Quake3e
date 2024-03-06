@@ -1230,54 +1230,40 @@ void RB_CalcSpecularAlpha( unsigned char *alphas ) {
 **
 ** The basic vertex lighting calc
 */
-static void RB_CalcDiffuseColor_scalar( unsigned char *colors )
+static void RB_CalcDiffuseColor_scalar(unsigned char *colors)
 {
-	int				i, j;
-	float			*v, *normal;
-	float			incoming;
-	const trRefEntity_t *ent;
-	int				ambientLightInt;
-	vec3_t			ambientLight;
-	vec3_t			lightDir;
-	vec3_t			directedLight;
-	int				numVertexes;
-	ent = backEnd.currentEntity;
-	ambientLightInt = ent->ambientLightInt;
-	VectorCopy( ent->ambientLight, ambientLight );
-	VectorCopy( ent->directedLight, directedLight );
-	VectorCopy( ent->lightDir, lightDir );
+    int 		i, j;
+    float 		*v, *normal;
+    float 		incoming;
+    const 		trRefEntity_t *ent 	= backEnd.currentEntity;
+    int 		ambientLightInt 	= ent->ambientLightInt;
+	int 		numVertexes 		= tess.numVertexes;
+	
+    vec3_t 		ambientLight, lightDir, directedLight;
 
-	v = tess.xyz[0];
-	normal = tess.normal[0];
+    VectorCopy(ent->ambientLight, ambientLight);
+    VectorCopy(ent->directedLight, directedLight);
+    VectorCopy(ent->lightDir, lightDir);
 
-	numVertexes = tess.numVertexes;
-	for (i = 0 ; i < numVertexes ; i++, v += 4, normal += 4) {
-		incoming = DotProduct (normal, lightDir);
-		if ( incoming <= 0 ) {
-			*(int *)&colors[i*4] = ambientLightInt;
-			continue;
-		} 
-		j = myftol( ambientLight[0] + incoming * directedLight[0] );
-		if ( j > 255 ) {
-			j = 255;
-		}
-		colors[i*4+0] = j;
+    v = tess.xyz[0];
+    normal = tess.normal[0];
 
-		j = myftol( ambientLight[1] + incoming * directedLight[1] );
-		if ( j > 255 ) {
-			j = 255;
-		}
-		colors[i*4+1] = j;
+    for (i = 0; i < numVertexes; i++, v += 4, normal += 4) {
+        incoming = DotProduct(normal, lightDir);
+        if (incoming <= 0) {
+            *(int *)&colors[i * 4] = ambientLightInt;
+            continue;
+        }
+        
+        for (j = 0; j < 3; j++) {
+            int diffuse = myftol(ambientLight[j] + incoming * directedLight[j]);
+            colors[i * 4 + j] = (diffuse > 255) ? 255 : diffuse;
+        }
 
-		j = myftol( ambientLight[2] + incoming * directedLight[2] );
-		if ( j > 255 ) {
-			j = 255;
-		}
-		colors[i*4+2] = j;
-
-		colors[i*4+3] = 255;
-	}
+        colors[i * 4 + 3] = 255;
+    }
 }
+
 
 
 void RB_CalcDiffuseColor( unsigned char *colors )

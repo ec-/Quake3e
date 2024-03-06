@@ -41,26 +41,26 @@ S_ValidateInterface
 */
 static bool S_ValidSoundInterface( const soundInterface_t *s )
 {
-	if( !s->Shutdown ) return qfalse;
-	if( !s->StartSound ) return qfalse;
-	if( !s->StartLocalSound ) return qfalse;
-	if( !s->StartBackgroundTrack ) return qfalse;
-	if( !s->StopBackgroundTrack ) return qfalse;
-	if( !s->RawSamples ) return qfalse;
-	if( !s->StopAllSounds ) return qfalse;
-	if( !s->ClearLoopingSounds ) return qfalse;
-	if( !s->AddLoopingSound ) return qfalse;
-	if( !s->AddRealLoopingSound ) return qfalse;
-	if( !s->StopLoopingSound ) return qfalse;
-	if( !s->Respatialize ) return qfalse;
-	if( !s->UpdateEntityPosition ) return qfalse;
-	if( !s->Update ) return qfalse;
-	if( !s->DisableSounds ) return qfalse;
-	if( !s->BeginRegistration ) return qfalse;
-	if( !s->RegisterSound ) return qfalse;
-	if( !s->ClearSoundBuffer ) return qfalse;
-	if( !s->SoundInfo ) return qfalse;
-	if( !s->SoundList ) return qfalse;
+	if( !s->Shutdown ) return false;
+	if( !s->StartSound ) return false;
+	if( !s->StartLocalSound ) return false;
+	if( !s->StartBackgroundTrack ) return false;
+	if( !s->StopBackgroundTrack ) return false;
+	if( !s->RawSamples ) return false;
+	if( !s->StopAllSounds ) return false;
+	if( !s->ClearLoopingSounds ) return false;
+	if( !s->AddLoopingSound ) return false;
+	if( !s->AddRealLoopingSound ) return false;
+	if( !s->StopLoopingSound ) return false;
+	if( !s->Respatialize ) return false;
+	if( !s->UpdateEntityPosition ) return false;
+	if( !s->Update ) return false;
+	if( !s->DisableSounds ) return false;
+	if( !s->BeginRegistration ) return false;
+	if( !s->RegisterSound ) return false;
+	if( !s->ClearSoundBuffer ) return false;
+	if( !s->SoundInfo ) return false;
+	if( !s->SoundList ) return false;
 
 	return true;
 }
@@ -347,7 +347,7 @@ static void S_Play_f( void ) {
 	}
 
 	for( i = 1; i < c; i++ ) {
-		h = si.RegisterSound( Cmd_Argv(i), qfalse );
+		h = si.RegisterSound( Cmd_Argv(i), false );
 
 		if( h ) {
 			si.StartLocalSound( h, CHAN_LOCAL_SOUND );
@@ -406,7 +406,7 @@ S_Init
 void S_Init( void )
 {
 	cvar_t		*cv;
-	bool	started = qfalse;
+	bool		started = false;
 
 	Com_Printf( "------ Initializing Sound ------\n" );
 
@@ -487,5 +487,5 @@ void S_Shutdown( void )
 
 	S_CodecShutdown();
 
-	cls.soundStarted = qfalse;
+	cls.soundStarted = false;
 }
