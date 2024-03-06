@@ -98,7 +98,7 @@ static void IN_MLookDown( void ) {
 
 
 static void IN_MLookUp( void ) {
-	in_mlooking = qfalse;
+	in_mlooking = false;
 	if ( !cl_freelook->integer ) {
 		IN_CenterView ();
 	}
@@ -153,7 +153,7 @@ static void IN_KeyUp( kbutton_t *b ) {
 	} else {
 		// typed manually at the console, assume for unsticking, so clear all
 		b->down[0] = b->down[1] = 0;
-		b->active = qfalse;
+		b->active = false;
 		return;
 	}
 
@@ -168,7 +168,7 @@ static void IN_KeyUp( kbutton_t *b ) {
 		return;		// some other key is still holding it down
 	}
 
-	b->active = qfalse;
+	b->active = false;
 
 	// save timestamp for partial frame summing
 	c = Cmd_Argv(2);
@@ -179,7 +179,7 @@ static void IN_KeyUp( kbutton_t *b ) {
 		b->msec += frame_msec / 2;
 	}
 
-	b->active = qfalse;
+	b->active = false;
 }
 
 
@@ -546,7 +546,7 @@ static void CL_CmdButtons( usercmd_t *cmd ) {
 		if ( in_buttons[i].active || in_buttons[i].wasPressed ) {
 			cmd->buttons |= 1 << i;
 		}
-		in_buttons[i].wasPressed = qfalse;
+		in_buttons[i].wasPressed = false;
 	}
 
 	if ( Key_GetCatcher() ) {
@@ -674,7 +674,7 @@ static void CL_CreateNewCommands( void ) {
 =================
 CL_ReadyToSendPacket
 
-Returns qfalse if we are over the maxpackets limit
+Returns false if we are over the maxpackets limit
 and should choke back the bandwidth a bit by not sending
 a packet this frame.  All the commands will still get
 delivered in the next packet, but saving a header and
@@ -687,12 +687,12 @@ static bool CL_ReadyToSendPacket( void ) {
 
 	// don't send anything if playing back a demo
 	if ( clc.demoplaying || cls.state == CA_CINEMATIC ) {
-		return qfalse;
+		return false;
 	}
 
 	// If we are downloading, we send no less than 50ms between packets
 	if ( *clc.downloadTempName && cls.realtime - clc.lastPacketSentTime < 50 ) {
-		return qfalse;
+		return false;
 	}
 
 	// if we don't have a valid gamestate yet, only send
@@ -701,7 +701,7 @@ static bool CL_ReadyToSendPacket( void ) {
 		cls.state != CA_PRIMED &&
 		!*clc.downloadTempName &&
 		cls.realtime - clc.lastPacketSentTime < 1000 ) {
-		return qfalse;
+		return false;
 	}
 
 	// send every frame for loopbacks
@@ -718,7 +718,7 @@ static bool CL_ReadyToSendPacket( void ) {
 	delta = cls.realtime - cl.outPackets[ oldPacketNum ].p_realtime;
 	if ( delta < 1000 / cl_maxpackets->integer ) {
 		// the accumulated commands will go out in the next packet
-		return qfalse;
+		return false;
 	}
 
 	return true;

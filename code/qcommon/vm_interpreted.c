@@ -169,7 +169,7 @@ int VM_CallInterpreted2( vm_t *vm, int nargs, int32_t *args ) {
 	int		i;
 
 	// interpret the code
-	//vm->currentlyInterpreting = qtrue;
+	//vm->currentlyInterpreting = true;
 
 	// we might be called recursively, so this might not be the very top
 	programStack = stackOnEntry = vm->programStack;
@@ -602,7 +602,7 @@ nextInstruction2:
 	}
 
 done:
-	//vm->currentlyInterpreting = qfalse;
+	//vm->currentlyInterpreting = false;
 
 	if ( opStack != &stack[2] ) {
 		Com_Error( ERR_DROP, "Interpreter error: opStack = %ld", (long int) (opStack - stack) );

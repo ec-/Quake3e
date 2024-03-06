@@ -144,7 +144,7 @@ static void CL_ParsePacketEntities( msg_t *msg, const clSnapshot_t *oldframe, cl
 			if ( cl_shownet->integer == 3 ) {
 				Com_Printf ("%3i:  delta: %i\n", msg->readcount, newnum);
 			}
-			CL_DeltaEntity( msg, newframe, newnum, oldstate, qfalse );
+			CL_DeltaEntity( msg, newframe, newnum, oldstate, false );
 
 			oldindex++;
 
@@ -163,7 +163,7 @@ static void CL_ParsePacketEntities( msg_t *msg, const clSnapshot_t *oldframe, cl
 			if ( cl_shownet->integer == 3 ) {
 				Com_Printf ("%3i:  baseline: %i\n", msg->readcount, newnum);
 			}
-			CL_DeltaEntity( msg, newframe, newnum, &cl.entityBaselines[newnum], qfalse );
+			CL_DeltaEntity( msg, newframe, newnum, &cl.entityBaselines[newnum], false );
 			continue;
 		}
 
@@ -222,7 +222,7 @@ static void CL_ParseSnapshot( msg_t *msg ) {
 
 	// if we were just unpaused, we can only *now* really let the
 	// change come into effect or the client hangs.
-	cl_paused->modified = qfalse;
+	cl_paused->modified = false;
 
 	newSnap.messageNum = clc.serverMessageSequence;
 
@@ -241,7 +241,7 @@ static void CL_ParseSnapshot( msg_t *msg ) {
 	if ( newSnap.deltaNum <= 0 ) {
 		newSnap.valid = true;		// uncompressed frame
 		old = NULL;
-		clc.demowaiting = qfalse;	// we can start recording now
+		clc.demowaiting = false;	// we can start recording now
 	} else {
 		old = &cl.snapshots[newSnap.deltaNum & PACKET_MASK];
 		if ( !old->valid ) {
@@ -298,7 +298,7 @@ static void CL_ParseSnapshot( msg_t *msg ) {
 	}
 
 	for ( i = 0, n = newSnap.messageNum - oldMessageNum; i < n; i++ ) {
-		cl.snapshots[ ( oldMessageNum + i ) & PACKET_MASK ].valid = qfalse;
+		cl.snapshots[ ( oldMessageNum + i ) & PACKET_MASK ].valid = false;
 	}
 
 	// copy to the current good spot
@@ -384,7 +384,7 @@ void CL_SystemInfoChanged( bool onlyGame ) {
 	if ( CL_GameSwitch() ) {
 		// we just restored fs_game from saved systeminfo
 		// reset modified flag to avoid unwanted side-effecfs
-		Cvar_SetModified( "fs_game", qfalse );
+		Cvar_SetModified( "fs_game", false );
 	}
 
 	s = Info_ValueForKey( systemInfo, "sv_cheats" );
@@ -602,7 +602,7 @@ static void CL_ParseGamestate( msg_t *msg ) {
 		}
 	}
 
-	gamedirModified = ( Cvar_Flags( "fs_game" ) & CVAR_MODIFIED ) ? true : qfalse;
+	gamedirModified = ( Cvar_Flags( "fs_game" ) & CVAR_MODIFIED ) ? true : false;
 
 	if ( !cl_oldGameSet && gamedirModified ) {
 		cl_oldGameSet = true;
@@ -626,7 +626,7 @@ static void CL_ParseGamestate( msg_t *msg ) {
 		Cvar_Set( "cl_reconnectArgs", reconnectArgs );
 	}
 
-	cls.gameSwitch = qfalse;
+	cls.gameSwitch = false;
 
 	// This used to call CL_StartHunkUsers, but now we enter the download state before loading the cgame
 	CL_InitDownloads();
@@ -651,10 +651,10 @@ bool CL_ValidPakSignature( const byte *data, int len )
 	// but situation when server sends fragmented/shortened
 	// zip header in first packet - looks pretty suspicious
 	if ( len < 22 )
-		return qfalse; // minimal ZIP file length is 22 bytes
+		return false; // minimal ZIP file length is 22 bytes
 
 	if ( data[0] != 'P' || data[1] != 'K' )
-		return qfalse;
+		return false;
 
 	if ( data[2] == 0x3 && data[3] == 0x4 )
 		return true; // local file header
@@ -662,7 +662,7 @@ bool CL_ValidPakSignature( const byte *data, int len )
 	if ( data[2] == 0x5 && data[3] == 0x6 )
 		return true; // EOCD
 
-	return qfalse;
+	return false;
 }
 
 //=====================================================================
@@ -681,7 +681,7 @@ static void CL_ParseDownload( msg_t *msg ) {
 
 	if (!*clc.downloadTempName) {
 		Com_Printf("Server sending download, but no download was requested\n");
-		CL_AddReliableCommand( "stopdl", qfalse );
+		CL_AddReliableCommand( "stopdl", false );
 		return;
 	}
 
@@ -727,7 +727,7 @@ static void CL_ParseDownload( msg_t *msg ) {
 		if ( !CL_ValidPakSignature( data, size ) )
 		{
 			Com_Printf( S_COLOR_YELLOW "Invalid pak signature for %s\n", clc.downloadName );
-			CL_AddReliableCommand( "stopdl", qfalse );
+			CL_AddReliableCommand( "stopdl", false );
 			CL_NextDownload();
 			return;
 		}
@@ -737,7 +737,7 @@ static void CL_ParseDownload( msg_t *msg ) {
 		if ( clc.download == FS_INVALID_HANDLE )
 		{
 			Com_Printf( "Could not create %s\n", clc.downloadTempName );
-			CL_AddReliableCommand( "stopdl", qfalse );
+			CL_AddReliableCommand( "stopdl", false );
 			CL_NextDownload();
 			return;
 		}
@@ -746,7 +746,7 @@ static void CL_ParseDownload( msg_t *msg ) {
 	if (size)
 		FS_Write( data, size, clc.download );
 
-	CL_AddReliableCommand( va("nextdl %d", clc.downloadBlock), qfalse );
+	CL_AddReliableCommand( va("nextdl %d", clc.downloadBlock), false );
 	clc.downloadBlock++;
 
 	clc.downloadCount += size;
@@ -804,7 +804,7 @@ static void CL_ParseCommandString( msg_t *msg ) {
 
 	index = seq & (MAX_RELIABLE_COMMANDS-1);
 	Q_strncpyz( clc.serverCommands[ index ], s, sizeof( clc.serverCommands[ index ] ) );
-	clc.serverCommandsIgnore[ index ] = qfalse;
+	clc.serverCommandsIgnore[ index ] = false;
 
 #ifdef USE_CURL
 	if ( !clc.cURLUsed )
@@ -906,7 +906,7 @@ void CL_ParseServerMessage( msg_t *msg ) {
 			CL_ParseDownload( msg );
 			break;
 		case svc_voipSpeex: // ioq3 extension
-			clc.dm68compat = qfalse;
+			clc.dm68compat = false;
 #ifdef USE_VOIP
 			CL_ParseVoip( msg, true );
 			break;
@@ -914,7 +914,7 @@ void CL_ParseServerMessage( msg_t *msg ) {
 			return;
 #endif
 		case svc_voipOpus: // ioq3 extension
-			clc.dm68compat = qfalse;
+			clc.dm68compat = false;
 #ifdef USE_VOIP
 			CL_ParseVoip( msg, !clc.voipEnabled );
 			break;

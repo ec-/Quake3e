@@ -51,9 +51,9 @@ typedef	struct sndBuffer_s {
 
 typedef struct sfx_s {
 	sndBuffer		*soundData;
-	bool		defaultSound;			// couldn't be loaded, so use buzz
-	bool		inMemory;				// not in Memory
-	bool		soundCompressed;		// not in Memory
+	bool			defaultSound;			// couldn't be loaded, so use buzz
+	bool			inMemory;				// not in Memory
+	bool			soundCompressed;		// not in Memory
 	int				soundCompressionMethod;
 	int 			soundLength;
 	int				soundChannels;
@@ -85,9 +85,9 @@ typedef struct loopSound_s {
 	vec3_t		velocity;
 	sfx_t		*sfx;
 	int			mergeFrame;
-	bool	active;
-	bool	kill;
-	bool	doppler;
+	bool		active;
+	bool		kill;
+	bool		doppler;
 	float		dopplerScale;
 	float		oldDopplerScale;
 	int			framenum;
@@ -105,9 +105,9 @@ typedef struct
 	float		dopplerScale;
 	float		oldDopplerScale;
 	vec3_t		origin;			// only use if fixed_origin is set
-	bool	fixed_origin;	// use origin instead of fetching entnum's origin
+	bool		fixed_origin;	// use origin instead of fetching entnum's origin
 	sfx_t		*thesfx;		// sfx structure
-	bool	doppler;
+	bool		doppler;
 } channel_t;
 
 

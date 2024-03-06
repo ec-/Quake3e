@@ -334,11 +334,11 @@ static bool CL_ValidatePipeFormat( const char *s )
 	while ( *s != '\0' ) 
 	{
 		if ( *s == '.' && *(s+1) == '.' && ( *(s+2) == '/' || *(s+2) == '\\' ) )
-			return qfalse;
+			return false;
 		if ( *s == ':' && *(s+1) == ':' )
-			return qfalse;
+			return false;
 		if ( *s == '>' || *s == '|' || *s == '&' )
-			return qfalse;
+			return false;
 		s++;
 	}
 	return true;
@@ -356,7 +356,7 @@ writing the actual data can begin
 bool CL_OpenAVIForWriting( const char *fileName, bool pipe, bool reopen )
 {
 	if ( afd.fileOpen )
-		return qfalse;
+		return false;
 
 	if ( reopen )
 	{
@@ -380,23 +380,23 @@ bool CL_OpenAVIForWriting( const char *fileName, bool pipe, bool reopen )
 
 		if ( !CL_ValidatePipeFormat( cl_aviPipeFormat->string ) ) {
 			Com_Printf( S_COLOR_YELLOW "Invalid pipe format: %s\n", cl_aviPipeFormat->string );
-			return qfalse;
+			return false;
 		}
 
 		ospath = FS_BuildOSPath( Cvar_VariableString( "fs_homepath" ), "", fileName );
 		Com_sprintf( cmd, sizeof( cmd ), cmd_fmt, cl_aviPipeFormat->string, ospath, ospath );
 		if ( (afd.f = FS_PipeOpenWrite( cmd, fileName )) == FS_INVALID_HANDLE )
-			return qfalse;
+			return false;
 	}
 	else
 	{
 		if ( (afd.f = FS_FOpenFileWrite( fileName )) == FS_INVALID_HANDLE )
-			return qfalse;
+			return false;
 
 		if ( (afd.idxF = FS_FOpenFileWrite( va( "%s" INDEX_FILE_EXTENSION, fileName ) )) == FS_INVALID_HANDLE )
 		{
 			FS_FCloseFile( afd.f );
-			return qfalse;
+			return false;
 		}
 	}
 
@@ -411,7 +411,7 @@ bool CL_OpenAVIForWriting( const char *fileName, bool pipe, bool reopen )
 	if ( cl_aviMotionJpeg->integer && !pipe )
 		afd.motionJpeg = true;
 	else
-		afd.motionJpeg = qfalse;
+		afd.motionJpeg = false;
 
 	if ( !reopen )
 	{
@@ -435,7 +435,7 @@ bool CL_OpenAVIForWriting( const char *fileName, bool pipe, bool reopen )
 
 	if ( Cvar_VariableIntegerValue( "s_initsound" ) == 0 )
 	{
-		afd.audio = qfalse;
+		afd.audio = false;
 	}
 	else
 	{
@@ -483,7 +483,7 @@ static bool CL_CheckFileSize( int bytesToAdd )
 
 	if ( afd.pipe )
 	{
-		return qfalse;
+		return false;
 	}
 
 	newFileSize =
@@ -501,12 +501,12 @@ static bool CL_CheckFileSize( int bytesToAdd )
 		CL_CloseAVI( true );
 
 		// ...And open a new one
-		CL_OpenAVIForWriting( va( "%s-%02d.avi", clc.videoName, ++clc.videoIndex ), qfalse, true );
+		CL_OpenAVIForWriting( va( "%s-%02d.avi", clc.videoName, ++clc.videoIndex ), false, true );
 
 		return true;
 	}
 
-	return qfalse;
+	return false;
 }
 
 
@@ -678,7 +678,7 @@ bool CL_CloseAVI( bool reopen )
 	// AVI file isn't open
 	if ( !afd.fileOpen )
 	{
-		return qfalse;
+		return false;
 	}
 
 	CL_FlushCaptureBuffer();
@@ -694,15 +694,15 @@ bool CL_CloseAVI( bool reopen )
 		Com_Printf( "Wrote %d:%d frames to pipe:%s\n", afd.numVideoFrames, afd.numAudioFrames, afd.fileName );
 		FS_FCloseFile( afd.f );
 		afd.f = FS_INVALID_HANDLE;
-		afd.fileOpen = qfalse;
-		afd.pipe = qfalse;
+		afd.fileOpen = false;
+		afd.pipe = false;
 		return true;
 	}
 
 	idxFileName = va( "%s" INDEX_FILE_EXTENSION, afd.fileName );
 	indexSize = afd.numIndices * 16;
 
-	afd.fileOpen = qfalse;
+	afd.fileOpen = false;
 
 	FS_Seek( afd.idxF, 4, FS_SEEK_SET );
 	bufIndex = 0;
@@ -721,7 +721,7 @@ bool CL_CloseAVI( bool reopen )
 			FS_FCloseFile( afd.idxF );
 		}
 		FS_FCloseFile( afd.f );
-		return qfalse;
+		return false;
 	}
 
 	indexRemainder = indexSize;

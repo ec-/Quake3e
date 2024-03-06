@@ -125,14 +125,14 @@ int R_CullLocalPointAndRadius( const vec3_t pt, float radius )
 */
 int R_CullPointAndRadius( const vec3_t pt, float radius )
 {
+	if ( r_nocull->integer ) {
+		return CULL_CLIP;
+	}
+
 	int		i;
 	float	dist;
 	const cplane_t	*frust;
 	bool mightBeClipped = false;
-
-	if ( r_nocull->integer ) {
-		return CULL_CLIP;
-	}
 
 	// check against frustum planes
 	for (i = 0 ; i < 4 ; i++) 
@@ -1254,27 +1254,27 @@ DRAWSURF SORTING
 R_Radix
 ===============
 */
-static ID_INLINE void R_Radix( int byte, int size, const drawSurf_t *source, drawSurf_t *dest )
+static ID_INLINE void R_Radix(int byte, int size, const drawSurf_t *source, drawSurf_t *dest)
 {
-  int           count[ 256 ] = { 0 };
-  int           index[ 256 ];
-  int           i;
-  unsigned char *sortKey;
-  unsigned char *end;
+    int count[256] = {0};
+    int index[256] = {0};
+    int i;
+    const unsigned char *sortKey = (const unsigned char *)&source[0].sort + byte;
+    const unsigned char *end = sortKey + (size * sizeof(drawSurf_t));
 
-  sortKey = ( (unsigned char *)&source[ 0 ].sort ) + byte;
-  end = sortKey + ( size * sizeof( drawSurf_t ) );
-  for( ; sortKey < end; sortKey += sizeof( drawSurf_t ) )
-    ++count[ *sortKey ];
+    // Count occurrences of each byte value
+    for (; sortKey < end; sortKey += sizeof(drawSurf_t))
+        ++count[*sortKey];
 
-  index[ 0 ] = 0;
+    // Calculate starting index for each byte value
+    index[0] = 0;
+    for (i = 1; i < 256; ++i)
+        index[i] = index[i - 1] + count[i - 1];
 
-  for( i = 1; i < 256; ++i )
-    index[ i ] = index[ i - 1 ] + count[ i - 1 ];
-
-  sortKey = ( (unsigned char *)&source[ 0 ].sort ) + byte;
-  for( i = 0; i < size; ++i, sortKey += sizeof( drawSurf_t ) )
-    dest[ index[ *sortKey ]++ ] = source[ i ];
+    // Move elements to their sorted positions
+    sortKey = (const unsigned char *)&source[0].sort + byte;
+    for (i = 0; i < size; ++i, sortKey += sizeof(drawSurf_t))
+        dest[index[*sortKey]++] = source[i];
 }
 
 

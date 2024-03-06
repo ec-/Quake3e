@@ -105,7 +105,7 @@ Con_MessageMode_f
 */
 static void Con_MessageMode_f( void ) {
 	chat_playerNum = -1;
-	chat_team = qfalse;
+	chat_team = false;
 	Field_Clear( &chatField );
 	chatField.widthInChars = 30;
 
@@ -138,7 +138,7 @@ static void Con_MessageMode3_f( void ) {
 		chat_playerNum = -1;
 		return;
 	}
-	chat_team = qfalse;
+	chat_team = false;
 	Field_Clear( &chatField );
 	chatField.widthInChars = 30;
 	Key_SetCatcher( Key_GetCatcher() ^ KEYCATCH_MESSAGE );
@@ -156,7 +156,7 @@ static void Con_MessageMode4_f( void ) {
 		chat_playerNum = -1;
 		return;
 	}
-	chat_team = qfalse;
+	chat_team = false;
 	Field_Clear( &chatField );
 	chatField.widthInChars = 30;
 	Key_SetCatcher( Key_GetCatcher() ^ KEYCATCH_MESSAGE );
@@ -209,7 +209,7 @@ static void Con_Dump_f( void )
 	Q_strncpyz( filename, Cmd_Argv( 1 ), sizeof( filename ) );
 	COM_DefaultExtension( filename, sizeof( filename ), ".txt" );
 
-	if ( !FS_AllowedExtension( filename, qfalse, &ext ) ) {
+	if ( !FS_AllowedExtension( filename, false, &ext ) ) {
 		Com_Printf( "%s: Invalid filename extension '%s'.\n", __func__, ext );
 		return;
 	}
@@ -370,7 +370,7 @@ void Con_CheckResize( void )
 
 	con.display = con.current;
 
-	con_scale->modified = qfalse;
+	con_scale->modified = false;
 }
 
 
@@ -523,8 +523,8 @@ void CL_ConsolePrint( const char *txt ) {
 	int		y;
 	int		c, l;
 	int		colorIndex;
-	bool skipnotify = qfalse;		// NERVE - SMF
-	int prev;							// NERVE - SMF
+	bool 	skipnotify = false;		// NERVE - SMF
+	int 	prev; 					// NERVE - SMF
 
 	// TTimo - prefix for text that shows up in console but not in notify
 	// backported from RTCW
@@ -588,7 +588,7 @@ void CL_ConsolePrint( const char *txt ) {
 			if ( con.newline ) {
 				Con_NewLine();
 				Con_Fixup();
-				con.newline = qfalse;
+				con.newline = false;
 			}
 			// display character and advance
 			y = con.current % con.totallines;
@@ -715,12 +715,12 @@ static void Con_DrawNotify( void )
 
 		if (chat_team)
 		{
-			SCR_DrawBigString( SMALLCHAR_WIDTH, v, "say_team:", 1.0f, qfalse );
+			SCR_DrawBigString( SMALLCHAR_WIDTH, v, "say_team:", 1.0f, false );
 			skip = 10;
 		}
 		else
 		{
-			SCR_DrawBigString( SMALLCHAR_WIDTH, v, "say:", 1.0f, qfalse );
+			SCR_DrawBigString( SMALLCHAR_WIDTH, v, "say:", 1.0f, false );
 			skip = 5;
 		}
 

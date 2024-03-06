@@ -575,7 +575,7 @@ static int LAN_ServerIsVisible(int source, int n ) {
 			}
 			break;
 	}
-	return qfalse;
+	return 0;
 }
 
 
@@ -713,19 +713,19 @@ static int GetConfigString(int index, char *buf, int size)
 	int		offset;
 
 	if (index < 0 || index >= MAX_CONFIGSTRINGS)
-		return qfalse;
+		return 0;
 
 	offset = cl.gameState.stringOffsets[index];
 	if (!offset) {
 		if( size ) {
 			buf[0] = 0;
 		}
-		return qfalse;
+		return 0;
 	}
 
 	Q_strncpyz( buf, cl.gameState.stringData+offset, size);
 
-	return true;
+	return 1;
 }
 
 
@@ -770,7 +770,7 @@ static bool UI_GetValue( char* value, int valueSize, const char* key ) {
 		return true;
 	}
 
-	return qfalse;
+	return false;
 }
 
 
@@ -890,7 +890,7 @@ static intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return 0;
 
 	case UI_R_ADDREFENTITYTOSCENE:
-		re.AddRefEntityToScene( VMA(1), qfalse );
+		re.AddRefEntityToScene( VMA(1), false );
 		return 0;
 
 	case UI_R_ADDPOLYTOSCENE:
@@ -1212,7 +1212,7 @@ CL_ShutdownUI
 */
 void CL_ShutdownUI( void ) {
 	Key_SetCatcher( Key_GetCatcher() & ~KEYCATCH_UI );
-	cls.uiStarted = qfalse;
+	cls.uiStarted = false;
 	if ( !uivm ) {
 		return;
 	}
@@ -1235,7 +1235,7 @@ void CL_InitUI( void ) {
 	vmInterpret_t		interpret;
 
 	// disallow vl.collapse for UI elements
-	re.VertexLighting( qfalse );
+	re.VertexLighting( false );
 
 	// load the dll or bytecode
 	interpret = Cvar_VariableIntegerValue( "vm_ui" );
@@ -1277,7 +1277,7 @@ void CL_InitUI( void ) {
 		uivm = NULL;
 
 		Com_Error( ERR_DROP, "User Interface is version %d, expected %d", v, UI_API_VERSION );
-		cls.uiStarted = qfalse;
+		cls.uiStarted = false;
 	}
 	else {
 		// init for this gamestate
@@ -1306,7 +1306,7 @@ See if the current console command is claimed by the ui
 */
 bool UI_GameCommand( void ) {
 	if ( !uivm ) {
-		return qfalse;
+		return false;
 	}
 
 	return VM_Call( uivm, 1, UI_CONSOLE_COMMAND, cls.realtime );

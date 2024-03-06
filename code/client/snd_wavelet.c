@@ -110,7 +110,7 @@ short MuLawDecode(byte uLaw) {
 }
 
 short mulawToShort[256];
-static bool madeTable = qfalse;
+static bool madeTable = false;
 
 static	int	NXStreamCount;
 
