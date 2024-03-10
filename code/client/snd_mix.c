@@ -682,7 +682,7 @@ void S_PaintChannels( int endtime ) {
 	int		sampleOffset;
 	byte	*buffer;
 
-	snd_vol = s_volume->value * 255;
+	snd_vol = (s_volume->value * 255) * s_masterVolume->value;
 
 	if ( (!gw_active && !gw_minimized && s_muteWhenUnfocused->integer) || (gw_minimized && s_muteWhenMinimized->integer) ) {
 		buffer = dma_buffer2;
