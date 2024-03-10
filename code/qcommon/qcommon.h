@@ -456,8 +456,11 @@ void Cbuf_Init( void );
 void Cbuf_AddText( const char *text );
 // Adds command text at the end of the buffer, does NOT add a final \n
 
-int Cbuf_Add( const char *text, int pos );
-// Adds command text at the specified position of the buffer, adds \n when needed
+void Cbuf_NestedAdd( const char *text );
+// Adds nested command text at the specified position of the buffer, adds \n when needed
+
+void Cbuf_NestedReset( void );
+// Resets nested cmd offset
 
 void Cbuf_InsertText( const char *text );
 // Adds command text at the beginning of the buffer, add \n
@@ -470,6 +473,9 @@ void Cbuf_Execute( void );
 // them through Cmd_ExecuteString.  Stops when the buffer is empty.
 // Normally called once per frame, but may be explicitly invoked.
 // Do not call inside a command function, or current args will be destroyed.
+
+qboolean Cbuf_Wait( void );
+// Checks if wait command timeout remaining
 
 //===========================================================================
 

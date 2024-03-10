@@ -102,22 +102,46 @@ void Cbuf_AddText( const char *text ) {
 }
 
 
+static int nestedCmdOffset;
+
+void Cbuf_NestedReset( void ) {
+	nestedCmdOffset = 0;
+}
+
 /*
 ============
-Cbuf_Add
+Cbuf_NestedAdd
 
 // Adds command text at the specified position of the buffer, adds \n when needed
 ============
 */
-int Cbuf_Add( const char *text, int pos ) {
+void Cbuf_NestedAdd( const char *text ) {
 
 	int len = (int)strlen( text );
+	int pos = nestedCmdOffset;
 	qboolean separate = qfalse;
 	int i;
 
-	if ( len == 0 ) {
-		return cmd_text.cursize;
+	if ( len <= 0 ) {
+		nestedCmdOffset = cmd_text.cursize;
+		return;
 	}
+
+#if 0
+	if ( cmd_text.cursize > 0 ) {
+		const int c = cmd_text.data[cmd_text.cursize - 1];
+		// insert separator for already existing command(s)
+		if ( c != '\n' && c != ';' && text[0] != '\n' && text[0] != ';' ) {
+			if ( cmd_text.cursize < cmd_text.maxsize ) {
+				cmd_text.data[cmd_text.cursize++] = ';';
+			} else {
+				Com_Printf( S_COLOR_YELLOW "%s(%i) overflowed\n", __func__, pos );
+				nestedCmdOffset = cmd_text.cursize;
+				return;
+			}
+		}
+	}
+#endif
 
 	if ( pos > cmd_text.cursize || pos < 0 ) {
 		// insert at the text end
@@ -133,7 +157,8 @@ int Cbuf_Add( const char *text, int pos ) {
 
 	if ( len + cmd_text.cursize > cmd_text.maxsize ) {
 		Com_Printf( S_COLOR_YELLOW "%s(%i) overflowed\n", __func__, pos );
-		return cmd_text.cursize;
+		nestedCmdOffset = cmd_text.cursize;
+		return;
 	}
 
 	// move the existing command text
@@ -152,7 +177,7 @@ int Cbuf_Add( const char *text, int pos ) {
 
 	cmd_text.cursize += len;
 
-	return pos + len;
+	nestedCmdOffset = cmd_text.cursize;
 }
 
 
@@ -200,19 +225,20 @@ void Cbuf_ExecuteText( cbufExec_t exec_when, const char *text )
 	switch (exec_when)
 	{
 	case EXEC_NOW:
+		cmd_wait = 0; // discard any pending waiting
 		if ( text && text[0] != '\0' ) {
 			Com_DPrintf(S_COLOR_YELLOW "EXEC_NOW %s\n", text);
-			Cmd_ExecuteString (text);
+			Cmd_ExecuteString( text );
 		} else {
 			Cbuf_Execute();
-			Com_DPrintf(S_COLOR_YELLOW "EXEC_NOW %s\n", cmd_text.data);
+			Com_DPrintf( S_COLOR_YELLOW "EXEC_NOW %s\n", cmd_text.data );
 		}
 		break;
 	case EXEC_INSERT:
-		Cbuf_InsertText (text);
+		Cbuf_InsertText( text );
 		break;
 	case EXEC_APPEND:
-		Cbuf_AddText (text);
+		Cbuf_AddText( text );
 		break;
 	default:
 		Com_Error (ERR_FATAL, "Cbuf_ExecuteText: bad exec_when");
@@ -227,25 +253,23 @@ Cbuf_Execute
 */
 void Cbuf_Execute( void )
 {
-	int i;
-	char *text;
-	char line[MAX_CMD_LINE];
-	int quotes;
+	char line[MAX_CMD_LINE], *text;
+	int i, n, quotes;
+
+	if ( cmd_wait > 0 ) {
+		// delay command buffer execution
+		cmd_wait--;
+		return;
+	}
 
 	// This will keep // style comments all on one line by not breaking on
 	// a semicolon.  It will keep /* ... */ style comments all on one line by not
 	// breaking it for semicolon or newline.
 	qboolean in_star_comment = qfalse;
 	qboolean in_slash_comment = qfalse;
+
 	while ( cmd_text.cursize > 0 )
 	{
-		if ( cmd_wait > 0 ) {
-			// skip out while text still remains in buffer, leaving it
-			// for next frame
-			cmd_wait--;
-			break;
-		}
-
 		// find a \n or ; line break or comment: // or /* */
 		text = (char *)cmd_text.data;
 
@@ -279,33 +303,61 @@ void Cbuf_Execute( void )
 			}
 		}
 
-		if ( i >= (MAX_CMD_LINE - 1) )
-			i = MAX_CMD_LINE - 1;
+		// copy up to (MAX_CMD_LINE - 1) chars but keep buffer position intact to prevent parsing truncated leftover
+		if ( i > (MAX_CMD_LINE - 1) )
+			n = MAX_CMD_LINE - 1;
+		else
+			n = i;
 
-		Com_Memcpy( line, text, i );
-		line[i] = '\0';
+		Com_Memcpy( line, text, n );
+		line[n] = '\0';
 
 		// delete the text from the command buffer and move remaining commands down
 		// this is necessary because commands (exec) can insert data at the
 		// beginning of the text buffer
 
-		if ( i == cmd_text.cursize )
-			cmd_text.cursize = 0;
-		else
-		{
-			i++;
-			cmd_text.cursize -= i;
-			// skip all repeating newlines/semicolons
-			while ( ( text[i] == '\n' || text[i] == '\r' || text[i] == ';' ) && cmd_text.cursize > 0 ) {
-				cmd_text.cursize--;
-				i++;
+		if ( i == cmd_text.cursize ) {
+			//cmd_text.cursize = 0;
+		} else {
+			++i;
+			// skip all repeating newlines/semicolons/whitespaces
+			while ( i < cmd_text.cursize && (text[i] == '\n' || text[i] == '\r' || text[i] == ';' || ( text[i] != '\0' && text[i] <= ' ' ) ) ) {
+				++i;
 			}
-			memmove( text, text+i, cmd_text.cursize );
+		}
+
+		cmd_text.cursize -= i;
+
+		if ( cmd_text.cursize ) {
+			memmove( text, text + i, cmd_text.cursize );
+		}
+
+		if ( nestedCmdOffset > 0 ) {
+			nestedCmdOffset -= i;
+			if ( nestedCmdOffset < 0 ) {
+				nestedCmdOffset = 0;
+			}
 		}
 
 		// execute the command line
 		Cmd_ExecuteString( line );
+
+		// break on wait command
+		if ( cmd_wait > 0 ) {
+			break;
+		}
 	}
+}
+
+
+/*
+============
+Cbuf_Wait
+============
+*/
+qboolean Cbuf_Wait( void )
+{
+	return (cmd_wait > 0) ? qtrue : qfalse;
 }
 
 

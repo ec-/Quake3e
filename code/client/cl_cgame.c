@@ -29,8 +29,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 extern	botlib_export_t	*botlib_export;
 
-static int nestedCmdOffset; // nested command buffer offset
-
 //extern qboolean loadCamera(const char *name);
 //extern void startCamera(int time);
 //extern qboolean getCameraInfo(int time, vec3_t *origin, vec3_t *angles);
@@ -536,7 +534,7 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 
 	case CG_SENDCONSOLECOMMAND: {
 		const char *cmd = VMA(1);
-		nestedCmdOffset = Cbuf_Add( cmd, nestedCmdOffset );
+		Cbuf_NestedAdd( cmd );
 		return 0;
 	}
 	case CG_ADDCOMMAND:
@@ -855,7 +853,7 @@ void CL_InitCGame( void ) {
 	int					t1, t2;
 	vmInterpret_t		interpret;
 
-	nestedCmdOffset = 0;
+	Cbuf_NestedReset();
 
 	t1 = Sys_Milliseconds();
 
@@ -943,7 +941,7 @@ qboolean CL_GameCommand( void ) {
 
 	bRes = (qboolean)VM_Call( cgvm, 0, CG_CONSOLE_COMMAND );
 
-	nestedCmdOffset = 0;
+	Cbuf_NestedReset();
 
 	return bRes;
 }
