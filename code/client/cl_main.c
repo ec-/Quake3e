@@ -28,10 +28,6 @@ cvar_t	*cl_noprint;
 cvar_t	*cl_debugMove;
 cvar_t	*cl_motd;
 
-#ifdef USE_RENDERER_DLOPEN
-cvar_t	*cl_renderer;
-#endif
-
 cvar_t	*rcon_client_password;
 cvar_t	*rconAddress;
 
@@ -111,9 +107,6 @@ download_t			download;
 
 // Structure containing functions exported from refresh DLL
 refexport_t	re;
-#ifdef USE_RENDERER_DLOPEN
-static void	*rendererLib;
-#endif
 
 static ping_t cl_pinglist[MAX_PINGREQUESTS];
 
@@ -3156,13 +3149,6 @@ CL_ShutdownRef
 ============
 */
 static void CL_ShutdownRef( refShutdownCode_t code ) {
-
-#ifdef USE_RENDERER_DLOPEN
-	if ( cl_renderer->modified ) {
-		code = REF_UNLOAD_DLL;
-	}
-#endif
-
 	// clear and mute all sounds until next registration
 	// S_DisableSounds();
 
@@ -3177,13 +3163,6 @@ static void CL_ShutdownRef( refShutdownCode_t code ) {
 	if ( re.Shutdown ) {
 		re.Shutdown( code );
 	}
-
-#ifdef USE_RENDERER_DLOPEN
-	if ( rendererLib ) {
-		Sys_UnloadLibrary( rendererLib );
-		rendererLib = NULL;
-	}
-#endif
 
 	Com_Memset( &re, 0, sizeof( re ) );
 
@@ -3360,45 +3339,9 @@ CL_InitRef
 static void CL_InitRef( void ) {
 	refimport_t	rimp;
 	refexport_t	*ret;
-#ifdef USE_RENDERER_DLOPEN
-	GetRefAPI_t		GetRefAPI;
-	char			dllName[ MAX_OSPATH ];
-#endif
-
 	CL_InitGLimp_Cvars();
 
 	Com_Printf( "----- Initializing Renderer ----\n" );
-
-#ifdef USE_RENDERER_DLOPEN
-
-#if defined (__linux__) && defined(__i386__)
-#define REND_ARCH_STRING "x86"
-#else
-#define REND_ARCH_STRING ARCH_STRING
-#endif
-
-	Com_sprintf( dllName, sizeof( dllName ), RENDERER_PREFIX "_%s_" REND_ARCH_STRING DLL_EXT, cl_renderer->string );
-	rendererLib = FS_LoadLibrary( dllName );
-	if ( !rendererLib )
-	{
-		Cvar_ForceReset( "cl_renderer" );
-		Com_sprintf( dllName, sizeof( dllName ), RENDERER_PREFIX "_%s_" REND_ARCH_STRING DLL_EXT, cl_renderer->string );
-		rendererLib = FS_LoadLibrary( dllName );
-		if ( !rendererLib )
-		{
-			Com_Error( ERR_FATAL, "Failed to load renderer %s", dllName );
-		}
-	}
-
-	GetRefAPI = Sys_LoadFunction( rendererLib, "GetRefAPI" );
-	if( !GetRefAPI )
-	{
-		Com_Error( ERR_FATAL, "Can't load symbol GetRefAPI" );
-		return;
-	}
-
-	cl_renderer->modified = false;
-#endif
 
 	Com_Memset( &rimp, 0, sizeof( rimp ) );
 
@@ -3752,19 +3695,6 @@ static void CL_ModeList_f( void )
 	Com_Printf( "\n" );
 }
 
-
-#ifdef USE_RENDERER_DLOPEN
-static bool isValidRenderer( const char *s ) {
-	while ( *s ) {
-		if ( !((*s >= 'a' && *s <= 'z') || (*s >= 'A' && *s <= 'Z') || (*s >= '1' && *s <= '9')) )
-			return false;
-		++s;
-	}
-	return true;
-}
-#endif
-
-
 static void CL_InitGLimp_Cvars( void )
 {
 	// shared with GLimp
@@ -3821,18 +3751,6 @@ static void CL_InitGLimp_Cvars( void )
 
 	cl_drawBuffer = Cvar_Get( "r_drawBuffer", "GL_BACK", CVAR_CHEAT );
 	Cvar_SetDescription( cl_drawBuffer, "Specifies buffer to draw from: GL_FRONT or GL_BACK." );
-#ifdef USE_RENDERER_DLOPEN
-#ifdef RENDERER_DEFAULT
-	cl_renderer = Cvar_Get( "cl_renderer", XSTRING( RENDERER_DEFAULT ), CVAR_ARCHIVE | CVAR_LATCH );
-#else
-	cl_renderer = Cvar_Get( "cl_renderer", "opengl", CVAR_ARCHIVE | CVAR_LATCH );
-#endif
-	Cvar_SetDescription( cl_renderer, "Sets your desired renderer, requires \\vid_restart." );
-
-	if ( !isValidRenderer( cl_renderer->string ) ) {
-		Cvar_ForceReset( "cl_renderer" );
-	}
-#endif
 }
 
 

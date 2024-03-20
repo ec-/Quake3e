@@ -182,30 +182,6 @@ int		max_polyverts;
 Vk_Instance vk;
 Vk_World	vk_world;
 
-// for modular renderer
-#ifdef USE_RENDERER_DLOPEN
-void QDECL Com_Error( errorParm_t code, const char *fmt, ... )
-{
-	char buf[ 4096 ];
-	va_list	argptr;
-	va_start( argptr, fmt );
-	Q_vsnprintf( buf, sizeof( buf ), fmt, argptr );
-	va_end( argptr );
-	ri.Error( code, "%s", buf );
-}
-
-void QDECL Com_Printf( const char *fmt, ... )
-{
-	char buf[ MAXPRINTMSG ];
-	va_list	argptr;
-	va_start( argptr, fmt );
-	Q_vsnprintf( buf, sizeof( buf ), fmt, argptr );
-	va_end( argptr );
-
-	ri.Printf( PRINT_ALL, "%s", buf );
-}
-#endif
-
 /*
 ** InitOpenGL
 **
@@ -1492,12 +1468,7 @@ static void RE_EndRegistration( void ) {
 GetRefAPI
 @@@@@@@@@@@@@@@@@@@@@
 */
-#ifdef USE_RENDERER_DLOPEN
-Q_EXPORT refexport_t* QDECL GetRefAPI ( int apiVersion, refimport_t *rimp ) {
-#else
 refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
-#endif
-
 	static refexport_t	re;
 
 	ri = *rimp;

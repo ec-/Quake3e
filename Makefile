@@ -37,7 +37,6 @@ USE_SYSTEM_VORBIS = 0
 
 USE_VULKAN       = 1
 USE_VULKAN_API   = 1
-USE_RENDERER_DLOPEN = 1
 
 # valid options: vulkan
 RENDERER_DEFAULT = vulkan
@@ -69,7 +68,6 @@ endif
 ifeq ($(COMPILE_PLATFORM),darwin)
   USE_SDL=1
   USE_LOCAL_HEADERS=1
-  USE_RENDERER_DLOPEN = 0
 endif
 
 ifeq ($(COMPILE_PLATFORM),cygwin)
@@ -162,12 +160,6 @@ endif
 
 ifndef USE_SYSTEM_VORBIS
   USE_SYSTEM_VORBIS=1
-endif
-
-ifeq ($(USE_RENDERER_DLOPEN),0)
-  ifeq ($(RENDERER_DEFAULT),vulkan)
-    USE_VULKAN=1
-  endif
 endif
 
 ifneq ($(USE_VULKAN),0)
@@ -279,12 +271,6 @@ endif
 
 ifneq ($(HAVE_VM_COMPILED),true)
   BASE_CFLAGS += -DNO_VM_COMPILED
-endif
-
-ifneq ($(USE_RENDERER_DLOPEN),0)
-  BASE_CFLAGS += -DUSE_RENDERER_DLOPEN
-  BASE_CFLAGS += -DRENDERER_PREFIX=\\\"$(RENDERER_PREFIX)\\\"
-  BASE_CFLAGS += -DRENDERER_DEFAULT="$(RENDERER_DEFAULT)"
 endif
 
 ifdef DEFAULT_BASEDIR
@@ -589,22 +575,13 @@ endif
 
 ifneq ($(BUILD_CLIENT),0)
   TARGETS += $(B)/$(TARGET_CLIENT)
-  ifneq ($(USE_RENDERER_DLOPEN),0)
-    ifeq ($(USE_VULKAN),1)
-      TARGETS += $(B)/$(TARGET_RENDV)
-    endif
-  endif
 endif
 
 ifeq ($(USE_CCACHE),1)
   CC := ccache $(CC)
 endif
 
-ifneq ($(USE_RENDERER_DLOPEN),0)
-    RENDCFLAGS=$(SHLIBCFLAGS)
-else
-    RENDCFLAGS=$(NOTSHLIBCFLAGS)
-endif
+RENDCFLAGS=$(NOTSHLIBCFLAGS)
 
 define DO_CC
 $(echo_cmd) "CC $<"
@@ -764,13 +741,6 @@ Q3RENDVOBJ = \
   $(B)/rendv/vk.o \
   $(B)/rendv/vk_flares.o \
   $(B)/rendv/vk_vbo.o \
-
-ifneq ($(USE_RENDERER_DLOPEN), 0)
-  Q3RENDVOBJ += \
-    $(B)/rendv/q_shared.o \
-    $(B)/rendv/puff.o \
-    $(B)/rendv/q_math.o
-endif
 
 JPGOBJ = \
   $(B)/client/jpeg/jaricom.o \
@@ -954,10 +924,8 @@ ifeq ($(USE_OGG_VORBIS),1)
     $(B)/client/snd_codec_ogg.o
 endif
 
-ifneq ($(USE_RENDERER_DLOPEN),1)
-  ifeq ($(USE_VULKAN),1)
-    Q3OBJ += $(Q3RENDVOBJ)
-  endif
+ifeq ($(USE_VULKAN),1)
+  Q3OBJ += $(Q3RENDVOBJ)
 endif
 
 ifeq ($(ARCH),x86)
