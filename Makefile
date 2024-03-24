@@ -28,7 +28,7 @@ BUILD_SERVER     = 1
 
 USE_SDL          = 1
 USE_CURL         = 1
-USE_PCRE         = 1
+USE_PCRE2        = 1
 USE_LOCAL_HEADERS= 0
 USE_SYSTEM_JPEG  = 0
 
@@ -156,8 +156,8 @@ ifndef USE_CURL_DLOPEN
   endif
 endif
 
-ifndef USE_PCRE
-  USE_PCRE=1
+ifndef USE_PCRE2
+  USE_PCRE2=1
 endif
 
 ifndef USE_OGG_VORBIS
@@ -333,8 +333,11 @@ ifeq ($(USE_CURL),1)
   endif
 endif
 
-ifeq ($(USE_PCRE),1)
-  BASE_CFLAGS += -DUSE_PCRE
+ifeq ($(USE_PCRE2),1)
+  BASE_CFLAGS += -DUSE_PCRE2
+  ifeq ($(MINGW),1)
+    BASE_CFLAGS += -DPCRE2_STATIC
+  endif
 endif
 
 ifeq ($(USE_VULKAN_API),1)
@@ -458,14 +461,18 @@ ifdef MINGW
     CLIENT_LDFLAGS += -lcurl -lwldap32 -lcrypt32
   endif
 
-  ifeq ($(USE_PCRE),1)
-    BASE_CFLAGS += -I$(MOUNT_DIR)/libpcre/windows/include
+  ifeq ($(USE_PCRE2),1)
+    BASE_CFLAGS += -I$(MOUNT_DIR)/libpcre2/include
     ifeq ($(ARCH),x86)
-      CLIENT_LDFLAGS += -L$(MOUNT_DIR)/libpcre/windows/mingw/lib32
+      CLIENT_LDFLAGS += -L$(MOUNT_DIR)/libpcre2/mingw/MINGW32
     else
-      CLIENT_LDFLAGS += -L$(MOUNT_DIR)/libpcre/windows/mingw/lib64
+      CLIENT_LDFLAGS += -L$(MOUNT_DIR)/libpcre2/mingw/MINGW64
     endif
-    CLIENT_LDFLAGS += -lpcre
+    ifeq ($(DEBUG),1)
+      CLIENT_LDFLAGS += -lpcre2-8d
+    else
+      CLIENT_LDFLAGS += -lpcre2-8
+    endif
   endif
 
   ifeq ($(USE_OGG_VORBIS),1)
@@ -528,8 +535,8 @@ ifeq ($(COMPILE_PLATFORM),darwin)
     CLIENT_LDFLAGS += -ljpeg
   endif
 
-  ifeq ($(USE_PCRE),1)
-    CLIENT_LDFLAGS += -lpcre
+  ifeq ($(USE_PCRE2),1)
+    CLIENT_LDFLAGS += -lpcre2-8
   endif
 
   ifeq ($(USE_OGG_VORBIS),1)
@@ -598,8 +605,8 @@ else
     endif
   endif
 
-  ifeq ($(USE_PCRE),1)
-    CLIENT_LDFLAGS += -lpcre
+  ifeq ($(USE_PCRE2),1)
+    CLIENT_LDFLAGS += -lpcre2-8
   endif
 
   ifeq ($(USE_OGG_VORBIS),1)
@@ -715,10 +722,10 @@ default: release
 all: debug release
 
 debug:
-	@$(MAKE) targets B=$(BD) CFLAGS="$(CFLAGS) $(DEBUG_CFLAGS)" LDFLAGS="$(LDFLAGS) $(DEBUG_LDFLAGS)" V=$(V)
+	@$(MAKE) targets DEBUG=1 B=$(BD) CFLAGS="$(CFLAGS) $(DEBUG_CFLAGS)" LDFLAGS="$(LDFLAGS) $(DEBUG_LDFLAGS)" V=$(V)
 
 release:
-	@$(MAKE) targets B=$(BR) CFLAGS="$(CFLAGS) $(RELEASE_CFLAGS)" V=$(V)
+	@$(MAKE) targets DEBUG=0 B=$(BR) CFLAGS="$(CFLAGS) $(RELEASE_CFLAGS)" V=$(V)
 
 define ADD_COPY_TARGET
 TARGETS += $2

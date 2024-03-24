@@ -91,13 +91,15 @@ static qboolean con_timedisplay_show = qfalse;
 
 int			g_console_field_width;
 
-#ifdef USE_PCRE
-#define PCRE_STATIC 1
-#include <pcre.h>
+#ifdef USE_PCRE2
+#define PCRE2_CODE_UNIT_WIDTH 8
+#include <pcre2.h>
+
 #define		MAX_CON_FILTERS 10
 static	cvar_t* con_filters[MAX_CON_FILTERS];
 static	cvar_t* con_filter;
-static	pcre* con_filters_compiled[MAX_CON_FILTERS];
+static	pcre2_code* con_filters_compiled[MAX_CON_FILTERS];
+static	pcre2_match_data* con_filters_match_data[MAX_CON_FILTERS];
 
 /*
 ================
@@ -105,7 +107,11 @@ Con_ShowPCREVersion_f
 ================
 */
 static void Con_ShowPCREVersion_f( void ) {
-	Com_Printf( "%s\n", pcre_version() );
+	const int len = pcre2_config(PCRE2_CONFIG_VERSION, NULL);
+	char* const version = malloc(len);
+	pcre2_config(PCRE2_CONFIG_VERSION, version);
+	Com_Printf( "%s\n", version );
+	free(version);
 }
 
 
@@ -115,32 +121,46 @@ Con_UpdateFilters
 
 Prepares regular expressions in con_filter* cvars for matching.
 Executed on init and on every console print.
-Doesn't do anything if filter cvars have not been changed since last run.  
+Doesn't do anything if filter cvars have not been changed since last run.
 ===============
 */
 static void Con_UpdateFilters( void ) {
-	const char* errptr;
-	int erroffset;
-	cvar_t** cvar;
-	pcre** regex;
+	int		i;
+	int errnumber;
+	PCRE2_SIZE erroffset;
+	cvar_t* cvar;
+	pcre2_code** regex;
+	pcre2_match_data** match_data;
 
-	for (cvar = con_filters; cvar - con_filters < MAX_CON_FILTERS; cvar++) {
-		if (!*cvar || !(*cvar)->modified) {
+	for ( i = 0; i < MAX_CON_FILTERS; ++i ) {
+		cvar = con_filters[i];
+		if (!cvar || !cvar->modified) {
 			continue;
 		}
-		regex = con_filters_compiled + (cvar - con_filters);
-		(*cvar)->modified = qfalse;
-		if (!strlen((*cvar)->string)) {
-			*regex = NULL;
+		cvar->modified = qfalse;
+
+		regex = con_filters_compiled + i;
+		match_data = con_filters_match_data + i;
+		pcre2_code_free(*regex);
+		pcre2_match_data_free(*match_data);
+		*regex = NULL;
+		*match_data = NULL;
+
+		const PCRE2_SIZE pattern_len = (PCRE2_SIZE)strlen(cvar->string);
+		if (!pattern_len) {
 			continue;
 		}
-		*regex = pcre_compile((*cvar)->string, 0, &errptr, &erroffset, NULL);
+
+		*regex = pcre2_compile((PCRE2_SPTR)cvar->string, pattern_len, 0, &errnumber, &erroffset, NULL);
 		if (!*regex) {
-			Com_Printf( S_COLOR_YELLOW "Failed to compile %s at character %i: %s\n", (*cvar)->name, erroffset, errptr);
-			Cvar_Set((*cvar)->name, "");
-			(*cvar)->modified = qfalse;
+			PCRE2_UCHAR buffer[256];
+			pcre2_get_error_message(errnumber, buffer, sizeof(buffer));
+			Com_Printf( S_COLOR_YELLOW "Failed to compile %s at character %i: %s\n", cvar->name, (int)erroffset, (const char*)buffer );
+			Cvar_Set(cvar->name, "");
+			cvar->modified = qfalse;
+			continue;
 		}
-
+		*match_data = pcre2_match_data_create_from_pattern(*regex, NULL);
 	}
 }
 
@@ -153,17 +173,25 @@ Check if a string is a match for any of the regular expressions in con_filter* c
 ===============
 */
 static qboolean Con_CheckFilters( const char* txt ) {
+	int		i;
 	char txt_nocolor[MAXPRINTMSG];
-	int ovector[30];
-	pcre** regex;
+	pcre2_code* regex;
+	pcre2_match_data* match_data;
 
 	Con_UpdateFilters();
 
 	Q_strncpyz( txt_nocolor, txt, sizeof( txt_nocolor ) );
 	Q_DecolorStr( txt_nocolor );
 
-	for ( regex = con_filters_compiled; regex - con_filters_compiled < MAX_CON_FILTERS; regex++ ) {
-		if ( *regex && pcre_exec( *regex, NULL, txt_nocolor, strlen( txt_nocolor ), 0, 0, ovector, 30 ) > 0 ) {
+	const PCRE2_SPTR subject = (PCRE2_SPTR)txt_nocolor;
+	const PCRE2_SIZE subject_len = (PCRE2_SIZE)strlen(txt_nocolor);
+
+	for ( i = 0; i < MAX_CON_FILTERS; ++i ) {
+		regex = con_filters_compiled[i];
+		if ( !regex ) continue;
+		match_data = con_filters_match_data[i];
+		assert( match_data );
+		if ( pcre2_match( regex, subject, subject_len, 0, 0, match_data, NULL ) >= 0 ) {
 			return qtrue;
 		}
 	}
@@ -180,12 +208,12 @@ Con_InitFilters
 static void Con_InitFilters( void ) {
 	int		i;
 	con_filter = Cvar_Get( "con_filter", "0", CVAR_ARCHIVE_ND );
-	for ( i = 0; i < MAX_CON_FILTERS; i++ ) {
+	for ( i = 0; i < MAX_CON_FILTERS; ++i ) {
 		con_filters[i] = Cvar_Get(va("con_filter%i", i), "", CVAR_ARCHIVE_ND);
 	}
 	Con_UpdateFilters();
 }
-#endif /* USE_PCRE */
+#endif /* USE_PCRE2 */
 
 /*
 ================
@@ -597,10 +625,10 @@ void Con_Init( void )
 	Cmd_AddCommand( "messagemode2", Con_MessageMode2_f );
 	Cmd_AddCommand( "messagemode3", Con_MessageMode3_f );
 	Cmd_AddCommand( "messagemode4", Con_MessageMode4_f );
-#ifdef USE_PCRE
-	Cmd_AddCommand( "pcre_version", Con_ShowPCREVersion_f );
+#ifdef USE_PCRE2
+	Cmd_AddCommand( "pcre2_version", Con_ShowPCREVersion_f );
 	Con_InitFilters();
-#endif /* USE_PCRE */
+#endif /* USE_PCRE2 */
 }
 
 
@@ -619,9 +647,9 @@ void Con_Shutdown( void )
 	Cmd_RemoveCommand( "messagemode2" );
 	Cmd_RemoveCommand( "messagemode3" );
 	Cmd_RemoveCommand( "messagemode4" );
-#ifdef USE_PCRE
-	Cmd_RemoveCommand( "pcre_version" );
-#endif /* USE_PCRE */
+#ifdef USE_PCRE2
+	Cmd_RemoveCommand( "pcre2_version" );
+#endif /* USE_PCRE2 */
 }
 
 
@@ -774,11 +802,11 @@ void CL_ConsolePrint( const char *txt ) {
 		return;
 	}
 
-#ifdef USE_PCRE
+#ifdef USE_PCRE2
 	if ( con_filter && con_filter->integer && Con_CheckFilters( txt ) ) {
 		return;
 	}
-#endif /* USE_PCRE */
+#endif /* USE_PCRE2 */
 
 	// TTimo - prefix for text that shows up in console but not in notify
 	// backported from RTCW
