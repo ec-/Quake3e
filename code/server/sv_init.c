@@ -755,6 +755,8 @@ void SV_Init( void )
 	Cvar_SetDescription( sv_zombietime, "Seconds to sink messages after disconnect." );
 	Cvar_Get ("nextmap", "", CVAR_TEMP );
 
+	sv_entityPath = Cvar_Get("sv_entityPath", "maps", CVAR_ARCHIVE );
+
 	sv_allowDownload = Cvar_Get ("sv_allowDownload", "1", CVAR_SERVERINFO);
 	Cvar_SetDescription( sv_allowDownload, "Toggle the ability for clients to download files maps etc. from server." );
 	Cvar_Get ("sv_dlURL", "", CVAR_SERVERINFO | CVAR_ARCHIVE);

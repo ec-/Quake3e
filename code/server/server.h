@@ -303,6 +303,8 @@ extern	cvar_t	*sv_lanForceRate;
 extern	cvar_t *sv_levelTimeReset;
 extern	cvar_t *sv_filter;
 
+extern cvar_t *sv_entityPath;
+
 #ifdef USE_BANS
 extern	cvar_t	*sv_banFile;
 extern	serverBan_t serverBans[SERVER_MAXBANS];
