@@ -2987,7 +2987,7 @@ static void Com_ExecuteCfg( void )
 	Cbuf_ExecuteText(EXEC_NOW, "exec default.cfg\n");
 	Cbuf_Execute(); // Always execute after exec to prevent text buffer overflowing
 
-	if(!Com_SafeMode())
+	if (!Com_SafeMode())
 	{
 		// skip the q3config.cfg and autoexec.cfg if "safe" is on the command line
 		Cbuf_ExecuteText(EXEC_NOW, "exec " Q3CONFIG_CFG "\n");
@@ -4073,8 +4073,8 @@ void Com_WriteConfiguration( void ) {
 	Com_WriteConfigToFile( Q3CONFIG_CFG );
 
 #ifndef DEDICATED
-	gamedir = Cvar_VariableString( "fs_game" );
-	basegame = Cvar_VariableString( "fs_basegame" );
+	gamedir = FS_GetCurrentGameDir();
+	basegame = FS_GetBaseGameDir();
 	if ( UI_usesUniqueCDKey() && gamedir[0] && Q_stricmp( basegame, gamedir ) ) {
 		Com_WriteCDKey( gamedir, &cl_cdkey[16] );
 	} else {
@@ -4368,7 +4368,10 @@ void Com_Frame( qboolean noDelay ) {
 			timeBeforeEvents = Sys_Milliseconds();
 		}
 		Com_EventLoop();
-		Cbuf_Execute();
+
+		if ( !Cbuf_Wait() ) {
+			Cbuf_Execute();
+		}
 
 		//
 		// client side
