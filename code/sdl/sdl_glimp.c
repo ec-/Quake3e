@@ -348,17 +348,11 @@ static int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qbool
 		{ // reduce depthBits
 			if (testDepthBits == 24)
 				testDepthBits = 16;
-			else if (testDepthBits == 16)
-				testDepthBits = 8;
 		}
 
 		if ((i % 4) == 1)
 		{ // reduce stencilBits
-			if (testStencilBits == 24)
-				testStencilBits = 16;
-			else if (testStencilBits == 16)
-				testStencilBits = 8;
-			else
+			if (testStencilBits == 8)
 				testStencilBits = 0;
 		}
 

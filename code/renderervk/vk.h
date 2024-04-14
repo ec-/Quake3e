@@ -14,7 +14,7 @@
 
 #define VERTEX_BUFFER_SIZE (4 * 1024 * 1024)
 #define IMAGE_CHUNK_SIZE (32 * 1024 * 1024)
-#define MAX_IMAGE_CHUNKS 48
+#define MAX_IMAGE_CHUNKS 56
 
 #define NUM_COMMAND_BUFFERS 2	// number of command buffers / render semaphores / framebuffer sets
 
