@@ -865,7 +865,7 @@ Returns first baseline index to drop due to msg overflow
 */
 static int Record_CalculateBaselineCutoff( record_entityset_t *baselines, msg_t msg ) {
 	int i;
-	byte buffer[MAX_MSGLEN];
+	byte buffer[MAX_MSGLEN_BUF];
 	entityState_t nullstate;
 
 	msg.data = buffer;

@@ -260,7 +260,7 @@ Based on sv_client.c->SV_SendClientGameState
 static void Record_SendSpectatorGamestate( spectator_t *spectator ) {
 	client_t *cl = &spectator->cl;
 	msg_t msg;
-	byte msgBuf[MAX_MSGLEN];
+	byte msgBuf[MAX_MSGLEN_BUF];
 
 	if ( SVC_RateLimit( &cl->gamestate_rate, 4, 1000 ) ) {
 		return;
@@ -273,7 +273,7 @@ static void Record_SendSpectatorGamestate( spectator_t *spectator ) {
 	cl->gamestateMessageNum = cl->netchan.outgoingSequence;
 
 	// Initialize message
-	Record_InitSpectatorMessage( cl, &msg, msgBuf, sizeof( msgBuf ) );
+	Record_InitSpectatorMessage( cl, &msg, msgBuf, MAX_MSGLEN );
 
 	// Write gamestate message
 	Record_WriteGamestateMessage( &sps->currentBaselines, sv.configstrings, 0, cl->reliableSequence, &msg,
@@ -293,7 +293,7 @@ Based on sv_snapshot.c->SV_SendClientSnapshot
 static void Record_SendSpectatorSnapshot( spectator_t *spectator ) {
 	client_t *cl = &spectator->cl;
 	msg_t msg;
-	byte msg_buf[MAX_MSGLEN];
+	byte msg_buf[MAX_MSGLEN_BUF];
 	spectator_frame_t *current_frame = &spectator->frames[cl->netchan.outgoingSequence % PACKET_BACKUP];
 	spectator_frame_t *delta_frame = 0;
 	int delta_frame_offset = 0;
@@ -335,7 +335,7 @@ static void Record_SendSpectatorSnapshot( spectator_t *spectator ) {
 	}
 
 	// Initialize message
-	Record_InitSpectatorMessage( cl, &msg, msg_buf, sizeof( msg_buf ) );
+	Record_InitSpectatorMessage( cl, &msg, msg_buf, MAX_MSGLEN );
 
 	// Write snapshot message
 	Record_WriteSnapshotMessage( &sps->frameEntities[current_frame->frameEntitiesPosition % FRAME_ENTITY_COUNT],

@@ -101,14 +101,14 @@ Based on cl_main.c->CL_Record_f
 */
 static void Record_WriteDemoGamestate( record_entityset_t *baselines, char **configstrings,
 		int clientNum, record_demo_writer_t *rdw ) {
-	byte buffer[MAX_MSGLEN];
+	byte buffer[MAX_MSGLEN_BUF];
 	msg_t msg;
 
 	// Delta from baselines for next snapshot
 	rdw->haveDelta = qfalse;
 	rdw->baselines = *baselines;
 
-	MSG_Init( &msg, buffer, sizeof( buffer ) );
+	MSG_Init( &msg, buffer, MAX_MSGLEN );
 
 	MSG_WriteLong( &msg, 0 );
 
@@ -143,10 +143,10 @@ Based on sv.snapshot.c->SV_SendClientSnapshot
 static void Record_WriteDemoSnapshot( record_entityset_t *entities, record_visibility_state_t *visibility,
 		playerState_t *ps, int svTime, record_demo_writer_t *rdw ) {
 	int i;
-	byte buffer[MAX_MSGLEN];
+	byte buffer[MAX_MSGLEN_BUF];
 	msg_t msg;
 
-	MSG_Init( &msg, buffer, sizeof( buffer ) );
+	MSG_Init( &msg, buffer, MAX_MSGLEN );
 
 	MSG_WriteLong( &msg, 0 );
 
