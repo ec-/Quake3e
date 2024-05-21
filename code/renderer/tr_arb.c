@@ -1110,7 +1110,7 @@ void FBO_Clean( frameBuffer_t *fb )
 					fb->depthStencil = 0;
 				}
 #else
-				if ( r_stencilbits->integer == 0 )
+				if ( glConfig.stencilBits == 0 )
 					qglFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0 );
 				else
 					qglFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, 0, 0 );
@@ -1165,7 +1165,7 @@ static GLuint FBO_CreateDepthTextureOrBuffer( GLsizei width, GLsizei height )
 	GLuint buffer;
 	qglGenRenderbuffers( 1, &buffer );
 	qglBindRenderbuffer( GL_RENDERBUFFER, buffer );
-	if ( r_stencilbits->integer == 0 )
+	if ( glConfig.stencilBits == 0 )
 		qglRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, width, height );
 	else
 		qglRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height );
@@ -1176,7 +1176,7 @@ static GLuint FBO_CreateDepthTextureOrBuffer( GLsizei width, GLsizei height )
 	GL_BindTexture( 0, tex );
 	qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
 	qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-	if ( r_stencilbits->integer == 0 )
+	if ( glConfig.stencilBits == 0 )
 		qglTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL );
 	else
 		qglTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL );
@@ -1336,12 +1336,12 @@ static qboolean FBO_Create( frameBuffer_t *fb, GLsizei width, GLsizei height, qb
 		fb->depthStencil = FBO_CreateDepthTextureOrBuffer( width, height );
 #endif
 #ifdef DEPTH_RENDER_BUFFER
-		if ( r_stencilbits->integer == 0 )
+		if ( glConfig.stencilBits == 0 )
 			qglFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fb->depthStencil );
 		else
 			qglFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, fb->depthStencil );
 #else
-		if ( r_stencilbits->integer == 0 )
+		if ( glConfig.stencilBits == 0 )
 			qglFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, fb->depthStencil, 0 );
 		else
 			qglFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, fb->depthStencil, 0 );
@@ -1413,7 +1413,7 @@ static qboolean FBO_CreateMS( frameBuffer_t *fb, int width, int height )
 
 	qglGenRenderbuffers( 1, &fb->depthStencil );
 	qglBindRenderbuffer( GL_RENDERBUFFER, fb->depthStencil );
-	if ( r_stencilbits->integer == 0 )
+	if ( glConfig.stencilBits == 0 )
 		qglRenderbufferStorageMultisample( GL_RENDERBUFFER, nSamples, GL_DEPTH_COMPONENT32, width, height );
 	else
 		qglRenderbufferStorageMultisample( GL_RENDERBUFFER, nSamples, GL_DEPTH24_STENCIL8, width, height );
@@ -1424,7 +1424,7 @@ static qboolean FBO_CreateMS( frameBuffer_t *fb, int width, int height )
 		return qfalse;
 	}
 
-	if ( r_stencilbits->integer == 0 )
+	if ( glConfig.stencilBits == 0 )
 		qglFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fb->depthStencil );
 	else
 		qglFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, fb->depthStencil );

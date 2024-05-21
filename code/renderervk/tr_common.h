@@ -71,7 +71,7 @@ extern int       maxAnisotropy;
 //
 // cvars
 //
-extern cvar_t *r_stencilbits;			// number of desired stencil bits
+//extern cvar_t *r_stencilbits;			// number of desired stencil bits
 extern cvar_t *r_texturebits;			// number of desired texture bits
 										// 0 = use framebuffer depth
 										// 16 = use 16-bit textures

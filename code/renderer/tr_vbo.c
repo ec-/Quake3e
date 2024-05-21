@@ -401,7 +401,7 @@ static qboolean isStaticTCgen( shaderStage_t *stage, int bundle )
 		case TCGEN_TEXTURE:
 			return qtrue;
 		case TCGEN_ENVIRONMENT_MAPPED:
-			if ( bundle == 0 && isStaticTCmod( &stage->bundle[bundle] ) ) {
+			if ( bundle == 0 && stage->bundle[bundle].numTexMods == 0 ) {
 				stage->tessFlags |= TESS_ENV0 << bundle;
 				stage->tessFlags &= ~( TESS_ST0 << bundle );
 				return qtrue;
