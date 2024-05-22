@@ -640,12 +640,15 @@ void SV_DirectConnect( const netadr_t *from ) {
 			Com_Printf( "%s:reconnect\n", NET_AdrToString( from ) );
 			newcl = cl;
 
-			// this doesn't work because it nukes the players userinfo
+			if ( newcl->state >= CS_CONNECTED ) {
+				// call QVM disconnect function before calling connect again
+				// fixes issues such as disappearing CTF flags in unpatched mods
+				VM_Call( gvm, 1, GAME_CLIENT_DISCONNECT, newcl - svs.clients );
 
-//			// disconnect the client from the game first so any flags the
-//			// player might have are dropped
-//			VM_Call( gvm, GAME_CLIENT_DISCONNECT, 1, newcl - svs.clients );
-			//
+				// don't leak memory or file handles due to e.g. downloads in progress
+				SV_FreeClient( newcl );
+			}
+
 			goto gotnewcl;
 		}
 	}
