@@ -2221,6 +2221,11 @@ void SV_ExecuteClientMessage( client_t *cl, msg_t *msg ) {
 		// TTimo - use a comparison here to catch multiple map_restart
 		if ( serverId - sv.restartedServerId >= 0 && serverId - sv.serverId < 0 ) {
 			// they just haven't caught the \map_restart yet
+			if ( cl->state < CS_ACTIVE ) {
+				// need to activate client, or serverid configstring won't be sent and we will
+				// be stuck in this check
+				SV_ClientEnterWorld( cl, NULL );
+			}
 			Com_DPrintf( "%s: ignoring pre map_restart / outdated client message\n", cl->name );
 			return;
 		}

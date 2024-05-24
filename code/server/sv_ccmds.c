@@ -351,13 +351,8 @@ static void SV_MapRestart_f( void ) {
 			continue;
 		}
 
-		if ( client->state == CS_ACTIVE )
+		if ( client->state == CS_ACTIVE ) {
 			SV_ClientEnterWorld( client, &client->lastUsercmd );
-		else {
-			// If we don't reset client->lastUsercmd and are restarting during map load,
-			// the client will hang because we'll use the last Usercmd from the previous map,
-			// which is wrong obviously.
-			SV_ClientEnterWorld( client, NULL );
 		}
 	}
 
