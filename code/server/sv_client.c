@@ -451,7 +451,7 @@ void SV_PrintClientStateChange( const client_t *cl, clientState_t newState ) {
 	if ( cl->name[0] != '\0' ) {
 		Com_Printf( "Going from %s to %s for %s\n", SV_GetStateName( cl->state ), SV_GetStateName( newState ), cl->name );
 	} else {
-		Com_Printf( "Going from %s to %s for client %d\n", SV_GetStateName( cl->state ), SV_GetStateName( newState ), cl - svs.clients );
+		Com_Printf( "Going from %s to %s for client %d\n", SV_GetStateName( cl->state ), SV_GetStateName( newState ), (int)(cl - svs.clients) );
 	}
 	
 }
