@@ -291,13 +291,13 @@ static void SV_MapRestart_f( void ) {
 	// generate a new serverid	
 	// TTimo - don't update restartedserverId there, otherwise we won't deal correctly with multiple map_restart
 	sv.serverId = com_frameTime;
-	Cvar_Set( "sv_serverid", va("%i", sv.serverId ) );
+	Cvar_SetIntegerValue( "sv_serverid", sv.serverId );
 
 	// if a map_restart occurs while a client is changing maps, we need
 	// to give them the correct time so that when they finish loading
 	// they don't violate the backwards time check in cl_cgame.c
-	for (i=0 ; i<sv_maxclients->integer ; i++) {
-		if (svs.clients[i].state == CS_PRIMED) {
+	for ( i = 0; i < sv_maxclients->integer; i++ ) {
+		if ( svs.clients[i].state == CS_PRIMED ) {
 			svs.clients[i].oldServerTime = sv.restartTime;
 		}
 	}
@@ -351,13 +351,8 @@ static void SV_MapRestart_f( void ) {
 			continue;
 		}
 
-		if ( client->state == CS_ACTIVE )
-			SV_ClientEnterWorld( client, &client->lastUsercmd );
-		else {
-			// If we don't reset client->lastUsercmd and are restarting during map load,
-			// the client will hang because we'll use the last Usercmd from the previous map,
-			// which is wrong obviously.
-			SV_ClientEnterWorld( client, NULL );
+		if ( client->state == CS_ACTIVE ) {
+			SV_ClientEnterWorld( client );
 		}
 	}
 

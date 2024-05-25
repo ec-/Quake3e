@@ -424,6 +424,39 @@ static const char *SV_FindCountry( const char *tld ) {
 }
 
 
+static const char *SV_GetStateName( clientState_t state ) {
+	switch ( state ) {
+		case CS_FREE:      return "CS_FREE";
+		case CS_ZOMBIE:    return "CS_ZOMBIE";
+		case CS_CONNECTED: return "CS_CONNECTED";
+		case CS_PRIMED:    return "CS_PRIMED";
+		case CS_ACTIVE:    return "CS_ACTIVE";
+		default:           return "CS_UNKNOWN";
+	}
+}
+
+
+void SV_PrintClientStateChange( const client_t *cl, clientState_t newState ) {
+
+	if ( cl->state == newState ) {
+		return;
+	}
+
+#ifndef _DEBUG
+	if ( com_developer->integer == 0 ) {
+		return;
+	}
+#endif // !_DEBUG
+
+	if ( cl->name[0] != '\0' ) {
+		Com_Printf( "Going from %s to %s for %s\n", SV_GetStateName( cl->state ), SV_GetStateName( newState ), cl->name );
+	} else {
+		Com_Printf( "Going from %s to %s for client %d\n", SV_GetStateName( cl->state ), SV_GetStateName( newState ), cl - svs.clients );
+	}
+	
+}
+
+
 /*
 ==================
 SV_DirectConnect
@@ -772,7 +805,7 @@ gotnewcl:
 		NET_OutOfBandPrint( NS_SERVER, from, "connectResponse %d", challenge );
 	}
 
-	Com_DPrintf( "Going from CS_FREE to CS_CONNECTED for %s\n", newcl->name );
+	SV_PrintClientStateChange( newcl, CS_CONNECTED );
 
 	newcl->state = CS_CONNECTED;
 	newcl->lastSnapshotTime = svs.time - 9999; // generate a snapshot immediately
@@ -826,7 +859,7 @@ or crashing -- SV_FinalMessage() will handle that
 =====================
 */
 void SV_DropClient( client_t *drop, const char *reason ) {
-	char	name[ MAX_NAME_LENGTH ];
+	char	name[ sizeof( drop->name ) ];
 	qboolean isBot;
 	int		i;
 
@@ -870,7 +903,8 @@ void SV_DropClient( client_t *drop, const char *reason ) {
 		// bots shouldn't go zombie, as there's no real net connection.
 		drop->state = CS_FREE;
 	} else {
-		Com_DPrintf( "Going to CS_ZOMBIE for %s\n", name );
+		Q_strncpyz( drop->name, name, sizeof( name ) );
+		SV_PrintClientStateChange( drop, CS_ZOMBIE );
 		drop->state = CS_ZOMBIE;		// become free in a few seconds
 	}
 
@@ -990,9 +1024,8 @@ static void SV_SendClientGameState( client_t *client ) {
 
 	Com_DPrintf( "SV_SendClientGameState() for %s\n", client->name );
 
-	if ( client->state != CS_PRIMED ) {
-		Com_DPrintf( "Going from CS_CONNECTED to CS_PRIMED for %s\n", client->name );
-	}
+	SV_PrintClientStateChange( client, CS_PRIMED );
+
 	client->state = CS_PRIMED;
 
 	client->pureAuthentic = qfalse;
@@ -1005,6 +1038,10 @@ static void SV_SendClientGameState( client_t *client ) {
 	// notice that it is from a different serverid and that the
 	// gamestate message was not just sent, forcing a retransmit
 	client->gamestateMessageNum = client->netchan.outgoingSequence;
+
+	// accept usercmds starting from current server time only
+	Com_Memset( &client->lastUsercmd, 0x0, sizeof( client->lastUsercmd ) );
+	client->lastUsercmd.serverTime = sv.time - 1;
 
 	MSG_Init( &msg, msgBuffer, MAX_MSGLEN );
 
@@ -1072,11 +1109,12 @@ static void SV_SendClientGameState( client_t *client ) {
 SV_ClientEnterWorld
 ==================
 */
-void SV_ClientEnterWorld( client_t *client, usercmd_t *cmd ) {
+void SV_ClientEnterWorld( client_t *client ) {
 	int		clientNum;
 	sharedEntity_t *ent;
 
-	Com_DPrintf( "Going from CS_PRIMED to CS_ACTIVE for %s\n", client->name );
+	SV_PrintClientStateChange( client, CS_ACTIVE );
+
 	client->state = CS_ACTIVE;
 
 	// resend all configstrings using the cs commands since these are
@@ -1092,13 +1130,8 @@ void SV_ClientEnterWorld( client_t *client, usercmd_t *cmd ) {
 	client->deltaMessage = client->netchan.outgoingSequence - (PACKET_BACKUP + 1); // force delta reset
 	client->lastSnapshotTime = svs.time - 9999; // generate a snapshot immediately
 
-	if(cmd)
-		memcpy(&client->lastUsercmd, cmd, sizeof(client->lastUsercmd));
-	else
-		memset(&client->lastUsercmd, '\0', sizeof(client->lastUsercmd));
-
 	// call the game begin function
-	VM_Call( gvm, 1, GAME_CLIENT_BEGIN, client - svs.clients );
+	VM_Call( gvm, 1, GAME_CLIENT_BEGIN, clientNum );
 }
 
 
@@ -2095,7 +2128,7 @@ static void SV_UserMove( client_t *cl, msg_t *msg, qboolean delta ) {
 			}
 			return;
 		}
-		SV_ClientEnterWorld( cl, &cmds[0] );
+		SV_ClientEnterWorld( cl );
 		// the moves can be processed normally
 	}
 
