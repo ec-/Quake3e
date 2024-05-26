@@ -323,10 +323,10 @@ jobs:
     strategy:
       matrix:
         include:
-#          - artifact_dir: linux-aarch64
-#            artifact_name: quake3e-linux-aarch64.zip
+#         - artifact_dir: linux-aarch64
+#           artifact_name: quake3e-linux-aarch64.zip
 
-#          - artifact_dir: linux-armv7
+#         - artifact_dir: linux-armv7
 #           artifact_name: quake3e-linux-armv7.zip
 
           - artifact_dir: linux-x86
