@@ -240,9 +240,10 @@ static void SV_MapRestart_f( void ) {
 	const char		*denied;
 	qboolean	isBot;
 	int			delay;
+	static int	lastRestartFrame;
 
 	// make sure we aren't restarting twice in the same frame
-	if ( com_frameTime == sv.serverId ) {
+	if ( com_frameTime == lastRestartFrame ) {
 		return;
 	}
 
@@ -287,11 +288,6 @@ static void SV_MapRestart_f( void ) {
 	// toggle the server bit so clients can detect that a
 	// map_restart has happened
 	svs.snapFlagServerBit ^= SNAPFLAG_SERVERCOUNT;
-
-	// generate a new serverid	
-	// TTimo - don't update restartedserverId there, otherwise we won't deal correctly with multiple map_restart
-	sv.serverId = com_frameTime;
-	Cvar_SetIntegerValue( "sv_serverid", sv.serverId );
 
 	// if a map_restart occurs while a client is changing maps, we need
 	// to give them the correct time so that when they finish loading
@@ -360,6 +356,18 @@ static void SV_MapRestart_f( void ) {
 	sv.time += 100;
 	VM_Call( gvm, 1, GAME_RUN_FRAME, sv.time );
 	svs.time += 100;
+
+	for ( i = 0 ; i < sv_maxclients->integer ; i++ ) {
+		client = &svs.clients[i];
+		if ( client->state >= CS_PRIMED ) {
+			// accept usercmds starting from current server time only
+			// to emulate original behavior which dropped pre-restart commands via serverid check
+			Com_Memset( &client->lastUsercmd, 0x0, sizeof( client->lastUsercmd ) );
+			client->lastUsercmd.serverTime = sv.time - 1;
+		}
+	}
+
+	lastRestartFrame = com_frameTime;
 }
 
 
