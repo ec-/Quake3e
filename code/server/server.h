@@ -67,7 +67,7 @@ typedef struct {
 	serverState_t	state;
 	qboolean		restarting;			// if true, send configstring changes during SS_LOADING
 	int				serverId;			// changes each server start
-	int				restartedServerId;	// serverId before a map_restart
+	int				restartedServerId;	// last time \map_restart was issued
 	int				checksumFeed;		// the feed key that we use to compute the pure checksum strings
 	// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=475
 	// the serverId associated with the current checksumFeed (always <= serverId)
@@ -351,11 +351,12 @@ void SV_GetChallenge( const netadr_t *from );
 void SV_InitChallenger( void );
 
 void SV_DirectConnect( const netadr_t *from );
+void SV_PrintClientStateChange( const client_t *cl, clientState_t newState );
 
 void SV_ExecuteClientMessage( client_t *cl, msg_t *msg );
 void SV_UserinfoChanged( client_t *cl, qboolean updateUserinfo, qboolean runFilter );
 
-void SV_ClientEnterWorld( client_t *client, usercmd_t *cmd );
+void SV_ClientEnterWorld( client_t *client );
 void SV_FreeClient( client_t *client );
 void SV_DropClient( client_t *drop, const char *reason );
 

@@ -262,7 +262,7 @@ jobs:
     steps:
 
     - name: Install tools
-      run: brew install coreutils pkg-config sdl2
+      run: brew install coreutils sdl2 # pkg-config
 
     - uses: actions/checkout@v4
       with:
@@ -305,7 +305,7 @@ jobs:
 #         7z a -r quake3e-linux-armv7.zip    ./linux-armv7/*
 
       - name: Create latest build
-        uses: marvinpinto/action-automatic-releases@latest
+        uses: czietz/action-automatic-releases@latest
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           automatic_release_tag: "latest"

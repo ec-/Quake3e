@@ -1117,7 +1117,7 @@ static void SV_CheckTimeouts( void ) {
 
 		if ( cl->state == CS_ZOMBIE && cl->lastPacketTime - zombiepoint < 0 ) {
 			// using the client id cause the cl->name is empty at this point
-			Com_DPrintf( "Going from CS_ZOMBIE to CS_FREE for client %d\n", i );
+			SV_PrintClientStateChange( cl, CS_FREE );
 			cl->state = CS_FREE;	// can now be reused
 			continue;
 		}
