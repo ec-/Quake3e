@@ -896,87 +896,33 @@ int Com_FilterPath( const char *filter, const char *name )
 	return Com_Filter( new_filter, new_name );
 }
 
+
 /*
 ================
 Com_RealTime
 ================
 */
 int Com_RealTime(qtime_t *qtime) {
-	static qboolean inited = qfalse;
-	static long int offset;
-	static unsigned char month_days[12]={31,28,31,30,31,30,31,31,30,31,30,31};
-	static const unsigned char week_days[7] = {4,5,6,0,1,2,3};
-
-	if (inited == qfalse)
-	{
-		offset = time(NULL);
-		offset -= Sys_Milliseconds()/1000;
-	#ifdef _WIN32
-		_tzset();
-		offset -= _timezone;
-	#else
-		tzset();
-		offset -= timezone;
-	#endif 
-
-		inited = qtrue;
-	}
-
 	time_t t;
+	struct tm *tms;
 
-	t = Sys_Milliseconds()/1000;
-	t += offset;
-
-	if (qtime)
-	{
-    int i;
-		time_t tmp = t;
-    int leap_days=0; 
-
-    qtime->tm_sec = tmp%60;
-    tmp /= 60;
-    qtime->tm_min = tmp%60;
-    tmp /= 60;
-    qtime->tm_hour = tmp%24;
-    tmp /= 24;
-        
-    int days_since_epoch = tmp;      //number of days since epoch
-    qtime->tm_wday = week_days[days_since_epoch%7];  //Calculating WeekDay
-    																								 //
-    qtime->tm_year = 1970+(days_since_epoch/365); // ball parking year, may not be accurate!
- 
-    for (i=1972; i<qtime->tm_year; i+=4)      // Calculating number of leap days since epoch/1970
-    {
-      if(((i%4==0) && (i%100!=0)) || (i%400==0)) leap_days++;
-    }
-            
-    qtime->tm_year = 1970+((days_since_epoch - leap_days)/365); // Calculating accurate current year by (days_since_epoch - extra leap days)
-    qtime->tm_yday = ((days_since_epoch - leap_days)%365)+1;
-   
-    if(((qtime->tm_year%4==0) && (qtime->tm_year%100!=0)) || (qtime->tm_year%400==0))  
-    {
-      month_days[1]=29;     //February = 29 days for leap years
-    }
-    else month_days[1]=28; //February = 28 days for non-leap years 
-   
-    int temp_days=0;
-   
-    for (qtime->tm_mon=0 ; qtime->tm_mon <= 11 ; qtime->tm_mon++) //calculating current Month
-    {
-      if (qtime->tm_yday <= temp_days) break; 
-      temp_days = temp_days + month_days[qtime->tm_mon];
-    }
-    
-    temp_days = temp_days - month_days[qtime->tm_mon-1]; //calculating current Date
-    qtime->tm_mday = qtime->tm_yday - temp_days;
-
-		qtime->tm_year -= 1900;
-		qtime->tm_mon -= 1;
-		qtime->tm_yday -= 1;
-  } 
+	t = time(NULL);
+	if (!qtime)
+		return t;
+	tms = localtime(&t);
+	if (tms) {
+		qtime->tm_sec = tms->tm_sec;
+		qtime->tm_min = tms->tm_min;
+		qtime->tm_hour = tms->tm_hour;
+		qtime->tm_mday = tms->tm_mday;
+		qtime->tm_mon = tms->tm_mon;
+		qtime->tm_year = tms->tm_year;
+		qtime->tm_wday = tms->tm_wday;
+		qtime->tm_yday = tms->tm_yday;
+		qtime->tm_isdst = tms->tm_isdst;
+	}
 	return t;
 }
-
 
 
 /*
