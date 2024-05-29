@@ -1377,6 +1377,9 @@ static int SV_WriteDownloadToClient( client_t *cl )
 		Com_Printf( "clientDownload: %d : beginning \"%s\"\n", (int) (cl - svs.clients), cl->downloadName );
 
 		// Init
+		SV_PrintClientStateChange( cl, CS_CONNECTED );
+		cl->state = CS_CONNECTED;
+
 		cl->downloadCurrentBlock = cl->downloadClientBlock = cl->downloadXmitBlock = 0;
 		cl->downloadCount = 0;
 		cl->downloadEOF = qfalse;
