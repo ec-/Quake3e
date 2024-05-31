@@ -28,6 +28,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 cvar_t *s_volume;
 cvar_t *s_musicVolume;
+cvar_t *s_masterVolume;
 cvar_t *s_doppler;
 cvar_t *s_muteWhenMinimized;
 cvar_t *s_muteWhenUnfocused;
@@ -412,10 +413,13 @@ void S_Init( void )
 
 	s_volume = Cvar_Get( "s_volume", "0.8", CVAR_ARCHIVE );
 	Cvar_CheckRange( s_volume, "0", "1", CV_FLOAT );
-	Cvar_SetDescription( s_volume, "Sets master volume for all game audio." );
+	Cvar_SetDescription( s_volume, "Sets volume for sound effects." );
 	s_musicVolume = Cvar_Get( "s_musicVolume", "0.25", CVAR_ARCHIVE );
 	Cvar_CheckRange( s_musicVolume, "0", "1", CV_FLOAT );
 	Cvar_SetDescription( s_musicVolume, "Sets volume for in-game music only." );
+	s_masterVolume = Cvar_Get( "s_masterVolume", "1", CVAR_ARCHIVE );
+	Cvar_CheckRange( s_masterVolume, "0", "1", CV_FLOAT );
+	Cvar_SetDescription( s_masterVolume, "Sets master volume for all game audio." );
 	s_doppler = Cvar_Get( "s_doppler", "1", CVAR_ARCHIVE_ND );
 	Cvar_CheckRange( s_doppler, "0", "1", CV_INTEGER );
 	Cvar_SetDescription( s_doppler, "Enables doppler effect on moving projectiles." );
