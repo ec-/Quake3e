@@ -637,7 +637,10 @@ void Sys_Sleep( int msec ) {
 		return;
 	}
 #if 1
-	usleep( msec * 1000 );
+	struct timespec req;
+	req.tv_sec = msec / 1000;
+	req.tv_nsec = ( msec % 1000 ) * 1000000;
+	nanosleep( &req, NULL );
 #else
 	if ( com_dedicated->integer && stdin_active ) {
 		FD_ZERO( &fdset );
