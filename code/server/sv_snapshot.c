@@ -756,15 +756,18 @@ void SV_SendClientMessages( void )
 	svs.msgTime = Sys_Milliseconds();
 
 	// send a message to each connected client
-	for( i = 0; i < sv_maxclients->integer; i++ )
+	for ( i = 0; i < sv_maxclients->integer; i++ )
 	{
 		c = &svs.clients[ i ];
 		
 		if ( c->state == CS_FREE )
 			continue;		// not connected
 
-		if ( *c->downloadName )
-			continue;		// Client is downloading, don't send snapshots
+		//if ( *c->downloadName )
+		//	continue;		// Client is downloading, don't send snapshots
+
+		if ( c->state == CS_CONNECTED )
+			continue;		// waiting usercmd/downloading
 
 		// 1. Local clients get snapshots every server frame
 		// 2. Remote clients get snapshots depending from rate and requested number of updates

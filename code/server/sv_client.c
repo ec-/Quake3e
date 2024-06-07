@@ -1028,6 +1028,9 @@ static void SV_SendClientGameState( client_t *client ) {
 
 	client->state = CS_PRIMED;
 
+	client->gamestateAcked = qfalse;
+	client->downloading = qfalse;
+
 	client->pureAuthentic = qfalse;
 	client->gotCP = qfalse;
 
@@ -1061,11 +1064,12 @@ static void SV_SendClientGameState( client_t *client ) {
 
 	// write the configstrings
 	for ( start = 0 ; start < MAX_CONFIGSTRINGS ; start++ ) {
-		if (sv.configstrings[start][0]) {
+		if ( *sv.configstrings[ start ] != '\0' ) {
 			MSG_WriteByte( &msg, svc_configstring );
 			MSG_WriteShort( &msg, start );
-			MSG_WriteBigString( &msg, sv.configstrings[start] );
+			MSG_WriteBigString( &msg, sv.configstrings[ start ] );
 		}
+		client->csUpdated[ start ] = qfalse;
 	}
 
 	// write the baselines
@@ -1116,6 +1120,8 @@ void SV_ClientEnterWorld( client_t *client ) {
 	SV_PrintClientStateChange( client, CS_ACTIVE );
 
 	client->state = CS_ACTIVE;
+
+	client->gamestateAcked = qtrue;
 
 	// resend all configstrings using the cs commands since these are
 	// no longer sent when the client is CS_PRIMED
@@ -1251,6 +1257,12 @@ static void SV_BeginDownload_f( client_t *cl ) {
 	// cl->downloadName is non-zero now, SV_WriteDownloadToClient will see this and open
 	// the file itself
 	Q_strncpyz( cl->downloadName, Cmd_Argv(1), sizeof(cl->downloadName) );
+
+	SV_PrintClientStateChange( cl, CS_CONNECTED );
+	cl->state = CS_CONNECTED;
+	cl->gentity = NULL;
+
+	cl->downloading = qtrue;
 }
 
 
@@ -1375,10 +1387,6 @@ static int SV_WriteDownloadToClient( client_t *cl )
 		}
 
 		Com_Printf( "clientDownload: %d : beginning \"%s\"\n", (int) (cl - svs.clients), cl->downloadName );
-
-		// Init
-		SV_PrintClientStateChange( cl, CS_CONNECTED );
-		cl->state = CS_CONNECTED;
 
 		cl->downloadCurrentBlock = cl->downloadClientBlock = cl->downloadXmitBlock = 0;
 		cl->downloadCount = 0;
@@ -2125,7 +2133,7 @@ static void SV_UserMove( client_t *cl, msg_t *msg, qboolean delta ) {
 	if ( cl->state == CS_PRIMED ) {
 		if ( sv_pure->integer != 0 && !cl->gotCP ) {
 			// we didn't get a cp yet, don't assume anything and just send the gamestate all over again
-			if ( !SVC_RateLimit( &cl->gamestate_rate, 4, 1000 ) ) {
+			if ( !SVC_RateLimit( &cl->gamestate_rate, 2, 1000 ) ) {
 				Com_DPrintf( "%s: didn't get cp command, resending gamestate\n", cl->name );
 				SV_SendClientGameState( cl );
 			}
@@ -2249,25 +2257,29 @@ void SV_ExecuteClientMessage( client_t *cl, msg_t *msg ) {
 	// the gamestate changes.  After the download is finished, we'll
 	// notice and send it a new game state
 	//
-	// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=536
-	// don't drop as long as previous command was a nextdl, after a dl is done, downloadName is set back to ""
-	// but we still need to read the next message to move to next download or send gamestate
-	// I don't like this hack though, it must have been working fine at some point, suspecting the fix is somewhere else
-	if ( serverId != sv.serverId && !*cl->downloadName && !strstr(cl->lastClientCommandString, "nextdl") ) {
-		// if we can tell that the client has dropped the last gamestate we sent them, resend it
-		if ( cl->state != CS_ACTIVE && cl->messageAcknowledge - cl->gamestateMessageNum > 0 ) {
-			if ( !SVC_RateLimit( &cl->gamestate_rate, 4, 1000 ) ) {
-				if ( cl->gentity )
-					Com_DPrintf( "%s: dropped gamestate, resending\n", cl->name );
+	if ( cl->state == CS_ACTIVE ) {
+		if ( serverId != sv.serverId ) {
+			Com_DPrintf( "%s: ignoring pre map_restart / outdated client message\n", cl->name );
+			return;
+		}
+	} else if ( cl->state == CS_CONNECTED ) {
+		if ( !cl->downloading ) {
+			// send initial gamestate, client may not acknowledge it in next command but start downloading after SV_ClientCommand()
+			if ( !SVC_RateLimit( &cl->gamestate_rate, 2, 1000 ) ) {
 				SV_SendClientGameState( cl );
 			}
+			return;
 		}
-		return;
 	}
+	// else if ( cl->state == CS_PRIMED ) {
+		// in case of download intention client replies with (messageAcknowledge - gamestateMessageNum) >= 0 and (serverId == sv.serverId)
+		// in case of lost gamestate client replies with (messageAcknowledge - gamestateMessageNum) > 0 and (serverId == sv.serverId)
+		// in case of disconnect/etc. client replies with any serverId
+	//}
 
 	// this client has acknowledged the new gamestate so it's
 	// safe to start sending it the real time again
-	if( cl->oldServerTime && serverId == sv.serverId ){
+	if ( cl->oldServerTime && serverId == sv.serverId ) {
 		Com_DPrintf( "%s acknowledged gamestate\n", cl->name );
 		cl->oldServerTime = 0;
 	}
@@ -2285,6 +2297,24 @@ void SV_ExecuteClientMessage( client_t *cl, msg_t *msg ) {
 			return;	// disconnect command
 		}
 	} while ( 1 );
+
+	if ( cl->state == CS_PRIMED && !cl->gamestateAcked ) {
+		// not downloading and gamestate is not yet acknowledged
+		const int gsDelta = cl->messageAcknowledge - cl->gamestateMessageNum;
+		if ( gsDelta == 0 && serverId == sv.serverId ) {
+			// exact match, acknowledge
+			cl->gamestateAcked = qtrue;
+		} else {
+			// dropped gamestate or invalid serverId
+			if ( gsDelta > 0 ) {
+				Com_DPrintf( "%s: dropped gamestate, resending\n", cl->name );
+				if ( !SVC_RateLimit( &cl->gamestate_rate, 2, 1000 ) ) {
+					SV_SendClientGameState( cl );
+				}
+			}
+			return;
+		}
+	}
 
 	// read the usercmd_t
 	if ( c == clc_move ) {

@@ -67,7 +67,6 @@ typedef struct {
 	serverState_t	state;
 	qboolean		restarting;			// if true, send configstring changes during SS_LOADING
 	int				serverId;			// changes each server start
-	int				restartedServerId;	// last time \map_restart was issued
 	int				checksumFeed;		// the feed key that we use to compute the pure checksum strings
 	// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=475
 	// the serverId associated with the current checksumFeed (always <= serverId)
@@ -150,7 +149,6 @@ struct leakyBucket_s {
 	leakyBucket_t *prev, *next;
 };
 
-
 typedef struct client_s {
 	clientState_t	state;
 	char			userinfo[MAX_INFO_STRING];		// name, etc
@@ -168,6 +166,9 @@ typedef struct client_s {
 	char			lastClientCommandString[MAX_STRING_CHARS];
 	sharedEntity_t	*gentity;			// SV_GentityNum(clientnum)
 	char			name[MAX_NAME_LENGTH];			// extracted from userinfo, high bits masked
+
+	qboolean		gamestateAcked;		// set to qtrue when serverId = sv.serverId & messageAcknowledge = gamestateMessageNum
+	qboolean		downloading;		// set at "download", reset at gamestate retransmission
 
 	// downloading
 	char			downloadName[MAX_QPATH]; // if not empty string, we are downloading

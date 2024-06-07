@@ -511,7 +511,6 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 
 	// serverid should be different each time
 	sv.serverId = com_frameTime;
-	sv.restartedServerId = com_frameTime;
 	sv.checksumFeedServerId = sv.serverId;
 	Cvar_Set( "sv_serverid", va( "%i", sv.serverId ) );
 
@@ -568,10 +567,14 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 				// was connected before the level change
 				SV_DropClient( &svs.clients[i], denied );
 			} else {
-				if( !isBot ) {
+
+				svs.clients[i].gamestateAcked = qfalse;
+
+				if ( !isBot ) {
 					// when we get the next packet from a connected client,
 					// the new gamestate will be sent
 					svs.clients[i].state = CS_CONNECTED;
+					svs.clients[i].gentity = NULL;
 				}
 				else {
 					client_t		*client;

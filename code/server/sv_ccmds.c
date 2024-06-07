@@ -242,7 +242,7 @@ static void SV_MapRestart_f( void ) {
 	int			delay;
 
 	// make sure we aren't restarting twice in the same frame
-	if ( com_frameTime == sv.restartedServerId ) {
+	if ( com_frameTime == sv.serverId ) {
 		return;
 	}
 
@@ -287,6 +287,10 @@ static void SV_MapRestart_f( void ) {
 	// toggle the server bit so clients can detect that a
 	// map_restart has happened
 	svs.snapFlagServerBit ^= SNAPFLAG_SERVERCOUNT;
+
+	// generate a new serverid
+	sv.serverId = com_frameTime;
+	Cvar_SetIntegerValue( "sv_serverid", sv.serverId );
 
 	// if a map_restart occurs while a client is changing maps, we need
 	// to give them the correct time so that when they finish loading
@@ -365,8 +369,6 @@ static void SV_MapRestart_f( void ) {
 			client->lastUsercmd.serverTime = sv.time - 1;
 		}
 	}
-
-	sv.restartedServerId = com_frameTime;
 }
 
 
