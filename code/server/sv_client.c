@@ -2307,7 +2307,7 @@ void SV_ExecuteClientMessage( client_t *cl, msg_t *msg ) {
 		} else {
 			// dropped gamestate or invalid serverId
 			if ( gsDelta > 0 ) {
-				Com_DPrintf( "%s: dropped gamestate, resending\n", cl->name );
+				Com_DPrintf( "%s: %s gamestate, resending\n", cl->name, serverId != sv.serverId ? "outdated" : "dropped" );
 				if ( !SVC_RateLimit( &cl->gamestate_rate, 2, 1000 ) ) {
 					SV_SendClientGameState( cl );
 				}
