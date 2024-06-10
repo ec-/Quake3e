@@ -67,6 +67,7 @@ typedef struct {
 	serverState_t	state;
 	qboolean		restarting;			// if true, send configstring changes during SS_LOADING
 	int				serverId;			// changes each server start
+	int				restartedServerId;	// changes each map restart
 	int				checksumFeed;		// the feed key that we use to compute the pure checksum strings
 	// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=475
 	// the serverId associated with the current checksumFeed (always <= serverId)
@@ -169,6 +170,7 @@ typedef struct client_s {
 
 	qboolean		gamestateAcked;		// set to qtrue when serverId = sv.serverId & messageAcknowledge = gamestateMessageNum
 	qboolean		downloading;		// set at "download", reset at gamestate retransmission
+	// int				serverId;		// last acknowledged serverId
 
 	// downloading
 	char			downloadName[MAX_QPATH]; // if not empty string, we are downloading

@@ -1114,18 +1114,28 @@ SV_ClientEnterWorld
 ==================
 */
 void SV_ClientEnterWorld( client_t *client ) {
-	int		clientNum;
 	sharedEntity_t *ent;
+	qboolean isBot;
+	int clientNum;
 
-	SV_PrintClientStateChange( client, CS_ACTIVE );
+	isBot = client->netchan.remoteAddress.type == NA_BOT;
+
+	if ( !isBot ) {
+		SV_PrintClientStateChange( client, CS_ACTIVE );
+	} else {
+		// client->serverId = sv.serverId;
+	}
 
 	client->state = CS_ACTIVE;
 
 	client->gamestateAcked = qtrue;
+	client->oldServerTime = 0;
 
 	// resend all configstrings using the cs commands since these are
 	// no longer sent when the client is CS_PRIMED
-	SV_UpdateConfigstrings( client );
+	if ( !isBot ) {
+		SV_UpdateConfigstrings( client );
+	}
 
 	// set up the entity for the client
 	clientNum = client - svs.clients;
@@ -1263,6 +1273,7 @@ static void SV_BeginDownload_f( client_t *cl ) {
 	cl->gentity = NULL;
 
 	cl->downloading = qtrue;
+	cl->gamestateAcked = qfalse;
 }
 
 
@@ -1961,6 +1972,7 @@ Also called by bot code
 qboolean SV_ExecuteClientCommand( client_t *cl, const char *s ) {
 	const ucmd_t *ucmd;
 	qboolean bFloodProtect;
+	qboolean isBot;
 
 	Cmd_TokenizeString( s );
 
@@ -1972,7 +1984,8 @@ qboolean SV_ExecuteClientCommand( client_t *cl, const char *s ) {
 
 	// We don't do this when the client hasn't been active yet since it's
 	// normal to spam a lot of commands when downloading
-	bFloodProtect = cl->netchan.remoteAddress.type != NA_BOT && cl->state >= CS_ACTIVE;
+	isBot = cl->netchan.remoteAddress.type == NA_BOT ? qtrue: qfalse;
+	bFloodProtect = !isBot && cl->state >= CS_ACTIVE;
 
 	// see if it is a server level command
 	for ( ucmd = ucmds; ucmd->name; ucmd++ ) {
@@ -1991,6 +2004,11 @@ qboolean SV_ExecuteClientCommand( client_t *cl, const char *s ) {
 			break;
 		}
 	}
+
+	// if ( !isBot && ( !cl->gamestateAcked || sv.serverId != cl->serverId ) ) {
+	//		Com_Printf( "%s: ignoring pre map_restart / outdated client command '%s'\n", cl->name, s );
+	//	return qtrue;
+	// }
 
 #ifndef DEDICATED
 	if ( !com_cl_running->integer && bFloodProtect && SV_FloodProtect( cl ) ) {
@@ -2249,6 +2267,8 @@ void SV_ExecuteClientMessage( client_t *cl, msg_t *msg ) {
 
 	cl->justConnected = qfalse;
 
+	// cl->serverId = serverId;
+
 	// if this is a usercmd from a previous gamestate,
 	// ignore it or retransmit the current gamestate
 	//
@@ -2257,12 +2277,7 @@ void SV_ExecuteClientMessage( client_t *cl, msg_t *msg ) {
 	// the gamestate changes.  After the download is finished, we'll
 	// notice and send it a new game state
 	//
-	if ( cl->state == CS_ACTIVE ) {
-		if ( serverId != sv.serverId ) {
-			Com_DPrintf( "%s: ignoring pre map_restart / outdated client message\n", cl->name );
-			return;
-		}
-	} else if ( cl->state == CS_CONNECTED ) {
+	if ( cl->state == CS_CONNECTED ) {
 		if ( !cl->downloading ) {
 			// send initial gamestate, client may not acknowledge it in next command but start downloading after SV_ClientCommand()
 			if ( !SVC_RateLimit( &cl->gamestate_rate, 2, 1000 ) ) {
@@ -2270,19 +2285,21 @@ void SV_ExecuteClientMessage( client_t *cl, msg_t *msg ) {
 			}
 			return;
 		}
+	} else if ( !cl->gamestateAcked ) {
+		// eary check for gamestate acknowledge
+		if ( serverId == sv.serverId && cl->messageAcknowledge == cl->gamestateMessageNum ) {
+			cl->gamestateAcked = qtrue;
+			// this client has acknowledged the new gamestate so it's
+			// safe to start sending it the real time again
+			Com_DPrintf( "%s acknowledged gamestate\n", cl->name );
+			cl->oldServerTime = 0;
+		}
 	}
 	// else if ( cl->state == CS_PRIMED ) {
-		// in case of download intention client replies with (messageAcknowledge - gamestateMessageNum) >= 0 and (serverId == sv.serverId)
+		// in case of download intention client replies with (messageAcknowledge - gamestateMessageNum) >= 0 and (serverId == sv.serverId), sv.serverId can drift away later
 		// in case of lost gamestate client replies with (messageAcknowledge - gamestateMessageNum) > 0 and (serverId == sv.serverId)
 		// in case of disconnect/etc. client replies with any serverId
 	//}
-
-	// this client has acknowledged the new gamestate so it's
-	// safe to start sending it the real time again
-	if ( cl->oldServerTime && serverId == sv.serverId ) {
-		Com_DPrintf( "%s acknowledged gamestate\n", cl->name );
-		cl->oldServerTime = 0;
-	}
 
 	// read optional clientCommand strings
 	do {
@@ -2298,22 +2315,15 @@ void SV_ExecuteClientMessage( client_t *cl, msg_t *msg ) {
 		}
 	} while ( 1 );
 
-	if ( cl->state == CS_PRIMED && !cl->gamestateAcked ) {
-		// not downloading and gamestate is not yet acknowledged
-		const int gsDelta = cl->messageAcknowledge - cl->gamestateMessageNum;
-		if ( gsDelta == 0 && serverId == sv.serverId ) {
-			// exact match, acknowledge
-			cl->gamestateAcked = qtrue;
-		} else {
-			// dropped gamestate or invalid serverId
-			if ( gsDelta > 0 ) {
-				Com_DPrintf( "%s: %s gamestate, resending\n", cl->name, serverId != sv.serverId ? "outdated" : "dropped" );
-				if ( !SVC_RateLimit( &cl->gamestate_rate, 2, 1000 ) ) {
-					SV_SendClientGameState( cl );
-				}
+	if ( !cl->gamestateAcked ) {
+		// late check for gamestate resend
+		if ( cl->state == CS_PRIMED && cl->messageAcknowledge - cl->gamestateMessageNum > 0 ) {
+			Com_DPrintf( "%s: dropped gamestate, resending\n", cl->name );
+			if ( !SVC_RateLimit( &cl->gamestate_rate, 2, 1000 ) ) {
+				SV_SendClientGameState( cl );
 			}
-			return;
 		}
+		return;
 	}
 
 	// read the usercmd_t

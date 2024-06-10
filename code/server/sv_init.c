@@ -507,12 +507,13 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	// set serverinfo visible name
 	Cvar_Set( "mapname", mapname );
 
-	Cvar_Set( "sv_mapChecksum", va( "%i",checksum ) );
+	Cvar_SetIntegerValue( "sv_mapChecksum", checksum );
 
 	// serverid should be different each time
 	sv.serverId = com_frameTime;
+	sv.restartedServerId = sv.serverId;
 	sv.checksumFeedServerId = sv.serverId;
-	Cvar_Set( "sv_serverid", va( "%i", sv.serverId ) );
+	Cvar_SetIntegerValue( "sv_serverid", sv.serverId );
 
 	// clear physics interaction links
 	SV_ClearWorld();
@@ -567,29 +568,14 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 				// was connected before the level change
 				SV_DropClient( &svs.clients[i], denied );
 			} else {
-
-				svs.clients[i].gamestateAcked = qfalse;
-
 				if ( !isBot ) {
+					svs.clients[i].gamestateAcked = qfalse;
 					// when we get the next packet from a connected client,
 					// the new gamestate will be sent
 					svs.clients[i].state = CS_CONNECTED;
 					svs.clients[i].gentity = NULL;
-				}
-				else {
-					client_t		*client;
-					sharedEntity_t	*ent;
-
-					client = &svs.clients[i];
-					client->state = CS_ACTIVE;
-					ent = SV_GentityNum( i );
-					ent->s.number = i;
-					client->gentity = ent;
-
-					client->deltaMessage = client->netchan.outgoingSequence - ( PACKET_BACKUP + 1 ); // force delta reset
-					client->lastSnapshotTime = svs.time - 9999; // generate a snapshot immediately
-
-					VM_Call( gvm, 1, GAME_CLIENT_BEGIN, i );
+				} else {
+					SV_ClientEnterWorld( &svs.clients[i] );
 				}
 			}
 		}
