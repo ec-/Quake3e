@@ -766,7 +766,7 @@ void SV_SendClientMessages( void )
 		//if ( *c->downloadName )
 		//	continue;		// Client is downloading, don't send snapshots
 
-		if ( c->state == CS_CONNECTED )
+		if ( !c->gamestateAcked )
 			continue;		// waiting usercmd/downloading
 
 		// 1. Local clients get snapshots every server frame
