@@ -1028,7 +1028,6 @@ static void SV_SendClientGameState( client_t *client ) {
 
 	client->state = CS_PRIMED;
 
-	client->gamestateAcked = qfalse;
 	client->downloading = qfalse;
 
 	client->pureAuthentic = qfalse;
@@ -1128,7 +1127,6 @@ void SV_ClientEnterWorld( client_t *client ) {
 
 	client->state = CS_ACTIVE;
 
-	client->gamestateAcked = qtrue;
 	client->oldServerTime = 0;
 
 	// resend all configstrings using the cs commands since these are
@@ -1218,6 +1216,10 @@ static void SV_DoneDownload_f( client_t *cl ) {
 
 	// resend the game state to update any clients that entered during the download
 	SV_SendClientGameState( cl );
+
+	// activate protection to resend gamestate if previous one was dropped
+	cl->downloadGamestateDropCheck = qtrue;
+	cl->downloadGamestateDropTime = 0;
 }
 
 
@@ -1273,7 +1275,6 @@ static void SV_BeginDownload_f( client_t *cl ) {
 	cl->gentity = NULL;
 
 	cl->downloading = qtrue;
-	cl->gamestateAcked = qfalse;
 }
 
 
@@ -2267,39 +2268,12 @@ void SV_ExecuteClientMessage( client_t *cl, msg_t *msg ) {
 
 	cl->justConnected = qfalse;
 
-	// cl->serverId = serverId;
-
-	// if this is a usercmd from a previous gamestate,
-	// ignore it or retransmit the current gamestate
-	//
-	// if the client was downloading, let it stay at whatever serverId and
-	// gamestate it was at.  This allows it to keep downloading even when
-	// the gamestate changes.  After the download is finished, we'll
-	// notice and send it a new game state
-	//
-	if ( cl->state == CS_CONNECTED ) {
-		if ( !cl->downloading ) {
-			// send initial gamestate, client may not acknowledge it in next command but start downloading after SV_ClientCommand()
-			if ( !SVC_RateLimit( &cl->gamestate_rate, 2, 1000 ) ) {
-				SV_SendClientGameState( cl );
-			}
-			return;
-		}
-	} else if ( !cl->gamestateAcked ) {
-		// eary check for gamestate acknowledge
-		if ( serverId == sv.serverId && cl->messageAcknowledge == cl->gamestateMessageNum ) {
-			cl->gamestateAcked = qtrue;
-			// this client has acknowledged the new gamestate so it's
-			// safe to start sending it the real time again
-			Com_DPrintf( "%s acknowledged gamestate\n", cl->name );
-			cl->oldServerTime = 0;
-		}
+	// this client has acknowledged the new gamestate so it's
+	// safe to start sending it the real time again
+	if ( cl->oldServerTime && serverId == sv.serverId ) {
+		Com_DPrintf( "%s acknowledged gamestate\n", cl->name );
+		cl->oldServerTime = 0;
 	}
-	// else if ( cl->state == CS_PRIMED ) {
-		// in case of download intention client replies with (messageAcknowledge - gamestateMessageNum) >= 0 and (serverId == sv.serverId), sv.serverId can drift away later
-		// in case of lost gamestate client replies with (messageAcknowledge - gamestateMessageNum) > 0 and (serverId == sv.serverId)
-		// in case of disconnect/etc. client replies with any serverId
-	//}
 
 	// read optional clientCommand strings
 	do {
@@ -2315,26 +2289,68 @@ void SV_ExecuteClientMessage( client_t *cl, msg_t *msg ) {
 		}
 	} while ( 1 );
 
-	if ( !cl->gamestateAcked ) {
-		// late check for gamestate resend
-		if ( cl->state == CS_PRIMED && cl->messageAcknowledge - cl->gamestateMessageNum > 0 ) {
-			Com_DPrintf( "%s: dropped gamestate, resending\n", cl->name );
-			if ( !SVC_RateLimit( &cl->gamestate_rate, 2, 1000 ) ) {
-				SV_SendClientGameState( cl );
-			}
-		}
+	if ( cl->downloading ) {
+		// waiting for "donedl" command
 		return;
 	}
 
-	// read the usercmd_t
-	if ( c == clc_move ) {
-		SV_UserMove( cl, msg, qtrue );
-	} else if ( c == clc_moveNoDelta ) {
-		SV_UserMove( cl, msg, qfalse );
-	} else if ( c != clc_EOF ) {
-		Com_Printf( "WARNING: bad command byte %i for client %i\n", c, (int) (cl - svs.clients) );
+	if ( cl->state == CS_ACTIVE || serverId == sv.serverId ) {
+		// read the usercmd_t
+		if ( c == clc_move ) {
+			SV_UserMove( cl, msg, qtrue );
+		} else if ( c == clc_moveNoDelta ) {
+			SV_UserMove( cl, msg, qfalse );
+		} else if ( c != clc_EOF ) {
+			Com_Printf( "WARNING: bad command byte %i for client %i\n", c, (int) (cl - svs.clients) );
+		}
+//		if ( msg->readcount != msg->cursize ) {
+//			Com_Printf( "WARNING: Junk at end of packet for client %i\n", cl - svs.clients );
+//		}
 	}
-//	if ( msg->readcount != msg->cursize ) {
-//		Com_Printf( "WARNING: Junk at end of packet for client %i\n", cl - svs.clients );
-//	}
+
+	// check for sending initial gamestate
+	if ( cl->state == CS_CONNECTED ) {
+		if ( !SVC_RateLimit( &cl->gamestate_rate, 2, 1000 ) ) {
+			SV_SendClientGameState( cl );
+		}
+	}
+
+	// check for dropped gamestate
+	else if ( cl->state == CS_PRIMED && serverId != sv.serverId &&
+			cl->messageAcknowledge - cl->gamestateMessageNum > 0 ) {
+		if ( !SVC_RateLimit( &cl->gamestate_rate, 2, 1000 ) ) {
+			Com_DPrintf( "%s: dropped gamestate, resending\n", cl->name );
+			SV_SendClientGameState( cl );
+		}
+	}
+
+	// special check for dropped gamestate for post-UDP download clients, since after
+	// download client can have correct serverid but still be awaiting gamestate
+	else if ( cl->downloadGamestateDropCheck ) {
+		const int gsDelta = cl->messageAcknowledge - cl->gamestateMessageNum;
+		if ( cl->state == CS_ACTIVE ) {
+			// this means client sent a move command, which means they have gamestate
+			Com_DPrintf( "%s: clearing gamestate drop check\n", cl->name );
+			cl->downloadGamestateDropCheck = qfalse;
+		} else if ( cl->state == CS_PRIMED && gsDelta > 0 ) {
+			// likely dropped gamestate, but wait for 2 messages at least 750ms apart to be safer
+			// for client compatibility (client should send messages 1s apart without gamestate)
+			const int time = Sys_Milliseconds();
+			if ( !cl->downloadGamestateDropTime ) {
+				Com_DPrintf( "%s: potential dropped post-download gamestate (gsdelta=%i)\n", cl->name, gsDelta );
+				cl->downloadGamestateDropTime = time;
+			} else if ( time - cl->downloadGamestateDropTime < 750 ) {
+				Com_DPrintf( "%s: potential dropped post-download gamestate bad time (time=%i, gsdelta=%i)\n",
+						cl->name, time - cl->downloadGamestateDropTime, gsDelta );
+				cl->downloadGamestateDropTime = time;
+			} else {
+				Com_DPrintf( "%s: resending post-download gamestate (time=%i, gsdelta=%i)\n",
+						cl->name, time - cl->downloadGamestateDropTime, gsDelta );
+				if ( !SVC_RateLimit( &cl->gamestate_rate, 2, 1000 ) ) {
+					SV_SendClientGameState( cl );
+				}
+				cl->downloadGamestateDropTime = 0;
+			}
+		}
+	}
 }

@@ -569,7 +569,6 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 				SV_DropClient( &svs.clients[i], denied );
 			} else {
 				if ( !isBot ) {
-					svs.clients[i].gamestateAcked = qfalse;
 					// when we get the next packet from a connected client,
 					// the new gamestate will be sent
 					svs.clients[i].state = CS_CONNECTED;
