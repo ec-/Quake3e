@@ -427,7 +427,7 @@ qboolean Netchan_Process( netchan_t *chan, msg_t *msg ) {
 	
 
 	//
-	// if this is the final framgent of a reliable message,
+	// if this is the final fragment of a reliable message,
 	// bump incoming_reliable_sequence 
 	//
 	if ( fragmented ) {

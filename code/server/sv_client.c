@@ -2286,7 +2286,7 @@ void SV_ExecuteClientMessage( client_t *cl, msg_t *msg ) {
 			return;
 		}
 	} else if ( !cl->gamestateAcked ) {
-		// eary check for gamestate acknowledge
+		// early check for gamestate acknowledge
 		if ( serverId == sv.serverId && cl->messageAcknowledge == cl->gamestateMessageNum ) {
 			cl->gamestateAcked = qtrue;
 			// this client has acknowledged the new gamestate so it's
