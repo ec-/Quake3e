@@ -168,11 +168,8 @@ typedef struct client_s {
 	sharedEntity_t	*gentity;			// SV_GentityNum(clientnum)
 	char			name[MAX_NAME_LENGTH];			// extracted from userinfo, high bits masked
 
-	qboolean		gamestateAcked;		// set to qtrue when serverId = sv.serverId & messageAcknowledge = gamestateMessageNum
-	qboolean		downloading;		// set at "download", reset at gamestate retransmission
-	// int				serverId;		// last acknowledged serverId
-
 	// downloading
+	qboolean		downloading;		// set at "download", reset at gamestate retransmission
 	char			downloadName[MAX_QPATH]; // if not empty string, we are downloading
 	fileHandle_t	download;			// file being downloaded
  	int				downloadSize;		// total bytes (can't use EOF because of paks)
@@ -184,6 +181,8 @@ typedef struct client_s {
 	int				downloadBlockSize[MAX_DOWNLOAD_WINDOW];
 	qboolean		downloadEOF;		// We have sent the EOF block
 	int				downloadSendTime;	// time we last got an ack from the client
+	qboolean		downloadGamestateDropCheck;		// perform extra dropped gamestate check after downloads
+	int				downloadGamestateDropTime;		// wait for 2nd client message ~750ms later
 
 	int				deltaMessage;		// frame last client usercmd message
 	int				lastPacketTime;		// svs.time when packet was last received
