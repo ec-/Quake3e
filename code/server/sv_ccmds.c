@@ -1517,7 +1517,7 @@ SV_CompleteMapName
 */
 static void SV_CompleteMapName( const char *args, int argNum ) {
 	if ( argNum == 2 ) 	{
-		if ( sv_pure->integer ) {
+		if ( sv.pure != 0 ) {
 			Field_CompleteFilename( "maps", "bsp", qtrue, FS_MATCH_PK3s | FS_MATCH_STICK );
 		} else {
 			Field_CompleteFilename( "maps", "bsp", qtrue, FS_MATCH_ANY | FS_MATCH_STICK );

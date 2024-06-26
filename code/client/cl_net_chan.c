@@ -175,8 +175,14 @@ CL_Netchan_Enqueue
 void CL_Netchan_Enqueue( netchan_t *chan, msg_t* msg, int times ) {
 	int i;
 
-	if ( chan->compat )
+	// make sure we send all pending fragments to get correct chan->outgoingSequence
+	while ( CL_Netchan_TransmitNextFragment( chan ) ) {
+		;
+	}
+
+	if ( chan->compat ) {
 		CL_Netchan_Encode( msg );
+	}
 
 	for ( i = 0; i < times; i++ ) {
 		Netchan_Enqueue( chan, msg->cursize, msg->data );

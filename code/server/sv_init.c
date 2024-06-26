@@ -494,7 +494,10 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 #endif
 
 	// get latched value
-	Cvar_Get( "sv_pure", "1", CVAR_SYSTEMINFO | CVAR_LATCH );
+	sv_pure = Cvar_Get( "sv_pure", "1", CVAR_SYSTEMINFO | CVAR_LATCH );
+
+	// VMs can change latched cvars instantly which could cause side-effects in SV_UserMove()
+	sv.pure = sv_pure->integer;
 
 	// get a new checksum feed and restart the file system
 	srand( Com_Milliseconds() );
@@ -512,7 +515,6 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	// serverid should be different each time
 	sv.serverId = com_frameTime;
 	sv.restartedServerId = sv.serverId;
-	sv.checksumFeedServerId = sv.serverId;
 	Cvar_SetIntegerValue( "sv_serverid", sv.serverId );
 
 	// clear physics interaction links
@@ -611,7 +613,7 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	Cvar_Set( "sv_paks", "" );
 	Cvar_Set( "sv_pakNames", "" ); // not used on client-side
 
-	if ( sv_pure->integer ) {
+	if ( sv.pure != 0 ) {
 		int freespace, pakslen, infolen;
 		qboolean overflowed = qfalse;
 		qboolean infoTruncated = qfalse;

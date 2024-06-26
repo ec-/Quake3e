@@ -168,18 +168,17 @@ void Netchan_TransmitNextFragment( netchan_t *chan ) {
 EnqueueFragments
 =================
 */
-void Netchan_EnqueueFragments( netchan_t *chan ) {
+static void Netchan_EnqueueFragments( const netchan_t *chan, const int length, const byte *data ) {
 	msg_t		send;
 	byte		send_buf[MAX_PACKETLEN + 8];
 	int			fragmentLength;
-	int			outgoingSequence;
+	int			unsentFragmentStart = 0;
 
 	for ( ;; ) {
 		// write the packet header
 		MSG_InitOOB( &send, send_buf, sizeof( send_buf ) - 8 );
 
-		outgoingSequence = chan->outgoingSequence | FRAGMENT_BIT;
-		MSG_WriteLong( &send, outgoingSequence );
+		MSG_WriteLong( &send, chan->outgoingSequence | FRAGMENT_BIT );
 
 		// send the qport if we are a client
 		if ( chan->sock == NS_CLIENT ) {
@@ -192,27 +191,26 @@ void Netchan_EnqueueFragments( netchan_t *chan ) {
 
 		// copy the reliable message to the packet first
 		fragmentLength = FRAGMENT_SIZE;
-		if ( chan->unsentFragmentStart + fragmentLength > chan->unsentLength ) {
-			fragmentLength = chan->unsentLength - chan->unsentFragmentStart;
+		if ( unsentFragmentStart + fragmentLength > length ) {
+			fragmentLength = length - unsentFragmentStart;
 		}
 
-		MSG_WriteShort( &send, chan->unsentFragmentStart );
+		MSG_WriteShort( &send, unsentFragmentStart );
 		MSG_WriteShort( &send, fragmentLength );
-		MSG_WriteData( &send, chan->unsentBuffer + chan->unsentFragmentStart, fragmentLength );
+		MSG_WriteData( &send, data + unsentFragmentStart, fragmentLength );
 
 		// enqueue the datagram
 		NET_QueuePacket( 1 /*queue index*/, chan->sock, send.cursize, send.data, &chan->remoteAddress, 0 /*offset*/ );
 
 		// TODO: add showpackets debug info
 
-		chan->unsentFragmentStart += fragmentLength;
+		unsentFragmentStart += fragmentLength;
 
 		// this exit condition is a little tricky, because a packet
 		// that is exactly the fragment length still needs to send
 		// a second packet of zero length so that the other side
 		// can tell there aren't more to follow
-		if ( chan->unsentFragmentStart == chan->unsentLength && fragmentLength != FRAGMENT_SIZE ) {
-			chan->unsentFragments = qfalse;
+		if ( unsentFragmentStart == length && fragmentLength != FRAGMENT_SIZE ) {
 			break;
 		}
 	}
@@ -297,15 +295,9 @@ void Netchan_Enqueue( netchan_t *chan, int length, const byte *data ) {
 		Com_Error( ERR_DROP, "%s: length = %i", __func__, length );
 	}
 
-	chan->unsentFragmentStart = 0;
-
 	// fragment large reliable messages
 	if ( length >= FRAGMENT_SIZE ) {
-		chan->unsentFragments = qtrue;
-		chan->unsentLength = length;
-		Com_Memcpy( chan->unsentBuffer, data, length );
-
-		Netchan_EnqueueFragments( chan );
+		Netchan_EnqueueFragments( chan, length, data );
 		return;
 	}
 
@@ -575,12 +567,13 @@ static void NET_SendLoopPacket( netsrc_t sock, int length, const void *data )
 //=============================================================================
 
 typedef struct packetQueue_s {
-        struct packetQueue_s *next;
-        int length;
-        byte *data;
-        netadr_t to;
-        netsrc_t sock;
-        int release;
+		struct packetQueue_s *next;
+		struct packetQueue_s *prev;
+		int length;
+		byte *data;
+		netadr_t to;
+		netsrc_t sock;
+		int release;
 } packetQueue_t;
 
 static packetQueue_t *packetQueue[2] = { NULL, NULL };

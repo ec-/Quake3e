@@ -1067,7 +1067,15 @@ static void SV_SendClientGameState( client_t *client ) {
 		if ( *sv.configstrings[ start ] != '\0' ) {
 			MSG_WriteByte( &msg, svc_configstring );
 			MSG_WriteShort( &msg, start );
-			MSG_WriteBigString( &msg, sv.configstrings[ start ] );
+			if ( start == CS_SYSTEMINFO && sv.pure != sv_pure->integer ) {
+				// make sure we send latched sv.pure, not forced cvar value
+				char systemInfo[BIG_INFO_STRING];
+				Q_strncpyz( systemInfo, sv.configstrings[ start ], sizeof( systemInfo ) );
+				Info_SetValueForKey_s( systemInfo, sizeof( systemInfo ), "sv_pure", va( "%i", sv.pure ) );
+				MSG_WriteBigString( &msg, systemInfo );
+			} else {
+				MSG_WriteBigString( &msg, sv.configstrings[start] );
+			}
 		}
 		client->csUpdated[ start ] = qfalse;
 	}
@@ -1214,7 +1222,7 @@ static void SV_DoneDownload_f( client_t *cl ) {
 	if ( cl->state == CS_ACTIVE )
 		return;
 
-	Com_DPrintf( "clientDownload: %s Done\n", cl->name);
+	Com_DPrintf( "clientDownload: %s Done\n", cl->name );
 
 	// resend the game state to update any clients that entered during the download
 	SV_SendClientGameState( cl );
@@ -1359,7 +1367,7 @@ static int SV_WriteDownloadToClient( client_t *cl )
 				(sv_allowDownload->integer & DLF_NO_UDP) ) {
 
 				Com_Printf("clientDownload: %d : \"%s\" download disabled\n", (int) (cl - svs.clients), cl->downloadName);
-				if (sv_pure->integer) {
+				if ( sv.pure != 0 ) {
 					Com_sprintf(errorMessage, sizeof(errorMessage), "Could not download \"%s\" because autodownloading is disabled on the server.\n\n"
 										"You will need to get this file elsewhere before you "
 										"can connect to this pure server.\n", cl->downloadName);
@@ -1578,7 +1586,7 @@ static void SV_VerifyPaks_f( client_t *cl ) {
 	// certain pk3 files, namely we want the client to have loaded the
 	// ui and cgame that we think should be loaded based on the pure setting
 	//
-	if ( sv_pure->integer != 0 ) {
+	if ( sv.pure != 0 ) {
 
 		nChkSum1 = nChkSum2 = 0;
 
@@ -1600,11 +1608,8 @@ static void SV_VerifyPaks_f( client_t *cl ) {
 		}
 		else
 		{
-			// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=475
-			// we may get incoming cp sequences from a previous checksumFeed, which we need to ignore
-			// since serverId is a frame count, it always goes up
-			if ( atoi( pArg ) - sv.checksumFeedServerId < 0 )
-			{
+			// we may get incoming cp sequences from a previous serverId, which we need to ignore
+			if ( atoi( pArg ) != sv.serverId /* || !cl->gamestateAcked */ ) {
 				Com_DPrintf( "ignoring outdated cp command from client %s\n", cl->name );
 				return;
 			}
@@ -2149,7 +2154,7 @@ static void SV_UserMove( client_t *cl, msg_t *msg, qboolean delta ) {
 	// if this is the first usercmd we have received
 	// this gamestate, put the client into the world
 	if ( cl->state == CS_PRIMED ) {
-		if ( sv_pure->integer != 0 && !cl->gotCP ) {
+		if ( sv.pure != 0 && !cl->gotCP ) {
 			// we didn't get a cp yet, don't assume anything and just send the gamestate all over again
 			if ( !SVC_RateLimit( &cl->gamestate_rate, 2, 1000 ) ) {
 				Com_DPrintf( "%s: didn't get cp command, resending gamestate\n", cl->name );
@@ -2162,15 +2167,7 @@ static void SV_UserMove( client_t *cl, msg_t *msg, qboolean delta ) {
 	}
 
 	// a bad cp command was sent, drop the client
-	if ( sv_pure->integer != 0 && !cl->pureAuthentic ) {
-#ifndef DEDICATED
-		if ( !cl->gotCP && cl->state == CS_ACTIVE && cl->netchan.remoteAddress.type == NA_LOOPBACK ) {
-			// fix host player being dropped with ZTM' FlexibleHud at level end in TA SP
-			// FIXME: exact reason how cl->pureAuthentic being reset is unclear, should be investigated later
-			Com_DPrintf( "%s: didn't get cp command, resending gamestate\n", cl->name );
-			SV_SendClientGameState( cl );
-		} else
-#endif
+	if ( sv.pure != 0 && !cl->pureAuthentic ) {
 		SV_DropClient( cl, "Cannot validate pure client!" );
 		return;
 	}

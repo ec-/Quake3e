@@ -272,7 +272,6 @@ void Netchan_Setup( netsrc_t sock, netchan_t *chan, const netadr_t *adr, int por
 void Netchan_Transmit( netchan_t *chan, int length, const byte *data );
 void Netchan_TransmitNextFragment( netchan_t *chan );
 void Netchan_Enqueue( netchan_t *chan, int length, const byte *data );
-void Netchan_EnqueueFragments( netchan_t *chan );
 
 qboolean Netchan_Process( netchan_t *chan, msg_t *msg );
 
