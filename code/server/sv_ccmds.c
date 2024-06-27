@@ -65,17 +65,17 @@ client_t *SV_GetPlayerByHandle( void ) {
 		int plid = atoi(s);
 
 		// Check for numeric playerid match
-		if(plid >= 0 && plid < sv_maxclients->integer)
+		if(plid >= 0 && plid < sv.maxclients)
 		{
 			cl = &svs.clients[plid];
 			
-			if(cl->state)
+			if (cl->state >= CS_CONNECTED)
 				return cl;
 		}
 	}
 
 	// check for a name match
-	for ( i=0, cl=svs.clients ; i < sv_maxclients->integer ; i++,cl++ ) {
+	for ( i = 0, cl = svs.clients; i < sv.maxclients; i++, cl++ ) {
 		if ( cl->state < CS_CONNECTED ) {
 			continue;
 		}
@@ -128,7 +128,7 @@ static client_t *SV_GetPlayerByNum( void ) {
 		}
 	}
 	idnum = atoi( s );
-	if ( idnum < 0 || idnum >= sv_maxclients->integer ) {
+	if ( idnum < 0 || idnum >= sv.maxclients ) {
 		Com_Printf( "Bad client slot: %i\n", idnum );
 		return NULL;
 	}
@@ -294,7 +294,7 @@ static void SV_MapRestart_f( void ) {
 	// if a map_restart occurs while a client is changing maps, we need
 	// to give them the correct time so that when they finish loading
 	// they don't violate the backwards time check in cl_cgame.c
-	for ( i = 0; i < sv_maxclients->integer; i++ ) {
+	for ( i = 0; i < sv.maxclients; i++ ) {
 		if ( svs.clients[i].state == CS_PRIMED ) {
 			svs.clients[i].oldServerTime = sv.restartTime;
 		}
@@ -322,7 +322,7 @@ static void SV_MapRestart_f( void ) {
 	sv.restarting = qfalse;
 
 	// connect and begin all the clients
-	for ( i = 0 ; i < sv_maxclients->integer ; i++ ) {
+	for ( i = 0; i < sv.maxclients; i++ ) {
 		client = &svs.clients[i];
 
 		// send the new gamestate to all connected clients
@@ -359,7 +359,7 @@ static void SV_MapRestart_f( void ) {
 	VM_Call( gvm, 1, GAME_RUN_FRAME, sv.time );
 	svs.time += 100;
 
-	for ( i = 0 ; i < sv_maxclients->integer ; i++ ) {
+	for ( i = 0; i < sv.maxclients; i++ ) {
 		client = &svs.clients[i];
 		if ( client->state >= CS_PRIMED ) {
 			// accept usercmds starting from current server time only
@@ -395,24 +395,24 @@ static void SV_Kick_f( void ) {
 
 	cl = SV_GetPlayerByHandle();
 	if ( !cl ) {
-		if ( !Q_stricmp(Cmd_Argv(1), "all") ) {
-			for ( i=0, cl=svs.clients ; i < sv_maxclients->integer ; i++,cl++ ) {
-				if ( !cl->state ) {
+		if ( !Q_stricmp( Cmd_Argv( 1 ), "all" ) ) {
+			for ( i = 0, cl = svs.clients; i < sv.maxclients; i++, cl++ ) {
+				if ( cl->state < CS_CONNECTED ) {
 					continue;
 				}
-				if( cl->netchan.remoteAddress.type == NA_LOOPBACK ) {
+				if ( cl->netchan.remoteAddress.type == NA_LOOPBACK ) {
 					continue;
 				}
 				SV_DropClient( cl, "was kicked" );
 				cl->lastPacketTime = svs.time;	// in case there is a funny zombie
 			}
 		}
-		else if ( !Q_stricmp(Cmd_Argv(1), "allbots") ) {
-			for ( i=0, cl=svs.clients ; i < sv_maxclients->integer ; i++,cl++ ) {
-				if ( !cl->state ) {
+		else if ( !Q_stricmp( Cmd_Argv( 1 ), "allbots" ) ) {
+			for ( i = 0, cl = svs.clients; i < sv.maxclients; i++, cl++ ) {
+				if ( cl->state < CS_CONNECTED ) {
 					continue;
 				}
-				if( cl->netchan.remoteAddress.type != NA_BOT ) {
+				if ( cl->netchan.remoteAddress.type != NA_BOT ) {
 					continue;
 				}
 				SV_DropClient( cl, "was kicked" );
@@ -421,8 +421,8 @@ static void SV_Kick_f( void ) {
 		}
 		return;
 	}
-	if( cl->netchan.remoteAddress.type == NA_LOOPBACK ) {
-		Com_Printf("Cannot kick host player\n");
+	if ( cl->netchan.remoteAddress.type == NA_LOOPBACK ) {
+		Com_Printf( "Cannot kick host player\n" );
 		return;
 	}
 
@@ -447,7 +447,7 @@ static void SV_KickBots_f( void ) {
 		return;
 	}
 
-	for( i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++ ) {
+	for( i = 0, cl = svs.clients; i < sv.maxclients; i++, cl++ ) {
 		if ( cl->state < CS_CONNECTED ) {
 			continue;
 		}
@@ -477,7 +477,7 @@ static void SV_KickAll_f( void ) {
 		return;
 	}
 
-	for( i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++ ) {
+	for( i = 0, cl = svs.clients; i < sv.maxclients; i++, cl++ ) {
 		if ( cl->state < CS_CONNECTED ) {
 			continue;
 		}
@@ -1216,7 +1216,7 @@ static void SV_Status_f( void ) {
 	Com_Memset( al, 0, sizeof( al ) );
 
 	// first pass: save and determine max.lengths of name/address fields
-	for ( i = 0, cl = svs.clients ; i < sv_maxclients->integer ; i++, cl++ )
+	for ( i = 0, cl = svs.clients; i < sv.maxclients; i++, cl++ )
 	{
 		if ( cl->state == CS_FREE )
 			continue;
@@ -1260,7 +1260,7 @@ static void SV_Status_f( void ) {
 	Com_Printf( " -----\n" );
 #endif
 
-	for ( i = 0, cl = svs.clients ; i < sv_maxclients->integer ; i++, cl++ )
+	for ( i = 0, cl = svs.clients; i < sv.maxclients; i++, cl++ )
 	{
 		if ( cl->state == CS_FREE )
 			continue;

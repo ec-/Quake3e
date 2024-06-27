@@ -756,10 +756,10 @@ void SV_SendClientMessages( void )
 	svs.msgTime = Sys_Milliseconds();
 
 	// send a message to each connected client
-	for ( i = 0; i < sv_maxclients->integer; i++ )
+	for ( i = 0; i < sv.maxclients; i++ )
 	{
 		c = &svs.clients[ i ];
-		
+
 		if ( c->state == CS_FREE )
 			continue;		// not connected
 
@@ -780,7 +780,7 @@ void SV_SendClientMessages( void )
 			c->rateDelayed = qtrue;
 			continue;		// Drop this snapshot if the packet queue is still full or delta compression will break
 		}
-	
+
 		if ( SV_RateMsec( c ) > 0 )
 		{
 			// Not enough time since last packet passed through the line

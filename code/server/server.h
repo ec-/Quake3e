@@ -66,7 +66,8 @@ typedef struct snapshotFrame_s {
 typedef struct {
 	serverState_t	state;
 	qboolean		restarting;			// if true, send configstring changes during SS_LOADING
-	int				pure;
+	int				pure;				// fixed at level spawn
+	int				maxclients;			// fixed at level spawn
 	int				serverId;			// changes each server start
 	int				restartedServerId;	// changes each map restart
 	int				checksumFeed;		// the feed key that we use to compute the pure checksum strings
@@ -340,7 +341,6 @@ void SV_UpdateConfigstrings( client_t *client );
 void SV_SetUserinfo( int index, const char *val );
 void SV_GetUserinfo( int index, char *buffer, int bufferSize );
 
-void SV_ChangeMaxClients( void );
 void SV_SpawnServer( const char *mapname, qboolean killBots );
 
 

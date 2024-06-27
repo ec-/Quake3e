@@ -380,7 +380,7 @@ static int seqs[ MAX_CLIENTS ];
 
 static void SV_SaveSequences( void ) {
 	int i;
-	for ( i = 0; i < sv_maxclients->integer; i++ ) {
+	for ( i = 0; i < sv.maxclients; i++ ) {
 		seqs[i] = svs.clients[i].reliableSequence;
 	}
 }
@@ -390,7 +390,7 @@ static void SV_InjectLocation( const char *tld, const char *country ) {
 	const char *cmd;
 	char *str;
 	int i, n;
-	for ( i = 0; i < sv_maxclients->integer; i++ ) {
+	for ( i = 0; i < sv.maxclients; i++ ) {
 		if ( seqs[i] != svs.clients[i].reliableSequence ) {
 			for ( n = seqs[i]; n != svs.clients[i].reliableSequence + 1; n++ ) {
 				cmd = svs.clients[i].reliableCommands[n & (MAX_RELIABLE_COMMANDS-1)];
@@ -503,7 +503,7 @@ void SV_DirectConnect( const netadr_t *from ) {
 	}
 
 	// check for concurrent connections
-	for ( i = 0, n = 0; i < sv_maxclients->integer; i++ ) {
+	for ( i = 0, n = 0; i < sv.maxclients; i++ ) {
 		const netadr_t *addr = &svs.clients[ i ].netchan.remoteAddress;
 		if ( addr->type != NA_BOT && NET_CompareBaseAdr( addr, from ) ) {
 			if ( svs.clients[ i ].state >= CS_CONNECTED && !svs.clients[ i ].justConnected ) {
@@ -643,7 +643,7 @@ void SV_DirectConnect( const netadr_t *from ) {
 
 	// quick reject
 	newcl = NULL;
-	for ( i = 0, cl = svs.clients ; i < sv_maxclients->integer ; i++, cl++ ) {
+	for ( i = 0, cl = svs.clients; i < sv.maxclients; i++, cl++ ) {
 		if ( NET_CompareAdr( from, &cl->netchan.remoteAddress ) ) {
 			int elapsed = svs.time - cl->lastConnectTime;
 			if ( elapsed < ( sv_reconnectlimit->integer * 1000 ) && elapsed >= 0 ) {
@@ -664,7 +664,7 @@ void SV_DirectConnect( const netadr_t *from ) {
 	}
 
 	// if there is already a slot for this ip, reuse it
-	for ( i = 0, cl = svs.clients ; i < sv_maxclients->integer ; i++, cl++ ) {
+	for ( i = 0, cl = svs.clients; i < sv.maxclients; i++, cl++ ) {
 		if ( cl->state == CS_FREE ) {
 			continue;
 		}
@@ -713,7 +713,7 @@ void SV_DirectConnect( const netadr_t *from ) {
 	// select least used free slot
 	n = 0;
 	newcl = NULL;
-	for ( i = startIndex; i < sv_maxclients->integer ; i++ ) {
+	for ( i = startIndex; i < sv.maxclients; i++ ) {
 		cl = &svs.clients[i];
 		if ( cl->state == CS_FREE && ( newcl == NULL || svs.time - cl->lastDisconnectTime > n ) ) {
 			n = svs.time - cl->lastDisconnectTime;
@@ -724,16 +724,16 @@ void SV_DirectConnect( const netadr_t *from ) {
 	if ( !newcl ) {
 		if ( NET_IsLocalAddress( from ) ) {
 			count = 0;
-			for ( i = startIndex; i < sv_maxclients->integer ; i++ ) {
+			for ( i = startIndex; i < sv.maxclients; i++ ) {
 				cl = &svs.clients[i];
 				if (cl->netchan.remoteAddress.type == NA_BOT) {
 					count++;
 				}
 			}
 			// if they're all bots
-			if (count >= sv_maxclients->integer - startIndex) {
-				SV_DropClient(&svs.clients[sv_maxclients->integer - 1], "only bots on server");
-				newcl = &svs.clients[sv_maxclients->integer - 1];
+			if (count >= sv.maxclients - startIndex) {
+				SV_DropClient(&svs.clients[sv.maxclients - 1], "only bots on server");
+				newcl = &svs.clients[sv.maxclients - 1];
 			}
 			else {
 				Com_Error( ERR_DROP, "server is full on local connect" );
@@ -824,12 +824,12 @@ gotnewcl:
 	// if this was the first client on the server, or the last client
 	// the server can hold, send a heartbeat to the master.
 	count = 0;
-	for (i=0,cl=svs.clients ; i < sv_maxclients->integer ; i++,cl++) {
+	for ( i = 0, cl = svs.clients ; i < sv.maxclients; i++, cl++) {
 		if ( svs.clients[i].state >= CS_CONNECTED ) {
 			count++;
 		}
 	}
-	if ( count == 1 || count == sv_maxclients->integer ) {
+	if ( count == 1 || count == sv.maxclients ) {
 		SV_Heartbeat_f();
 	}
 }
@@ -915,12 +915,12 @@ void SV_DropClient( client_t *drop, const char *reason ) {
 	// if this was the last client on the server, send a heartbeat
 	// to the master so it is known the server is empty
 	// send a heartbeat now so the master will get up to date info
-	for ( i = 0 ; i < sv_maxclients->integer ; i++ ) {
+	for ( i = 0; i < sv.maxclients; i++ ) {
 		if ( svs.clients[i].state >= CS_CONNECTED ) {
 			break;
 		}
 	}
-	if ( i == sv_maxclients->integer ) {
+	if ( i == sv.maxclients ) {
 		SV_Heartbeat_f();
 	}
 }
@@ -1506,7 +1506,7 @@ int SV_SendQueuedMessages( void )
 	int i, retval = -1, nextFragT;
 	client_t *cl;
 
-	for( i = 0; i < sv_maxclients->integer; i++ )
+	for( i = 0; i < sv.maxclients; i++ )
 	{
 		cl = &svs.clients[i];
 
@@ -1538,7 +1538,7 @@ int SV_SendDownloadMessages( void )
 	int i, numDLs = 0;
 	client_t *cl;
 
-	for( i = 0; i < sv_maxclients->integer; i++ )
+	for( i = 0; i < sv.maxclients; i++ )
 	{
 		cl = &svs.clients[ i ];
 		if ( cl->state >= CS_CONNECTED && *cl->downloadName )
@@ -1878,7 +1878,7 @@ void SV_PrintLocations_f( client_t *client ) {
 	max_ctrylength = 7; // strlen( "country" )
 
 	// first pass: save and determine max.lengths of name/address fields
-	for ( i = 0, cl = svs.clients ; i < sv_maxclients->integer ; i++, cl++ )
+	for ( i = 0, cl = svs.clients; i < sv.maxclients; i++, cl++ )
 	{
 		if ( cl->state == CS_FREE )
 			continue;
@@ -1902,7 +1902,7 @@ void SV_PrintLocations_f( client_t *client ) {
 	Com_sprintf( line, sizeof( line ), "-- %s -- %s\n", filln, fillc );
 	s = Q_stradd( s, line );
 
-	for ( i = 0, cl = svs.clients ; i < sv_maxclients->integer ; i++, cl++ )
+	for ( i = 0, cl = svs.clients; i < sv.maxclients; i++, cl++ )
 	{
 		if ( cl->state == CS_FREE )
 			continue;
