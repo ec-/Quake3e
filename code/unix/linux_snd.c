@@ -729,10 +729,14 @@ static int xrun_recovery( snd_pcm_t *handle, int err )
 	else if ( err == -ESTRPIPE )
 	{
 		int tries = 0;
+		struct timespec req;
+		req.tv_sec = period_time / 1000000;
+		req.tv_nsec = ( period_time % 1000000 ) * 1000;
+
 		/* wait until the suspend flag is released */
 		while ( ( err = _snd_pcm_resume( handle ) ) == -EAGAIN )
 		{
-			usleep( period_time );
+			nanosleep( &req, NULL );
 			if ( tries++ < 16 )
 			{
 				break;
