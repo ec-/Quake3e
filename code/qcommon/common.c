@@ -2830,11 +2830,13 @@ Returns last event time
 */
 int Com_EventLoop( void ) {
 	sysEvent_t	ev;
-	netadr_t	evFrom;
+
+#ifndef DEDICATED
 	byte		bufData[ MAX_MSGLEN_BUF ];
 	msg_t		buf;
 
 	MSG_Init( &buf, bufData, MAX_MSGLEN );
+#endif // !DEDICATED
 
 	while ( 1 ) {
 		ev = Com_GetEvent();
@@ -2843,20 +2845,19 @@ int Com_EventLoop( void ) {
 		if ( ev.evType == SE_NONE ) {
 			// manually send packet events for the loopback channel
 #ifndef DEDICATED
+			netadr_t evFrom;
 			while ( NET_GetLoopPacket( NS_CLIENT, &evFrom, &buf ) ) {
 				CL_PacketEvent( &evFrom, &buf );
 			}
-#endif
 			while ( NET_GetLoopPacket( NS_SERVER, &evFrom, &buf ) ) {
 				// if the server just shut down, flush the events
 				if ( com_sv_running->integer ) {
 					Com_RunAndTimeServerPacket( &evFrom, &buf );
 				}
 			}
-
+#endif // !DEDICATED
 			return ev.evTime;
 		}
-
 
 		switch ( ev.evType ) {
 #ifndef DEDICATED
@@ -2872,7 +2873,7 @@ int Com_EventLoop( void ) {
 		case SE_JOYSTICK_AXIS:
 			CL_JoystickEvent( ev.evValue, ev.evValue2, ev.evTime );
 			break;
-#endif
+#endif // !DEDICATED
 		case SE_CONSOLE:
 			Cbuf_AddText( (char *)ev.evPtr );
 			Cbuf_AddText( "\n" );

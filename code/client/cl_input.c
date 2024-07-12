@@ -855,7 +855,7 @@ void CL_WritePacket( int repeat ) {
 		CL_Netchan_Transmit( &clc.netchan, &buf );
 	} else {
 		CL_Netchan_Enqueue( &clc.netchan, &buf, repeat + 1 );
-		NET_FlushPacketQueue( 1 );
+		NET_FlushPacketQueue( 0 );
 	}
 }
 
