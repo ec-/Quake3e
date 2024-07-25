@@ -200,7 +200,7 @@ static void Netchan_EnqueueFragments( const netchan_t *chan, const int length, c
 		MSG_WriteData( &send, data + unsentFragmentStart, fragmentLength );
 
 		// enqueue the datagram
-		NET_QueuePacket( 1 /*queue index*/, chan->sock, send.cursize, send.data, &chan->remoteAddress, 0 /*offset*/ );
+		NET_QueuePacket( chan->sock, send.cursize, send.data, &chan->remoteAddress, 0 /*offset*/ );
 
 		// TODO: add showpackets debug info
 
@@ -316,7 +316,7 @@ void Netchan_Enqueue( netchan_t *chan, int length, const byte *data ) {
 	MSG_WriteData( &send, data, length );
 
 	// enqueue the datagram
-	NET_QueuePacket( 1 /*queue index*/, chan->sock, send.cursize, send.data, &chan->remoteAddress, 0 /*offset*/ );
+	NET_QueuePacket( chan->sock, send.cursize, send.data, &chan->remoteAddress, 0 /*offset*/ );
 
 	// TODO: add showpackets debug info
 }
@@ -508,10 +508,11 @@ LOOPBACK BUFFERS FOR LOCAL PLAYER
 
 =============================================================================
 */
+#ifndef DEDICATED
 
 // there needs to be enough loopback messages to hold a complete
 // gamestate of maximum size
-#define	MAX_LOOPBACK	16
+#define	MAX_LOOPBACK	32
 
 typedef struct {
 	byte	data[MAX_PACKETLEN];
@@ -564,6 +565,8 @@ static void NET_SendLoopPacket( netsrc_t sock, int length, const void *data )
 	loop->msgs[i].datalen = length;
 }
 
+#endif // !DEDICATED
+
 //=============================================================================
 
 typedef struct packetQueue_s {
@@ -576,11 +579,82 @@ typedef struct packetQueue_s {
 		int release;
 } packetQueue_t;
 
-static packetQueue_t *packetQueue[2] = { NULL, NULL };
+static packetQueue_t *packetQueue = NULL;
 
-void NET_QueuePacket( int index, netsrc_t sock, int length, const void *data, const netadr_t *to, int offset )
+static packetQueue_t *list_remove( packetQueue_t *head, packetQueue_t *item ) {
+	if ( item->next != item ) {
+		item->next->prev = item->prev;
+		item->prev->next = item->next;
+	} else {
+		item->next = item->prev = NULL;
+	}
+	return item == head ? item->next : head;
+}
+
+
+static packetQueue_t *list_insert( packetQueue_t *head, packetQueue_t *item )
 {
-	packetQueue_t *new, *next = packetQueue[index];
+	if ( head ) {
+		packetQueue_t *prev = head->prev;
+		packetQueue_t *next = head;
+		prev->next = item;
+		next->prev = item;
+		item->prev = prev;
+		item->next = next;
+		return head;
+	} else {
+		item->prev = item->next = item;
+		return item;
+	}
+}
+
+
+static packetQueue_t *list_process( packetQueue_t *head, const int time_diff )
+{
+	packetQueue_t *item = head;
+	int do_break = 0;
+	int now;
+	do {
+		if ( head == NULL ) {
+			break;
+		}
+		if ( head->prev == item ) {
+			do_break = 1;
+		}
+		now = Sys_Milliseconds();
+		if ( now - item->release >= time_diff ) {
+			packetQueue_t *next = item->next;
+#ifndef DEDICATED
+			if ( item->to.type == NA_LOOPBACK )
+				NET_SendLoopPacket( item->sock, item->length, item->data );
+			else
+#endif
+				Sys_SendPacket( item->length, item->data, &item->to );
+			head = list_remove( head, item );
+			Z_Free( item );
+			item = next;
+		} else {
+			item = item->next;
+		}
+	} while ( do_break == 0 );
+
+	return head;
+}
+
+
+void NET_QueuePacket( netsrc_t sock, int length, const void *data, const netadr_t *to, int offset )
+{
+	packetQueue_t *new;
+
+	if ( to->type == NA_BOT ) {
+		return;
+	}
+	if ( to->type == NA_BAD ) {
+		return;
+	}
+	if ( com_timescale->value == 0.0f ) {
+		return;
+	}
 
 	if ( offset > 999 ) {
 		offset = 999;
@@ -592,45 +666,16 @@ void NET_QueuePacket( int index, netsrc_t sock, int length, const void *data, co
 	new->length = length;
 	new->to = *to;
 	new->sock = sock;
-	new->release = Sys_Milliseconds() + (int)((float)offset / com_timescale->value);	
+	new->release = Sys_Milliseconds() + (int)( (float)offset / com_timescale->value );
 	new->next = NULL;
 
-	if (packetQueue[index] == NULL) {
-		packetQueue[index] = new;
-		return;
-	}
-
-	while (next) {
-		if (!next->next) {
-			next->next = new;
-			return;
-		}
-		next = next->next;
-	}
+	packetQueue = list_insert( packetQueue, new );
 }
 
 
-void NET_FlushPacketQueue( int index )
+void NET_FlushPacketQueue( int time_diff )
 {
-	packetQueue_t *last;
-	int now;
-
-	while ( packetQueue[index] ) {
-		now = Sys_Milliseconds();
-		if ( packetQueue[index]->release - now > 0 ) {
-			break;
-		}
-
-		if ( index == 0 ) {
-			Sys_SendPacket( packetQueue[index]->length, packetQueue[index]->data, &packetQueue[index]->to );
-		} else {
-			NET_SendPacket( packetQueue[index]->sock, packetQueue[index]->length, packetQueue[index]->data, &packetQueue[index]->to );
-		}
-
-		last = packetQueue[index];
-		packetQueue[index] = packetQueue[index]->next;
-		Z_Free( last );
-	}
+	packetQueue = list_process( packetQueue, time_diff );
 }
 
 
@@ -641,10 +686,6 @@ void NET_SendPacket( netsrc_t sock, int length, const void *data, const netadr_t
 		Com_Printf ("send packet %4i\n", length);
 	}
 
-	if ( to->type == NA_LOOPBACK ) {
-		NET_SendLoopPacket( sock, length, data );
-		return;
-	}
 	if ( to->type == NA_BOT ) {
 		return;
 	}
@@ -653,12 +694,17 @@ void NET_SendPacket( netsrc_t sock, int length, const void *data, const netadr_t
 	}
 #ifndef DEDICATED
 	if ( sock == NS_CLIENT && cl_packetdelay->integer > 0 ) {
-		NET_QueuePacket( 0, sock, length, data, to, cl_packetdelay->integer );
+		NET_QueuePacket( sock, length, data, to, cl_packetdelay->integer );
 	} else
 #endif
 	if ( sock == NS_SERVER && sv_packetdelay->integer > 0 ) {
-		NET_QueuePacket( 0, sock, length, data, to, sv_packetdelay->integer );
+		NET_QueuePacket( sock, length, data, to, sv_packetdelay->integer );
 	}
+#ifndef DEDICATED
+	else if ( to->type == NA_LOOPBACK ) {
+		NET_SendLoopPacket( sock, length, data );
+	}
+#endif
 	else {
 		Sys_SendPacket( length, data, to );
 	}

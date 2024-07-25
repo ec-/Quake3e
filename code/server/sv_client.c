@@ -1028,7 +1028,12 @@ static void SV_SendClientGameState( client_t *client ) {
 
 	client->state = CS_PRIMED;
 
-	client->gamestateAcked = qfalse;
+	if ( client->gamestateAck == GSA_INIT ) {
+		client->gamestateAck = GSA_SENT_ONCE;
+	} else {
+		client->gamestateAck = GSA_SENT_MANY;
+	}
+
 	client->downloading = qfalse;
 
 	client->pureAuthentic = qfalse;
@@ -1135,8 +1140,8 @@ void SV_ClientEnterWorld( client_t *client ) {
 	}
 
 	client->state = CS_ACTIVE;
+	client->gamestateAck = GSA_ACKED;
 
-	client->gamestateAcked = qtrue;
 	client->oldServerTime = 0;
 
 	// resend all configstrings using the cs commands since these are
@@ -1281,7 +1286,7 @@ static void SV_BeginDownload_f( client_t *cl ) {
 	cl->gentity = NULL;
 
 	cl->downloading = qtrue;
-	cl->gamestateAcked = qfalse;
+	cl->gamestateAck = GSA_SENT_MANY; // expect exact messageAcknowledge next time
 }
 
 
@@ -2282,14 +2287,17 @@ void SV_ExecuteClientMessage( client_t *cl, msg_t *msg ) {
 			}
 			return;
 		}
-	} else if ( !cl->gamestateAcked ) {
+	} else if ( cl->gamestateAck != GSA_ACKED ) {
 		// early check for gamestate acknowledge
-		if ( serverId == sv.serverId && cl->messageAcknowledge == cl->gamestateMessageNum ) {
-			cl->gamestateAcked = qtrue;
-			// this client has acknowledged the new gamestate so it's
-			// safe to start sending it the real time again
-			Com_DPrintf( "%s acknowledged gamestate\n", cl->name );
-			cl->oldServerTime = 0;
+		if ( serverId == sv.serverId ) {
+			const int delta = cl->messageAcknowledge - cl->gamestateMessageNum;
+			if ( delta == 0 || ( delta > 0 && cl->gamestateAck == GSA_SENT_ONCE ) ) {
+				cl->gamestateAck = GSA_ACKED;
+				// this client has acknowledged the new gamestate so it's
+				// safe to start sending it the real time again
+				Com_DPrintf( "%s acknowledged gamestate with delta %i\n", cl->name, delta );
+				cl->oldServerTime = 0;
+			}
 		}
 	}
 	// else if ( cl->state == CS_PRIMED ) {
@@ -2312,7 +2320,7 @@ void SV_ExecuteClientMessage( client_t *cl, msg_t *msg ) {
 		}
 	} while ( 1 );
 
-	if ( !cl->gamestateAcked ) {
+	if ( cl->gamestateAck != GSA_ACKED ) {
 		// late check for gamestate resend
 		if ( cl->state == CS_PRIMED && cl->messageAcknowledge - cl->gamestateMessageNum > 0 ) {
 			Com_DPrintf( "%s: dropped gamestate, resending\n", cl->name );
