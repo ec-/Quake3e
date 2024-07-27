@@ -1588,7 +1588,8 @@ static qboolean vk_create_device( VkPhysicalDevice physical_device, int device_i
 			vk.wideLines = qtrue;
 		}
 
-		if ( device_features.fragmentStoresAndAtomics ) {
+		if ( device_features.fragmentStoresAndAtomics && device_features.vertexPipelineStoresAndAtomics ) {
+			features.vertexPipelineStoresAndAtomics = VK_TRUE;
 			features.fragmentStoresAndAtomics = VK_TRUE;
 			vk.fragmentStores = qtrue;
 		}
@@ -2859,6 +2860,7 @@ static void vk_alloc_persistent_pipelines( void )
 	}
 
 	// flare visibility test dot
+	if ( vk.fragmentStores )
 	{
 		Com_Memset( &def, 0, sizeof( def ) );
 		//def.state_bits = GLS_DEFAULT;
