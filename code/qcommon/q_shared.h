@@ -400,7 +400,7 @@ typedef vec_t vec3_t[3];
 typedef vec_t vec4_t[4];
 typedef vec_t vec5_t[5];
 
-typedef vec_t quat_t[4];
+typedef vec4_t quat_t;
 
 typedef	int	fixed4_t;
 typedef	int	fixed8_t;
@@ -412,18 +412,6 @@ typedef	int	fixed16_t;
 
 #ifndef M_LN2
 #define M_LN2      0.693147180559945309417f
-#endif
-
-#ifdef __linux__
-#ifdef __GLIBC__
-#if idx64
-// force version for better runtime compatibility
-__asm__(".symver logf,logf@GLIBC_2.2.5");
-__asm__(".symver powf,powf@GLIBC_2.2.5");
-__asm__(".symver expf,expf@GLIBC_2.2.5");
-__asm__(".symver memcpy,memcpy@GLIBC_2.2.5");
-#endif
-#endif
 #endif
 
 #define NUMVERTEXNORMALS	162

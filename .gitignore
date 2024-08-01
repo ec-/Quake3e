@@ -5,3 +5,10 @@ output/
 *.user
 cmake-*
 .idea
+CMakeFiles/
+Makefile
+CMakeCache.txt
+cmake_install.cmake
+install_manifest.txt
+libquake3e_*
+quake3e.*

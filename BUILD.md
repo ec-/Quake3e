@@ -18,7 +18,7 @@ All build dependencies (libraries, headers) are bundled-in
 
 Build with either `make ARCH=x86` or `make ARCH=x86_64` commands depending on your target system, then copy resulting binaries from created `build` directory or use command:
 
-`make install DESTDIR=<path_to_game_files>`
+`make -f Makefile.unix install DESTDIR=<path_to_game_files>`
 
 ---
 
@@ -34,7 +34,7 @@ Build with: `make`
 
 Copy the resulting binaries from created `build` directory or use command:
 
-`make install DESTDIR=<path_to_game_files>`
+`make -f Makefile.unix install DESTDIR=<path_to_game_files>`
 
 ---
 
@@ -70,7 +70,7 @@ Build with: `make`
 
 Copy the resulting binaries from created `build` directory or use command:
 
-`make install DESTDIR=<path_to_game_files>`
+`make -f Makefile.unix install DESTDIR=<path_to_game_files>`
 
 ---
 
@@ -107,4 +107,4 @@ Several Makefile options are available for linux/mingw/macos builds:
 
 Example:
 
-`make BUILD_SERVER=0 USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=vulkan` - which means do not build dedicated binary, build client with single static vulkan renderer
+`make -f Makefile.unix BUILD_SERVER=0 USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=vulkan` - which means do not build dedicated binary, build client with single static vulkan renderer
