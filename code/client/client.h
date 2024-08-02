@@ -472,7 +472,7 @@ qboolean CL_GetModeInfo( int *width, int *height, float *windowAspect, int mode,
 void CL_InitInput( void );
 void CL_ClearInput( void );
 void CL_SendCmd( void );
-void CL_WritePacket( void );
+void CL_WritePacket( int repeat );
 
 //
 // cl_keys.c
@@ -580,6 +580,7 @@ void Key_SetCatcher( int catcher );
 // cl_net_chan.c
 //
 void CL_Netchan_Transmit( netchan_t *chan, msg_t *msg );
+void CL_Netchan_Enqueue( netchan_t *chan, msg_t *msg, int times );
 qboolean CL_Netchan_Process( netchan_t *chan, msg_t *msg );
 
 //

@@ -43,7 +43,7 @@ jobs:
             rule: install
 
           - btype: Debug
-            rule: debug install
+            rule: debug
 
     defaults:
       run:
@@ -154,7 +154,7 @@ jobs:
 
           - btype: Debug
             if: ${{ github.event_name != 'release' }}
-            rule: debug install
+            rule: debug
 
           - arch: x86
             use_sdl: USE_SDL=0
@@ -208,7 +208,7 @@ jobs:
             rule: install
 
           - btype: Debug
-            rule: debug install
+            rule: debug
 
     steps:
 
@@ -230,9 +230,9 @@ jobs:
           apt-get -qq update
           apt-get install -y make gcc g++
           apt-get -y install libcurl4-openssl-dev mesa-common-dev libxxf86dga-dev libxrandr-dev libxxf86vm-dev libasound-dev
-          make ${{ matrix.rule }} -j 4 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_SDL=0 USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=vulkan CNAME=quake3e-vulkan BUILD_SERVER=0
+          make ${{ matrix.rule }} -j 8 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_SDL=0 USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=vulkan CNAME=quake3e-vulkan BUILD_SERVER=0
           make clean ARCH=${{ matrix.arch }} 
-          make ${{ matrix.rule }} -j 4 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_SDL=0 USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=opengl
+          make ${{ matrix.rule }} -j 8 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_SDL=0 USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=opengl
 
     - uses: actions/upload-artifact@v4
       if: false
@@ -244,12 +244,12 @@ jobs:
         retention-days: 5
 
   macos-x86:
-    name: ${{ matrix.btype }} macOS x86_64
+    name: ${{ matrix.btype }} macOS ${{ matrix.arch }}
     runs-on: macos-latest
     strategy:
       fail-fast: false
       matrix:
-        arch: [x86_64]
+        arch: [x86_64, aarch64]
         cc: [clang]
         btype: [Release, Debug]
         include:
@@ -257,12 +257,12 @@ jobs:
             rule: install
 
           - btype: Debug
-            rule: debug install
+            rule: debug
 
     steps:
 
     - name: Install tools
-      run: brew install coreutils pkg-config sdl2
+      run: brew install coreutils sdl2 # pkg-config
 
     - uses: actions/checkout@v4
       with:
@@ -271,9 +271,9 @@ jobs:
     - name: Build
       if: ${{ github.event_name != 'release' || matrix.btype != 'Debug' }} # skip Debug configuration in Release build
       run: |
-        make ${{ matrix.rule }} -j 4 CC=${{ matrix.cc }} DESTDIR=bin INSTALL=ginstall USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=vulkan CNAME=quake3e-vulkan BUILD_SERVER=0 STRIP=echo
+        make ${{ matrix.rule }} -j 8 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin INSTALL=ginstall USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=vulkan CNAME=quake3e-vulkan BUILD_SERVER=0 STRIP=echo
         make clean ARCH=${{ matrix.arch }} 
-        make ${{ matrix.rule }} -j 4 CC=${{ matrix.cc }} DESTDIR=bin INSTALL=ginstall USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=opengl STRIP=echo
+        make ${{ matrix.rule }} -j 8 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin INSTALL=ginstall USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=opengl STRIP=echo
 
     - uses: actions/upload-artifact@v4
       if: matrix.cc == 'clang' && matrix.btype == 'release'
@@ -293,7 +293,7 @@ jobs:
 
       - name: Create binary archives
         run: |
-          7z a -r quake3e-linux-x86.zip           ./linux-x86/*
+          7z a -r quake3e-linux-x86.zip            ./linux-x86/*
           7z a -r quake3e-linux-x86_64.zip         ./linux-x86_64/*
           7z a -r quake3e-windows-mingw-x86.zip    ./windows-mingw-x86/*
           7z a -r quake3e-windows-mingw-x86_64.zip ./windows-mingw-x86_64/*
@@ -301,11 +301,12 @@ jobs:
           7z a -r quake3e-windows-msvc-x86_64.zip  ./windows-msvc-x86_64/*
           7z a -r quake3e-windows-msvc-arm64.zip   ./windows-msvc-arm64/*
           7z a -r quake3e-macos-x86_64.zip         ./macos-x86_64/*
-#         7z a -r quake3e-linux-aarch64.zip  ./linux-aarch64/*
-#         7z a -r quake3e-linux-armv7.zip    ./linux-armv7/*
+          7z a -r quake3e-macos-aarch64.zip        ./macos-aarch64/*
+#         7z a -r quake3e-linux-aarch64.zip        ./linux-aarch64/*
+#         7z a -r quake3e-linux-armv7.zip          ./linux-armv7/*
 
       - name: Create latest build
-        uses: marvinpinto/action-automatic-releases@latest
+        uses: czietz/action-automatic-releases@latest
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           automatic_release_tag: "latest"
@@ -322,11 +323,11 @@ jobs:
     strategy:
       matrix:
         include:
-          # - artifact_dir: linux-aarch64
-          #   artifact_name: quake3e-linux-aarch64.zip
+#         - artifact_dir: linux-aarch64
+#           artifact_name: quake3e-linux-aarch64.zip
 
-          # - artifact_dir: linux-armv7
-          #  artifact_name: quake3e-linux-armv7.zip
+#         - artifact_dir: linux-armv7
+#           artifact_name: quake3e-linux-armv7.zip
 
           - artifact_dir: linux-x86
             artifact_name: quake3e-linux-x86.zip
