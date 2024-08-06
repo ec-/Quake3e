@@ -195,7 +195,8 @@ typedef struct {
 
 void		NET_Init( void );
 void		NET_Shutdown( void );
-void		NET_FlushPacketQueue(void);
+void		NET_FlushPacketQueue( int time_diff );
+void		NET_QueuePacket( netsrc_t sock, int length, const void *data, const netadr_t *to, int offset );
 void		NET_SendPacket( netsrc_t sock, int length, const void *data, const netadr_t *to );
 void		QDECL NET_OutOfBandPrint( netsrc_t net_socket, const netadr_t *adr, const char *format, ...) __attribute__ ((format (printf, 3, 4)));
 void		NET_OutOfBandCompress( netsrc_t sock, const netadr_t *adr, const byte *data, int len );
@@ -207,7 +208,9 @@ qboolean	NET_IsLocalAddress( const netadr_t *adr );
 const char	*NET_AdrToString( const netadr_t *a );
 const char	*NET_AdrToStringwPort( const netadr_t *a );
 int         NET_StringToAdr( const char *s, netadr_t *a, netadrtype_t family );
+#ifndef DEDICATED
 qboolean	NET_GetLoopPacket( netsrc_t sock, netadr_t *net_from, msg_t *net_message );
+#endif
 #ifdef USE_IPV6
 void		NET_JoinMulticast6( void );
 void		NET_LeaveMulticast6( void );
@@ -270,6 +273,7 @@ void Netchan_Setup( netsrc_t sock, netchan_t *chan, const netadr_t *adr, int por
 
 void Netchan_Transmit( netchan_t *chan, int length, const byte *data );
 void Netchan_TransmitNextFragment( netchan_t *chan );
+void Netchan_Enqueue( netchan_t *chan, int length, const byte *data );
 
 qboolean Netchan_Process( netchan_t *chan, msg_t *msg );
 
@@ -456,8 +460,11 @@ void Cbuf_Init( void );
 void Cbuf_AddText( const char *text );
 // Adds command text at the end of the buffer, does NOT add a final \n
 
-int Cbuf_Add( const char *text, int pos );
-// Adds command text at the specified position of the buffer, adds \n when needed
+void Cbuf_NestedAdd( const char *text );
+// Adds nested command text at the specified position of the buffer, adds \n when needed
+
+void Cbuf_NestedReset( void );
+// Resets nested cmd offset
 
 void Cbuf_InsertText( const char *text );
 // Adds command text at the beginning of the buffer, add \n
@@ -470,6 +477,9 @@ void Cbuf_Execute( void );
 // them through Cmd_ExecuteString.  Stops when the buffer is empty.
 // Normally called once per frame, but may be explicitly invoked.
 // Do not call inside a command function, or current args will be destroyed.
+
+qboolean Cbuf_Wait( void );
+// Checks if wait command timeout remaining
 
 //===========================================================================
 
@@ -856,9 +866,7 @@ void FS_VM_CloseFiles( handleOwner_t owner );
 const char *FS_GetCurrentGameDir( void );
 const char *FS_GetBaseGameDir( void );
 
-const char *FS_GetBasePath( void );
 const char *FS_GetHomePath( void );
-const char *FS_GetGamePath( void );
 
 qboolean FS_StripExt( char *filename, const char *ext );
 qboolean FS_AllowedExtension( const char *fileName, qboolean allowPk3s, const char **ext );

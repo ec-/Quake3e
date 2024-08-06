@@ -205,7 +205,7 @@ In order to use this functionality you need to install ffmpeg package (on linux)
 <br>
 Use <b>\cl_aviPipeFormat</b> to control encoder parameters passed to ffmpeg, see ffmpeg documentation for details, default value is set according to YouTube recommendations:<br>
 <pre>
--preset medium -crf 23 -vcodec libx264 -flags +cgop -pix_fmt yuv420p -bf 2 -codec:a aac -strict -2 -b:a 160k -r:a 22050 -movflags faststart</pre>
+-preset medium -crf 23 -c:v libx264 -flags +cgop -pix_fmt yuvj420p -bf 2 -c:a aac -strict -2 -b:a 160k -movflags faststart</pre>
 If you need higher bitrate - decrease <b>-crf</b> parameter, if you need better compression at cost of cpu time - set <b>-preset</b> to <i>slow</i> or <i>slower</i>.<br>
 <br>
 And since ffmpeg can utilize all available CPU cores for faster encoding - make sure you have <b>\com_affinityMask</b> set to 0.
