@@ -26,7 +26,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // q_shared.h -- included first by ALL program modules.
 // A user mod should never modify this file
 
-#define XMOD_VERSION "0.2.3"
+#define Q3_VERSION            "Q3 1.32e"
+
+#define XMOD_VERSION          "0.2.9 beta1"
+#define XQ3E_VERSION          ("XQ3E " XMOD_VERSION)
+#define SIGNATURE             ""
 
 #if defined(_MSC_VER)
 #ifdef _M_AMD64
@@ -38,7 +42,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define XMOD_ARCH "Unknown"
 #endif
 
-#define Q3_VERSION            "Q3 1.32e"
 #ifndef SVN_VERSION
   #define SVN_VERSION Q3_VERSION
 #endif
@@ -854,6 +857,7 @@ void	Q_strcat( char *dest, int size, const char *src );
 int     Q_replace( const char *str1, const char *str2, char *src, int max_len );
 
 char	*Q_stradd( char *dst, const char *src );
+char	*Q_strncpy( char *dest, const char *src, int destsize );
 
 // strlen that discounts Quake color sequences
 int Q_PrintStrlen( const char *string );

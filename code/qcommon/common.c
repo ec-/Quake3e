@@ -172,11 +172,6 @@ A raw string should NEVER be passed as fmt, because of "%f" type crashers.
 static void QDECL Com_Printf_Internal(int section,  int len, const char *msg) {
 	static qboolean opening_qconsole = qfalse;
 
-#ifndef DEDICATED
-	if (X_Main_IsOutputDisabled())
-		return;
-#endif
-
 	if ( rd_buffer && !rd_flushing ) {
 		if ( len + (int)strlen( rd_buffer ) > ( rd_buffersize - 1 ) ) {
 			rd_flushing = qtrue;
@@ -192,7 +187,10 @@ static void QDECL Com_Printf_Internal(int section,  int len, const char *msg) {
 	}
 
 #ifndef DEDICATED
-	// echo to client console if we're not a dedicated server
+	// echo to client console if we're not a dedicated server && disable output/logging while port scanning
+	if (X_Main_IsOutputDisabled())
+		return;
+	//
 	if (!com_dedicated || !com_dedicated->integer) {
 		if (section == CON_SECTION_LEFT)
 			CL_ConsolePrint(msg);

@@ -155,7 +155,7 @@ NET
 
 #define	PORT_ANY			-1
 
-#define	MAX_RELIABLE_COMMANDS	64			// max string commands buffered for restransmit
+#define	MAX_RELIABLE_COMMANDS	128			// max string commands buffered for restransmit
 
 typedef enum {
 	NA_BAD = 0,					// an address lookup failed
@@ -609,7 +609,7 @@ void	Cvar_SetCheatState( void );
 // reset all testing vars to a safe value
 
 void    Cvar_ResetXmodProtection( void );
-void    Cvar_RemoveCheatProtected(const char* var_name);
+void    Cvar_RemoveCheatProtected( const char *var_name );
 
 qboolean Cvar_Command( void );
 // called by Cmd_ExecuteString when Cmd_Argv(0) doesn't match a known

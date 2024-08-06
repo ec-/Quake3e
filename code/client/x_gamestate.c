@@ -5,7 +5,6 @@
 #define X_CS_CONFIGURATION 1000
 
 static cvar_t *x_gs_show_events = 0;
-
 // ====================
 //   Implementation
 
@@ -719,6 +718,7 @@ static void LoadEntitiesToCache(snapshot_t *snapshot)
 
 static void InterceptEvents(snapshot_t *snapshot)
 {
+	
 	for (int i = 0; i < snapshot->numEntities; i++)
 	{
 		entityState_t *entity = snapshot->entities + i;
@@ -747,8 +747,23 @@ static void InterceptEvents(snapshot_t *snapshot)
 
 		if (event == EV_OBITUARY)
 		{
+			if (clc.clientNum == entity->otherEntityNum) {
+				char* ondeath = Cvar_Get("x_exec_OnDeath", "", CVAR_ARCHIVE_ND)->string;
+				Cmd_ExecuteString(ondeath);
+			}
+
 			X_Main_OnDeathSound(entity->otherEntityNum, entity->otherEntityNum2);
 		}
+		
+		if (event == EV_PLAYER_TELEPORT_IN)
+		{
+			if (clc.clientNum == entity->clientNum & snapshot->ps.pm_time < 60) {
+				char* ondeath = Cvar_Get("x_exec_OnSpawn", "", CVAR_ARCHIVE_ND)->string;
+				Cmd_ExecuteString(ondeath);
+			}
+			
+		}
+
 	}
 
 	if (x_gs_show_events->integer && xmod.gs.psevseq != snapshot->ps.eventSequence)

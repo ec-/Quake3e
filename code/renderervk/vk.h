@@ -14,7 +14,7 @@
 
 #define VERTEX_BUFFER_SIZE (4 * 1024 * 1024)
 #define IMAGE_CHUNK_SIZE (32 * 1024 * 1024)
-#define MAX_IMAGE_CHUNKS 48
+#define MAX_IMAGE_CHUNKS 56
 
 #define NUM_COMMAND_BUFFERS 2	// number of command buffers / render semaphores / framebuffer sets
 
@@ -26,6 +26,18 @@
 #define USE_DEDICATED_ALLOCATION
 //#define MIN_IMAGE_ALIGN (128*1024)
 #define MAX_ATTACHMENTS_IN_POOL (8+VK_NUM_BLOOM_PASSES*2) // depth + msaa + msaa-resolve + depth-resolve + screenmap.msaa + screenmap.resolve + screenmap.depth + bloom_extract + blur pairs
+
+#define VK_DESC_STORAGE      0
+#define VK_DESC_UNIFORM      1
+#define VK_DESC_TEXTURE0     2
+#define VK_DESC_TEXTURE1     3
+#define VK_DESC_TEXTURE2     4
+#define VK_DESC_FOG_COLLAPSE 5
+#define VK_DESC_COUNT        6
+
+#define VK_DESC_TEXTURE_BASE VK_DESC_TEXTURE0
+#define VK_DESC_FOG_ONLY     VK_DESC_TEXTURE1
+#define VK_DESC_FOG_DLIGHT   VK_DESC_TEXTURE1
 
 typedef enum {
 	TYPE_COLOR_BLACK,
@@ -221,7 +233,7 @@ void vk_initialize( void );
 void vk_init_descriptors( void );
 
 // Shutdown vulkan subsystem by releasing resources acquired by Vk_Instance.
-void vk_shutdown( void );
+void vk_shutdown( refShutdownCode_t code );
 
 // Releases vulkan resources allocated during program execution.
 // This effectively puts vulkan subsystem into initial state (the state we have after vk_initialize call).
@@ -233,7 +245,7 @@ void vk_wait_idle( void );
 // Resources allocation.
 //
 void vk_create_image( image_t *image, int width, int height, int mip_levels );
-void vk_upload_image_data( image_t *image, int x, int y, int width, int height, int miplevels, byte *pixels, int size );
+void vk_upload_image_data( image_t *image, int x, int y, int width, int height, int miplevels, byte *pixels, int size, qboolean update );
 void vk_update_descriptor_set( image_t *image, qboolean mipmap );
 void vk_destroy_image_resources( VkImage *image, VkImageView *imageView );
 
@@ -251,6 +263,7 @@ void vk_clear_color( const vec4_t color );
 void vk_clear_depth( qboolean clear_stencil );
 void vk_begin_frame( void );
 void vk_end_frame( void );
+void vk_present_frame( void );
 
 void vk_end_render_pass( void );
 void vk_begin_main_render_pass( void );
@@ -310,8 +323,8 @@ typedef struct vk_tess_s {
 		uint32_t		offset[2]; // 0 (uniform) and 5 (storage)
 	} descriptor_set;
 
-	Vk_Depth_Range depth_range;
-	VkPipeline last_pipeline;
+	Vk_Depth_Range		depth_range;
+	VkPipeline			last_pipeline;
 
 	uint32_t num_indexes; // value from most recent vk_bind_index() call
 
@@ -322,9 +335,7 @@ typedef struct vk_tess_s {
 // Vk_Instance contains engine-specific vulkan resources that persist entire renderer lifetime.
 // This structure is initialized/deinitialized by vk_initialize/vk_shutdown functions correspondingly.
 typedef struct {
-	VkInstance instance;
 	VkPhysicalDevice physical_device;
-	VkSurfaceKHR surface;
 	VkSurfaceFormatKHR base_format;
 	VkSurfaceFormatKHR present_format;
 
@@ -532,10 +543,6 @@ typedef struct {
 	VkPipeline bloom_extract_pipeline;
 	VkPipeline blur_pipeline[VK_NUM_BLOOM_PASSES*2]; // horizontal & vertical pairs
 	VkPipeline bloom_blend_pipeline;
-
-#ifndef NDEBUG
-	VkDebugReportCallbackEXT debug_callback;
-#endif
 
 	uint32_t frame_count;
 	qboolean active;

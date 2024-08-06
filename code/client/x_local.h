@@ -280,7 +280,7 @@ typedef enum
 	HeadModel
 } PlayerModel;
 
-#define X_MAX_NET_PORTS 20
+#define X_MAX_NET_PORTS 15
 #define X_NET_PORT_ATTEMPTS 16
 
 typedef struct
@@ -496,7 +496,7 @@ void X_Main_Event_OnSoundStart(int entityNum, const vec3_t origin, const char *s
 
 void X_Main_OnDeathSound(int target, int attacker);
 
-qboolean X_Main_Hook_CGame_Cvar_SetSafe(const char *var_name, const char *value);
+//qboolean X_Main_Hook_CGame_Cvar_SetSafe(const char *var_name, const char *value);
 void X_Main_Hook_UpdateEntityPosition(int entityNum, const vec3_t origin);
 int X_Main_Hook_FS_GetFileList(const char *path, const char *extension, char *listbuf, int bufsize);
 void X_Main_Hook_AddLoopingSound(int entityNum, const vec3_t origin, const vec3_t velocity, sfxHandle_t sfx);
@@ -512,7 +512,7 @@ cvar_t *X_Main_RegisterXModeCmd(char *cmd, char *dfault, char *start, char *stop
 
 #define X_Main_RegisterXCommand(cvar, dfault, start, stop, description) (cvar)=X_Main_RegisterXModeCmd((#cvar),(dfault),(start),(stop),(description),CVAR_ARCHIVE,CV_INTEGER)
 #define X_Main_RegisterFloatXCommand(cvar, dfault, start, stop, description) (cvar)=X_Main_RegisterXModeCmd((#cvar),(dfault),(start),(stop),(description),CVAR_ARCHIVE,CV_FLOAT)
-#define X_Main_RegisterHackXCommand(cvar, dfault, start, stop, description) (cvar)=X_Main_RegisterXModeCmd((#cvar),(dfault),(start),(stop),(description),CVAR_ARCHIVE|CVAR_USERINFO|CVAR_XMOD,CV_INTEGER)
+#define X_Main_RegisterHackXCommand(cvar, dfault, start, stop, description) (cvar)=X_Main_RegisterXModeCmd((#cvar),(dfault),(start),(stop),(description),CVAR_ARCHIVE|CVAR_XMOD,CV_INTEGER)
 
 /*********************************
  *  x_net.c
@@ -532,7 +532,7 @@ void X_Hud_On_CG_PRINT(const char *message);
 void X_CH_Init(void);
 qboolean X_CH_CustomizeCrosshair(float x, float y, float w, float h, qhandle_t shader);
 void X_CH_ChangeCrosshairOnSoundTrigger(const char *soundName);
-void X_CH_CalculateDistance(const refdef_t *fd);
+//void X_CH_CalculateDistance(const refdef_t *fd);
 
 /*********************************
  *  x_ddamage.c

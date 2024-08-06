@@ -58,7 +58,7 @@ typedef struct {
 
 	float	xadjust;		// for wide aspect screens
 
-	float	displayFrac;	// aproaches finalFrac at scr_conspeed
+	float	displayFrac;	// aproaches finalFrac at con_speed
 	float	finalFrac;		// 0.0 to 1.0 lines of console to display
 
 	int		vislines;		// in scanlines
@@ -76,10 +76,12 @@ extern  qboolean    chat_team;
 extern  int         chat_playerNum;
 extern cvar_t       *x_con_overlay_size;
 extern cvar_t       *x_con_chat_section;
+extern cvar_t		*x_con_height;
+extern cvar_t		*x_con_smoothanim;
 
 console_t	con;
 
-cvar_t		*con_conspeed;
+cvar_t		*con_speed;
 cvar_t		*con_autoclear;
 cvar_t		*con_notifytime;
 cvar_t		*con_scale;
@@ -420,8 +422,9 @@ void Con_Init( void )
 {
 	con_notifytime = Cvar_Get( "con_notifytime", "3", 0 );
 	Cvar_SetDescription( con_notifytime, "Defines how long messages (from players or the system) are on the screen (in seconds)." );
-	con_conspeed = Cvar_Get( "scr_conspeed", "3", 0 );
-	Cvar_SetDescription( con_conspeed, "Console opening/closing scroll speed." );
+	con_speed = Cvar_Get( "con_speed", "15", CVAR_ARCHIVE_ND );
+	Cvar_CheckRange(con_speed, "1.0", "100.0", CV_FLOAT);
+	Cvar_SetDescription( con_speed, "Console opening/closing scroll speed." );
 	con_autoclear = Cvar_Get("con_autoclear", "1", CVAR_ARCHIVE_ND);
 	Cvar_SetDescription( con_autoclear, "Enable/disable clearing console input text when console is closed." );
 	con_scale = Cvar_Get( "con_scale", "1", CVAR_ARCHIVE_ND );
@@ -430,6 +433,14 @@ void Con_Init( void )
 
 	Field_Clear( &g_consoleField );
 	g_consoleField.widthInChars = g_console_field_width;
+
+	x_con_height = Cvar_Get("x_con_height", "0.5", CVAR_ARCHIVE_ND);
+	Cvar_CheckRange(x_con_height, "0.05", "0.9", CV_FLOAT);
+	Cvar_SetDescription(x_con_height, "Console height.");
+
+	x_con_smoothanim = Cvar_Get("x_con_smoothanim", "0", CVAR_ARCHIVE_ND);
+	Cvar_CheckRange(x_con_smoothanim, "0", "1", CV_INTEGER);
+	Cvar_SetDescription(x_con_smoothanim, "Console smooth animation.");
 
 	Cmd_AddCommand( "clear", Con_Clear_f );
 	Cmd_AddCommand( "condump", Con_Dump_f );
@@ -517,8 +528,11 @@ Con_Linefeed
 static void Con_Linefeed( qboolean skipnotify, section_t *section )
 {
 	int times = X_GetMaxOverlay();
+	if (times == 0) times = 1;
+	//if (times < 1) return;
+	//if (times == 0) skipnotify = qtrue;
 	// mark time for transparent overlay
-	if ( section->current >= 0 )	{
+	if ( section->current >= 0)	{
 		if ( skipnotify )
 			con.times[ section->current % times ] = 0;
 		else
@@ -625,6 +639,7 @@ void CL_ConsolePrintInternal( const char *txt , section_t* section, qboolean mai
 			y = section->current % con.totallines;
 			section->text[y * con.linewidth + section->x ] = (colorIndex << 8) | (c & 255);
 			section->x++;
+
 			if (main && section->x >= con.linewidth ) {
 				Con_Linefeed( skipnotify, section );
 			}
@@ -635,7 +650,10 @@ void CL_ConsolePrintInternal( const char *txt , section_t* section, qboolean mai
 	// mark time for transparent overlay
 	if (main && section->current >= 0 ) {
 		int times = X_GetMaxOverlay();
-		if ( skipnotify ) {
+		if (times == 0) times = 1;
+		
+		//if (times < 1) return;
+		if ( skipnotify) {
 			prev = section->current % times - 1;
 			if ( prev < 0 )
 				prev = times - 1;
@@ -749,23 +767,23 @@ Con_DrawNotify
 Draws the last few lines of output transparently over the game top
 ================
 */
-static void Con_DrawNotify( void )
+static void Con_DrawNotify(void)
 {
 	int		x, v;
-	short	*text;
+	short* text;
 	int		i;
 	int		time;
 	int		skip;
 	int		currentColorIndex;
 	int		colorIndex;
 
-	currentColorIndex = ColorIndex( COLOR_WHITE );
-	re.SetColor( g_color_table[ currentColorIndex ] );
+	currentColorIndex = ColorIndex(COLOR_WHITE);
+	re.SetColor(g_color_table[currentColorIndex]);
 
 	int times = X_GetMaxOverlay();
 
 	v = 0;
-	for (i= con.section->current- times +1 ; i<=con.section->current ; i++)
+	for (i = con.section->current - times + 1; i <= con.section->current; i++)
 	{
 		if (i < 0)
 			continue;
@@ -773,57 +791,143 @@ static void Con_DrawNotify( void )
 		if (time == 0)
 			continue;
 		time = cls.realtime - time;
-		if ( time >= con_notifytime->value*1000 )
+		if (time >= con_notifytime->value * 1000)
 			continue;
-		text = con.section->text + (i % con.totallines)*con.linewidth;
+		text = con.section->text + (i % con.totallines) * con.linewidth;
 
-		if (cl.snap.ps.pm_type != PM_INTERMISSION && Key_GetCatcher( ) & (KEYCATCH_UI | KEYCATCH_CGAME) ) {
+		if (cl.snap.ps.pm_type != PM_INTERMISSION && Key_GetCatcher() & (KEYCATCH_UI | KEYCATCH_CGAME)) {
 			continue;
 		}
 
-		for (x = 0 ; x < con.linewidth ; x++) {
-			if ( ( text[x] & 0xff ) == ' ' ) {
+		for (x = 0; x < con.linewidth; x++) {
+			if ((text[x] & 0xff) == ' ') {
 				continue;
 			}
-			colorIndex = ( text[x] >> 8 ) & 63;
-			if ( currentColorIndex != colorIndex ) {
+			colorIndex = (text[x] >> 8) & 63;
+			if (currentColorIndex != colorIndex) {
 				currentColorIndex = colorIndex;
-				re.SetColor( g_color_table[ colorIndex ] );
+				re.SetColor(g_color_table[colorIndex]);
 			}
-			SCR_DrawSmallChar( cl_conXOffset->integer + con.xadjust + (x+1)*smallchar_width, v, text[x] & 0xff );
+			SCR_DrawSmallChar(cl_conXOffset->integer + con.xadjust + (x + 1) * smallchar_width, v, text[x] & 0xff);
 		}
 
 		v += smallchar_height;
 	}
 
-	re.SetColor( NULL );
+	re.SetColor(NULL);
 
-	if ( Key_GetCatcher() & (KEYCATCH_UI | KEYCATCH_CGAME) ) {
+	if (Key_GetCatcher() & (KEYCATCH_UI | KEYCATCH_CGAME)) {
 		return;
 	}
 
 	// draw the chat line
-	if ( Key_GetCatcher( ) & KEYCATCH_MESSAGE )
+	if (Key_GetCatcher() & KEYCATCH_MESSAGE)
 	{
 		// rescale to virtual 640x480 space
 		v /= cls.glconfig.vidHeight / 480.0;
 
+
 		if (chat_team)
 		{
-			SCR_DrawBigString( SMALLCHAR_WIDTH, v, "say_team:", 1.0f, qfalse );
+			SCR_DrawBigString(SMALLCHAR_WIDTH, v, "say_team:", 1.0f, qfalse);
 			skip = 10;
 		}
 		else
 		{
-			SCR_DrawBigString( SMALLCHAR_WIDTH, v, "say:", 1.0f, qfalse );
+			SCR_DrawBigString(SMALLCHAR_WIDTH, v, "say:", 1.0f, qfalse);
 			skip = 5;
 		}
 
-		Field_BigDraw( &chatField, skip * BIGCHAR_WIDTH, v,
-			SCREEN_WIDTH - ( skip + 1 ) * BIGCHAR_WIDTH, qtrue, qtrue );
+		Field_BigDraw(&chatField, skip * BIGCHAR_WIDTH, v,
+			SCREEN_WIDTH - (skip + 1) * BIGCHAR_WIDTH, qtrue, qtrue);
 	}
 }
 
+// tried to make messages appearing smooth
+//static void Con_DrawNotify(void)
+//{
+//	int		x, v;
+//	short* text;
+//	int		i;
+//	int		time;
+//	int		skip;
+//	int		currentColorIndex;
+//	int		colorIndex;
+//	float	fadeInTime = 0.5f; // adjust this value to control the fade-in speed
+//
+//	currentColorIndex = ColorIndex(COLOR_WHITE);
+//	re.SetColor(g_color_table[currentColorIndex]);
+//
+//	int times = X_GetMaxOverlay();
+//
+//	v = 0;
+//	for (i = con.section->current - times + 1; i <= con.section->current; i++)
+//	{
+//		if (i < 0)
+//			continue;
+//		time = con.times[i % times];
+//		if (time == 0)
+//			continue;
+//		time = cls.realtime - time;
+//		if (time >= con_notifytime->value * 1000)
+//			continue;
+//		text = con.section->text + (i % con.totallines) * con.linewidth;
+//
+//		if (cl.snap.ps.pm_type != PM_INTERMISSION && Key_GetCatcher() & (KEYCATCH_UI | KEYCATCH_CGAME)) {
+//			continue;
+//		}
+//
+//		float fadeInProgress = 1.0f;
+//		if (time < fadeInTime * 200) {
+//			fadeInProgress = (float)time / (fadeInTime * 200);
+//		}
+//
+//		for (x = 0; x < con.linewidth; x++) {
+//			if ((text[x] & 0xff) == ' ') {
+//				continue;
+//			}
+//			colorIndex = (text[x] >> 8) & 63;
+//			if (currentColorIndex != colorIndex) {
+//				currentColorIndex = colorIndex;
+//				re.SetColor(g_color_table[colorIndex]);
+//			}
+//			int charX = cl_conXOffset->integer + con.xadjust + (x)*smallchar_width;
+//			charX -= (int)(fadeInProgress * smallchar_width); // adjust x position based on fade-in progress
+//			SCR_DrawSmallChar(charX, v, text[x] & 0xff);
+//
+//		}
+//
+//		v += smallchar_height;
+//	}
+//
+//	re.SetColor(NULL);
+//
+//	if (Key_GetCatcher() & (KEYCATCH_UI | KEYCATCH_CGAME)) {
+//		return;
+//	}
+//
+//	// draw the chat line
+//	if (Key_GetCatcher() & KEYCATCH_MESSAGE)
+//	{
+//		// rescale to virtual 640x480 space
+//		v /= cls.glconfig.vidHeight / 480.0;
+//
+//
+//		if (chat_team)
+//		{
+//			SCR_DrawBigString(SMALLCHAR_WIDTH, v, "say_team:", 1.0f, qfalse);
+//			skip = 10;
+//		}
+//		else
+//		{
+//			SCR_DrawBigString(SMALLCHAR_WIDTH, v, "say:", 1.0f, qfalse);
+//			skip = 5;
+//		}
+//
+//		Field_BigDraw(&chatField, skip * BIGCHAR_WIDTH, v,
+//			SCREEN_WIDTH - (skip + 1) * BIGCHAR_WIDTH, qtrue, qtrue);
+//	}
+//}
 
 /*
 ================
@@ -901,9 +1005,13 @@ static void Con_DrawSolidConsole( float frac ) {
 
 	//y = yf;
 
+	char version[30];
+	Com_sprintf(version, sizeof(version), "%s <%s> ", XQ3E_VERSION, Cvar_VariableString("rendererCON"));
+	int len = strlen(version);
+
 	// draw the version number
-	SCR_DrawSmallString( cls.glconfig.vidWidth - ( ARRAY_LEN( Q3_VERSION ) ) * smallchar_width,
-		lines - smallchar_height, Q3_VERSION, ARRAY_LEN( Q3_VERSION ) - 1 );
+	SCR_DrawSmallString( cls.glconfig.vidWidth - (len) * smallchar_width,
+		lines - smallchar_height, version, len );
 
 	// draw the text
 	con.vislines = lines;
@@ -1018,27 +1126,54 @@ Con_RunConsole
 Scroll it up or down
 ==================
 */
-void Con_RunConsole( void ) 
+void Con_RunConsole(void)
 {
 	// decide on the destination height of the console
-	if ( Key_GetCatcher( ) & KEYCATCH_CONSOLE )
-		con.finalFrac = 0.5;	// half screen
+	if (Key_GetCatcher() & KEYCATCH_CONSOLE)
+		con.finalFrac = x_con_height->value;    // half screen
 	else
-		con.finalFrac = 0.0;	// none visible
-	
-	// scroll towards the destination height
-	if ( con.finalFrac < con.displayFrac )
-	{
-		con.displayFrac -= con_conspeed->value * cls.realFrametime * 0.001;
-		if ( con.finalFrac > con.displayFrac )
-			con.displayFrac = con.finalFrac;
+		con.finalFrac = 0.0;    // none visible
 
+	if (x_con_smoothanim->integer) {
+	// cap the frametime to prevent large delta values
+	// pidorasilo pri low fps - ebal rot
+	float frametime = cls.realFrametime;
+	if (frametime > 10) {
+		frametime = 10;
 	}
-	else if ( con.finalFrac > con.displayFrac )
-	{
-		con.displayFrac += con_conspeed->value * cls.realFrametime * 0.001;
-		if ( con.finalFrac < con.displayFrac )
-			con.displayFrac = con.finalFrac;
+
+	// interpolation
+	float delta = con_speed->value * frametime * 0.001;
+	con.displayFrac += (con.finalFrac - con.displayFrac) * delta;
+
+	// dozakryvaem console chtoby drawnotify rabotal
+	if (con.finalFrac == 0.0 && con.displayFrac < 0.006) {
+		con.displayFrac = 0.0;
+	}
+
+	// stop animation
+	if (con.displayFrac < 0.0)
+		con.displayFrac = 0.0;
+	else if (con.displayFrac > 1.0)
+		con.displayFrac = 1.0;
+	}
+	else {
+		//vanilla console
+
+		// scroll towards the destination height
+		if (con.finalFrac < con.displayFrac)
+		{
+			con.displayFrac -= con_speed->value * cls.realFrametime * 0.001;
+			if (con.finalFrac > con.displayFrac)
+				con.displayFrac = con.finalFrac;
+
+		}
+		else if (con.finalFrac > con.displayFrac)
+		{
+			con.displayFrac += con_speed->value * cls.realFrametime * 0.001;
+			if (con.finalFrac < con.displayFrac)
+				con.displayFrac = con.finalFrac;
+		}
 	}
 }
 
@@ -1101,6 +1236,9 @@ void Con_Close( void )
 static int X_GetMaxOverlay(void) {
 	if (!x_con_overlay_size)
 		return NUM_CON_TIMES;
+	
+	//if (x_con_overlay_size->integer < 1)
+	//	return 1;
 
 	if (x_con_overlay_size->integer > NUM_CON_TIMES)
 		return NUM_CON_TIMES;

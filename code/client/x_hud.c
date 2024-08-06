@@ -172,9 +172,9 @@ static void DrawBotLevel(Bar *bar, float x, float y, float skill);
 
 void X_Hud_On_CG_PRINT(const char *message)
 {
-	/* Disable statsall for meat q3msk.ru */
+	// Disable statsall for non-OSP servers
 	const char *pattern = "^1\'^3statsall^1\' is currently disabled^7.";
-	if (Q_strncmp(message, pattern, strlen(pattern)) == 0 )
+	if ( !Q_strncmp(message, pattern, strlen(pattern)) )
 	{
 		xmod.x_mod_hud_context.statsall_disabled = qtrue;
 	}
@@ -186,7 +186,7 @@ void X_Hud_Init()
 	Cmd_AddCommand("-xscore", HideScoreTable);
 
 	X_Main_RegisterXCommand(x_hud_fix_font, "1", "0", "1", 0);
-	X_Main_RegisterXCommand(x_hud_xscore_by_default, "1", "0", "1", 0);
+	X_Main_RegisterXCommand(x_hud_xscore_by_default, "0", "0", "1", 0);
 	X_Main_RegisterFloatXCommand(x_hud_xscore_opaque, "0.9", "0.0", "1.0", 0);
 
 	X_Hud_ValidateDefaultScores();
@@ -248,7 +248,7 @@ qboolean X_Hud_UpdatePlayerStats()
 		if (current >= xmod.scr.lastUpd)
 		{
 			CL_AddReliableCommand("score", qfalse);
-			if (!xmod.x_mod_hud_context.statsall_disabled)
+			if ( !xmod.x_mod_hud_context.statsall_disabled )
 			{
 				CL_AddReliableCommand("statsall", qfalse);
 			}
@@ -448,16 +448,22 @@ static void CheckAndTurnOfAutoshow(void)
 
 static void DrawTopHud(void)
 {
-	char text[64];
+	char text[32];
 	Bar bar;
-	qtime_t qtime;
 
 	CalculateCenterBar(&bar, 640.0f, 480.0f);
+	
+	struct tm *newtime;
+	time_t aclock;
+	char timestr[16];
 
-	Com_RealTime(&qtime);
-	Com_sprintf(text, sizeof(text), "^7CURRENT TIME^z:^d%02d:%02d:%02d", qtime.tm_hour, qtime.tm_min, qtime.tm_sec);
+	time( &aclock );
+	newtime = localtime( &aclock );
+	strftime( timestr, sizeof( timestr ), "%X", newtime );
+
+	Com_sprintf(text, sizeof(text), "^7CURRENT TIME^z:^d%s", timestr);
 	DrawBarStrRightAligned(&bar, 635.f, 5.f, 7.5f, 0.8f, text)
-
+	//
 	Com_sprintf(text, sizeof(text), "^7PLAYING^z:^d%s", CovertTimeToString(Sys_Milliseconds()));
 	DrawBarStrRightAligned(&bar, 635.f, 15.f, 7.5f, 0.8f, text)
 }

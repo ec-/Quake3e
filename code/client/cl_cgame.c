@@ -498,10 +498,10 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		Cvar_Update( VMA(1), cgvm->privateFlag );
 		return 0;
 	case CG_CVAR_SET:
-		if (X_Main_Hook_CGame_Cvar_SetSafe(VMA(1), VMA(2)) == qtrue)
-		{
-			Cvar_SetSafe(VMA(1), VMA(2));
-		}
+	//	if (X_Main_Hook_CGame_Cvar_SetSafe(VMA(1), VMA(2)) == qtrue)
+	//	{
+			Cvar_SetSafe( VMA(1), VMA(2) );
+	//	}
 		return 0;
 	case CG_CVAR_VARIABLESTRINGBUFFER:
 		VM_CHECKBOUNDS( cgvm, args[2], args[3] );
@@ -709,7 +709,7 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		return args[1];
 	case TRAP_STRNCPY:
 		VM_CHECKBOUNDS( cgvm, args[1], args[3] );
-		strncpy( VMA(1), VMA(2), args[3] );
+		Q_strncpy( VMA(1), VMA(2), args[3] );
 		return args[1];
 	case TRAP_SIN:
 		return FloatAsInt( sin( VMF(1) ) );
@@ -885,15 +885,15 @@ void CL_InitCGame( void ) {
 	}
 	cls.state = CA_LOADING;
 
-	{
-		int savefps = com_maxfps->integer;
+//	{
+//		int savefps = com_maxfps->integer;
 		// init for this gamestate
 		// use the lastExecutedServerCommand instead of the serverCommandSequence
 		// otherwise server commands sent just before a gamestate are dropped
 		VM_Call(cgvm, 3, CG_INIT, clc.serverMessageSequence, clc.lastExecutedServerCommand, clc.clientNum);
 
-		Cvar_SetIntegerValue("com_maxfps", savefps);
-	}
+//		Cvar_SetIntegerValue("com_maxfps", savefps);
+//	}
 
 	X_Main_InitAfterCGameVM();
 

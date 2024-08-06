@@ -46,11 +46,13 @@ void X_DMG_ParseSnapshotDamage()
 	{
 		return;
 	}
-
+	
 	snapshot_t *snapshot = &xmod.snap;
 	Damage *dmg = &xmod.dmg;
 	int total = snapshot->ps.persistant[PERS_HITS];
-
+	//int total = snapshot->ps.persistant[PERS_ATTACKEE_ARMOR] & 0xff;
+	//int test = snapshot->ps.persistant[PERS_ATTACKEE_ARMOR] & 0xff;
+	//Com_Printf("test: %d\n", test);
 	dmg->type = DmgNone;
 	dmg->printed = qfalse;
 	dmg->damage = 0;
@@ -65,6 +67,7 @@ void X_DMG_ParseSnapshotDamage()
 	if (!total || dmg->total > total)
 	{
 		dmg->total = total;
+		
 	}
 
 	if (dmg->total == total)
@@ -102,7 +105,7 @@ void X_DMG_ParseSnapshotDamage()
 
 		if (event == EV_MISSILE_MISS && xmod.dmg.type != DmgMissle)
 		{
-			xmod.dmg.type = DmgMissle;
+			xmod.dmg.type = DmgMissle;    
 		}
 
 		if (event == EV_RAILTRAIL && dmg->clientNum == snapshot->entities[i].clientNum)
@@ -293,7 +296,7 @@ static void SetDamageIconPosition(DamageIcon *icon, vec3_t origin, const vec3_t 
 	float step = 2.0f / dmg->duration;
 	float x = (delataMs * step);
 	float y = -(x * x) + (2 * x);
-
+	
 	switch (x_hck_dmg_draw->integer)
 	{
 		case 1:
@@ -301,6 +304,7 @@ static void SetDamageIconPosition(DamageIcon *icon, vec3_t origin, const vec3_t 
 			y /= (step * 8);
 			break;
 		case 2:
+			
 			x /= (step * 15) * icon->dir;
 			y /= (step * icon->params[0]);
 			break;

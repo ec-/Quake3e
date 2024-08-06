@@ -769,7 +769,7 @@ static void upload_vk_image( image_t *image, byte *pic ) {
 	image->uploadHeight = h;
 
 	vk_create_image( image, w, h, upload_data.mip_levels );
-	vk_upload_image_data( image, 0, 0, w, h, upload_data.mip_levels, upload_data.buffer, upload_data.buffer_size );
+	vk_upload_image_data( image, 0, 0, w, h, upload_data.mip_levels, upload_data.buffer, upload_data.buffer_size, qfalse );
 
 	ri.Hunk_FreeTempMemory( upload_data.buffer );
 }
@@ -1701,8 +1701,6 @@ void R_SetColorMappings( void ) {
 	}
 
 #ifdef USE_VULKAN
-	vk_update_post_process_pipelines();
-
 	if ( gls.deviceSupportsGamma ) {
 		if ( vk.fboActive )
 			ri.GLimp_SetGamma( s_gammatable_linear, s_gammatable_linear, s_gammatable_linear );
@@ -1744,6 +1742,10 @@ void R_InitImages( void ) {
 
 	// create default texture and white texture
 	R_CreateBuiltinImages();
+
+#ifdef USE_VULKAN
+	vk_update_post_process_pipelines();
+#endif
 }
 
 

@@ -545,10 +545,10 @@ void RE_RenderScene( const refdef_t *fd ) {
 	parms.viewportWidth = tr.refdef.width;
 	parms.viewportHeight = tr.refdef.height;
 	parms.isPortal = qfalse;
-
+	//parms.viewportWidth = 50;
 	parms.fovX = tr.refdef.fov_x;
 	parms.fovY = tr.refdef.fov_y;
-	
+	//Com_Printf("fovx: %f\n", parms.fovX);
 	parms.stereoFrame = tr.refdef.stereoFrame;
 
 	VectorCopy( fd->vieworg, parms.or.origin );

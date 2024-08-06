@@ -8,13 +8,13 @@ static cvar_t *x_net_port_auto_renew = 0;
 
 static cvar_t *x_net_show_commands = 0;
 
-static char x_net_last_visited_server[MAX_OSPATH];
+static char x_last_visited_server[MAX_OSPATH];
 
 // ====================
 //   Const vars
 
 static char X_HELP_NET_PORT_AUTO_RENEW[] = "\n ^fx_net_port_auto_renew^5 0|1^7\n\n"
-										   "   Automatically select the network port with the best ping value (when changing a map or joining to a server).\n";
+										   "   Automatically select the network port with the lowest ping value when joining to a server.\n";
 
 // ====================
 //   Static routines
@@ -56,6 +56,7 @@ static void InitNetScanProgressBar(void)
 void X_Net_Teardown(void)
 {
 	Cmd_RemoveCommand("x_net_port_renew");
+	Cmd_RemoveCommand("x_send");
 }
 
 void X_Net_RenewPortOnSnapshot(snapshot_t *snapshot)
@@ -175,29 +176,27 @@ qboolean X_Net_ShowCommands(void)
 	return (x_net_show_commands->integer ? qtrue : qfalse);
 }
 
-static void UpdateStaticServerInfo(void)
+static void UpdateStaticServerInfo( void )
 {
-	if (clc.demoplaying)
-	{
+	if ( clc.demoplaying )
 		return;
-	}
 
-	if (Q_stricmp(cls.servername, x_net_last_visited_server))
+	if ( Q_stricmp(cls.servername, x_last_visited_server) )
 	{
 		X_Con_PrintToChatSection("connected to ^7%s", cls.servername);
 
-		if (x_net_port_auto_renew && x_net_port_auto_renew->integer) PortRenew(qtrue);
+		if ( x_net_port_auto_renew->integer && clc.netchan.remoteAddress.type != NA_LOOPBACK )
+			PortRenew(qtrue);
 
-		Q_strncpyz(x_net_last_visited_server, cls.servername, sizeof(x_net_last_visited_server));
+		Q_strncpyz(x_last_visited_server, cls.servername, sizeof(x_last_visited_server));
 	}
-
 }
 
 static void PortRenewNoisy()
 {
 	if (clc.demoplaying)
 	{
-		Com_Printf("Can't renew port when demo is playing");
+		Com_Printf("^1Can't renew port while playing demo^7.");
 		return;
 	}
 
@@ -211,7 +210,7 @@ static void PortRenew(qboolean silent)
 		return;
 	}
 
-	Com_Printf("^fPort scan has been started\n");
+	Com_Printf("^fPort scanning has started^1.\n");
 
 	Network *net = &xmod.net;
 	net->scan = qtrue;
@@ -265,12 +264,12 @@ static void CompletePortScan(void)
 
 	int lowest = 999, port = 27960;
 
-	Com_Printf("^fPort scan has been completed\n");
+	Com_Printf("^fPort scanning has completed^1.\n");
 
 	if (!net->silent)
 	{
 		Com_Printf(
-		"\n  ^7Summary\n\n"
+		"\n  ^7Summary^1:\n\n"
 		);
 	}
 

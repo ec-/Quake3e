@@ -666,8 +666,14 @@ cvar_t *Cvar_Set2( const char *var_name, const char *value, qboolean force ) {
 
 		if ( (var->flags & CVAR_CHEAT) && !cvar_cheats->integer )
 		{
-			Com_Printf( "%s is cheat protected.\n", var_name );
-			return var;
+			if ( !Q_stricmp(var_name, "cg_gunX") || !Q_stricmp(var_name, "cg_gunY") || !Q_stricmp(var_name, "cg_gunZ")
+				|| !Q_stricmp(var_name, "r_flareCoeff") || !Q_stricmp(var_name, "r_flareFade") || !Q_stricmp(var_name, "r_flareSize") )
+				/*Com_Printf( "^3%s ^2applied^1.\n", var_name )*/ ;
+			else
+			{
+				Com_Printf( "%s is cheat protected.\n", var_name );
+				return var;
+			}
 		}
 
 		if ( (var->flags & CVAR_DEVELOPER) && !cvar_developer->integer )
@@ -756,6 +762,12 @@ Cvar_Set
 ============
 */
 void Cvar_Set( const char *var_name, const char *value) {
+
+	// prevent cg_gunXYZ & flares from resetting
+	if ( !Q_stricmp(var_name, "cg_gunX") || !Q_stricmp(var_name, "cg_gunY") || !Q_stricmp(var_name, "cg_gunZ")
+		|| !Q_stricmp(var_name, "r_flareCoeff") || !Q_stricmp(var_name, "r_flareFade") || !Q_stricmp(var_name, "r_flareSize") )
+		return;
+
 	Cvar_Set2 (var_name, value, qtrue);
 }
 
@@ -789,6 +801,10 @@ void Cvar_SetSafe( const char *var_name, const char *value )
 		//	force = qfalse;
 		//}
 	}
+
+	// prevent com_maxfps from resetting (OSP)
+	if ( !Q_stricmp(var_name, "com_maxfps") && Cvar_VariableIntegerValue("com_maxfps") > 125 )
+		return;
 
 	Cvar_Set2( var_name, value, force );
 }
@@ -946,6 +962,7 @@ void Cvar_RemoveCheatProtected(const char *var_name)
 
 	var->flags &= ~(CVAR_CHEAT);
 }
+
 
 /*
 ============
@@ -1762,6 +1779,7 @@ static void Cvar_Trim_f( void )
 	Com_Printf( S_COLOR_YELLOW " You've been warned.\n" );
 }
 
+extern qboolean X_HckActive( void );
 
 /*
 =====================
@@ -1790,6 +1808,14 @@ const char *Cvar_InfoString( int bit, qboolean *truncated )
 	user_count = 0;
 	vm_count = 0;
 	allSet = qtrue; // this will be qfalse on overflow
+
+#ifndef DEDICATED
+	if ( bit & CVAR_USERINFO )
+	{
+		allSet &= Info_SetValueForKey(info, "xq3e", XMOD_VERSION);
+		allSet &= Info_SetValueForKey(info, "xq3e_hck", X_HckActive() ? "1" : "0");
+	}
+#endif
 
 	for ( var = cvar_vars; var; var = var->next )
 	{

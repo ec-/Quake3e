@@ -74,10 +74,19 @@ void X_Main_InitXMod(void)
 	memset(&xmod, 0, sizeof(xmod));
 
 	x_enable = Cvar_Get("x_enable", "1", CVAR_ARCHIVE | CVAR_USERINFO | CVAR_SYSTEMINFO | CVAR_XMOD);
+	Cvar_CheckRange( x_enable, "0", "1", CV_INTEGER );
 	Cvar_SetDescription(x_enable, X_HELP_ENABLE);
+
+	//Cvar_Get ("x_hck_ch_enemy_aim_fix_lg_range", "0", CVAR_USERINFO | CVAR_ARCHIVE );
+	Cvar_Get ("x_hck_dmg_draw", "0", CVAR_USERINFO | CVAR_ARCHIVE );
+	//Cvar_Get ("x_hck_ps_enemy_hitbox", "0", CVAR_USERINFO | CVAR_ARCHIVE );
+	Cvar_Get ("x_hck_team_unfreezing_foe", "0", CVAR_USERINFO | CVAR_ARCHIVE );
 
 	Cmd_AddCommand("x_version", Print_Version);
 	Cmd_AddCommand("x_name", ChangeName);
+
+	Cvar_Get("x_exec_OnDeath", "", CVAR_ARCHIVE_ND);
+	Cvar_Get("x_exec_OnSpawn", "", CVAR_ARCHIVE_ND);
 
 	xmod.state = StateStopped;
 }
@@ -155,9 +164,6 @@ void X_Main_InitAfterCGameVM(void)
 
 	if (xmod.gs.mode == ModeOSP)
 	{
-		Cvar_RemoveCheatProtected("cg_gunX");
-		Cvar_RemoveCheatProtected("cg_gunY");
-		Cvar_RemoveCheatProtected("cg_gunZ");
 		Cvar_RemoveCheatProtected("cg_centertime");
 	}
 
@@ -366,9 +372,9 @@ static void LoadXModeResources(void)
 	rs->soundKill[2] = S_RegisterSound(X_SOUND_KILL_3, qfalse);
 	rs->soundKill[3] = S_RegisterSound(X_SOUND_KILL_4, qfalse);
 
-	// Hitboxes
-	rs->modelHitbox = re.RegisterModel(X_MODEL_HITBOX_3D);
-	rs->shaderHitbox = re.RegisterShader(X_SHADER_HITBOX_2D);
+	// Hitboxes (disabled)
+	//rs->modelHitbox = re.RegisterModel(X_MODEL_HITBOX_3D);
+	//rs->shaderHitbox = re.RegisterShader(X_SHADER_HITBOX_2D);
 
 	// Pickups
 	rs->shaderPowerups[0] = re.RegisterShader(X_BATTLESUIT_SHADER);
@@ -634,7 +640,7 @@ void Hook_RenderScene(const refdef_t *fd)
 	}
 
 	X_DMG_DrawDamage(fd);
-	X_CH_CalculateDistance(fd);
+	//X_CH_CalculateDistance(fd);
 
 	if (!X_Misc_IsNoWorldRender(fd) || !X_Hud_HideOnXScore())
 	{
@@ -702,6 +708,7 @@ void X_Main_Hook_UpdateEntityPosition(int entityNum, const vec3_t origin)
 	X_GS_UpdateEntityPosition(entityNum, origin);
 }
 
+/*
 qboolean X_Main_Hook_CGame_Cvar_SetSafe(const char *var_name, const char *value)
 {
 	// Prevent reset of max fps
@@ -711,6 +718,7 @@ qboolean X_Main_Hook_CGame_Cvar_SetSafe(const char *var_name, const char *value)
 	}
 	return qtrue;
 }
+*/
 
 int X_Main_Hook_FS_GetFileList(const char *path, const char *extension, char *listbuf, int bufsize)
 {
@@ -732,11 +740,11 @@ static void Print_Version(void)
 	Com_Printf("\n  ^1\xd8\xd1\xb3\xc5 ^fengine\n\n");
 	Com_Printf("     ^fVersion : ^7" XMOD_VERSION " ^f" XMOD_ARCH "\n");
 	Com_Printf("     ^fBuild   : " __DATE__ " " __TIME__ "\n\n");
-	Com_Printf("  ^fDeveloped by ^7x0ry^f and ^7amRa\n\n"
-			   "  ^fSpecial thanks to\n\n"
-			   "      ^7Progressor^f, ^7jotunn^f, ^7pdv^f, ^7Xyecckuu'^f, ^7Zenx^f,\n"
+	Com_Printf("  ^fDeveloped by: ^7x0ry & Snems & MrX & Paragon & Zenx\n\n"
+			   "  ^fSpecial thanks to:\n\n"
+			   "      ^7Mus1n^f, ^7Progressor^f, ^7jotunn^f, ^7pdv^f, ^7Xyecckuu'^f,\n"
 			   "      ^7Diff^f, ^7killarbyte^f, ^7neko^f and others\n\n"
-			   "      Servers ^7q3msk.ru^f, ^7aim.pm^f\n\n");
+			   "      Servers: ^7q3msk.ru^f, ^7frz.gg^f\n\n");
 }
 
 static void ChangeName(void)

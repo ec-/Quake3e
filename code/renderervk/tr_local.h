@@ -280,6 +280,7 @@ typedef enum {
 	TMOD_ENTITY_TRANSLATE,
 	TMOD_OFFSET,
 	TMOD_SCALE_OFFSET,
+	TMOD_OFFSET_SCALE,
 } texMod_t;
 
 #define	MAX_SHADER_DEFORMS	3
@@ -330,7 +331,7 @@ typedef struct {
 
 
 #define MAX_IMAGE_ANIMATIONS		24
-#define MAX_IMAGE_ANIMATIONS_VQ3	8
+#define MAX_IMAGE_ANIMATIONS_VQ3	24
 
 #define LIGHTMAP_INDEX_NONE			0
 #define LIGHTMAP_INDEX_SHADER		1
@@ -1328,9 +1329,11 @@ extern cvar_t	*r_hdr;
 extern cvar_t	*r_bloom;
 extern cvar_t	*r_bloom_threshold;
 extern cvar_t	*r_bloom_intensity;
+extern cvar_t	*r_bloom_threshold_mode;
+extern cvar_t	*r_bloom_modulate;
 extern cvar_t	*r_ext_multisample;
 extern cvar_t	*r_ext_supersample;
-extern cvar_t	*r_ext_alpha_to_coverage;
+//extern cvar_t	*r_ext_alpha_to_coverage;
 extern cvar_t	*r_renderWidth;
 extern cvar_t	*r_renderHeight;
 extern cvar_t	*r_renderScale;
