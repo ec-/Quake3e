@@ -1021,18 +1021,13 @@ static void SV_SendClientGameState( client_t *client ) {
 	const svEntity_t *svEnt;
 	msg_t		msg;
 	byte		msgBuffer[ MAX_MSGLEN_BUF ];
+	qboolean	csUpdated;
 
 	Com_DPrintf( "SV_SendClientGameState() for %s\n", client->name );
 
 	SV_PrintClientStateChange( client, CS_PRIMED );
 
 	client->state = CS_PRIMED;
-
-	if ( client->gamestateAck == GSA_INIT ) {
-		client->gamestateAck = GSA_SENT_ONCE;
-	} else {
-		client->gamestateAck = GSA_SENT_MANY;
-	}
 
 	client->downloading = qfalse;
 
@@ -1068,6 +1063,7 @@ static void SV_SendClientGameState( client_t *client ) {
 	MSG_WriteLong( &msg, client->reliableSequence );
 
 	// write the configstrings
+	csUpdated = qfalse;
 	for ( start = 0 ; start < MAX_CONFIGSTRINGS ; start++ ) {
 		if ( *sv.configstrings[ start ] != '\0' ) {
 			MSG_WriteByte( &msg, svc_configstring );
@@ -1082,7 +1078,22 @@ static void SV_SendClientGameState( client_t *client ) {
 				MSG_WriteBigString( &msg, sv.configstrings[start] );
 			}
 		}
-		client->csUpdated[ start ] = qfalse;
+		if ( client->csUpdated[start] ) {
+			csUpdated = qtrue;
+		}
+		client->csUpdated[start] = qfalse;
+	}
+
+	if ( client->gamestateAck == GSA_INIT ) {
+		// inital submission, accept any messageAcknowledge with matching serverId
+		client->gamestateAck = GSA_SENT_ONCE;
+	} else {
+		if ( client->gamestateAck == GSA_SENT_ONCE && !csUpdated ) {
+			// if no configstrings being updated since last submission then assume that we're (re)sending identical gamestate
+		} else {
+			// expect exact messageAcknowledge
+			client->gamestateAck = GSA_SENT_MANY;
+		}
 	}
 
 	// write the baselines
@@ -1286,7 +1297,10 @@ static void SV_BeginDownload_f( client_t *cl ) {
 	cl->gentity = NULL;
 
 	cl->downloading = qtrue;
-	cl->gamestateAck = GSA_SENT_MANY; // expect exact messageAcknowledge next time
+
+	if ( cl->gamestateAck = GSA_ACKED ) {
+		cl->gamestateAck = GSA_SENT_ONCE;
+	}
 }
 
 
