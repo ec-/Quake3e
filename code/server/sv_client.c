@@ -1298,7 +1298,7 @@ static void SV_BeginDownload_f( client_t *cl ) {
 
 	cl->downloading = qtrue;
 
-	if ( cl->gamestateAck = GSA_ACKED ) {
+	if ( cl->gamestateAck == GSA_ACKED ) {
 		cl->gamestateAck = GSA_SENT_ONCE;
 	}
 }
