@@ -260,7 +260,6 @@ void Cbuf_Execute( void )
 
 	if ( cmd_wait > 0 ) {
 		// delay command buffer execution
-		cmd_wait--;
 		return;
 	}
 
@@ -357,9 +356,11 @@ void Cbuf_Execute( void )
 Cbuf_Wait
 ============
 */
-qboolean Cbuf_Wait( void )
+void Cbuf_Wait( void )
 {
-	return (cmd_wait > 0) ? qtrue : qfalse;
+	if ( cmd_wait > 0 ) {
+		--cmd_wait;
+	}
 }
 
 
