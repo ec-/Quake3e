@@ -808,13 +808,7 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 
 	SetUnhandledExceptionFilter( ExceptionFilter );
 
-	// get the initial time base
-	Sys_Milliseconds();
-
 	Com_Init( sys_cmdline );
-	NET_Init();
-
-	Com_Printf( "Working directory: %s\n", Sys_Pwd() );
 
 	// hide the early console since we've reached the point where we
 	// have a working graphics subsystems
