@@ -356,6 +356,8 @@ jobs:
           - artifact_dir: macos-x86_64
             artifact_name: quake3e-macos-x86_64.zip
 
+          - artifact_dir: macos-aarch64
+            artifact_name: quake3e-macos-aarch64.zip
     steps:
       - name: Download Artifacts
         uses: actions/download-artifact@v4
