@@ -12,6 +12,21 @@ To compile with Vulkan backend - clean solution, right click on `quake3e` projec
 
 ---
 
+### windows/msys2
+
+Install the build dependencies:
+
+`MSYS2 MSYS`
+
+* pacman -Syu
+* pacman -S make mingw-w64-x86_64-gcc mingw-w64-i686-gcc
+
+Use `MSYS2 MINGW32` or `MSYS2 MINGW64` depending on your target system, then copy resulting binaries from created `build` directory or use command:
+
+`make install DESTDIR=<path_to_game_files>`
+
+---
+
 ### windows/mingw
 
 All build dependencies (libraries, headers) are bundled-in
