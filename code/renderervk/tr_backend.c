@@ -464,7 +464,11 @@ static void RB_Hyperspace( void ) {
 
 	RB_SetGL2D();
 
-	c.rgba[0] = c.rgba[1] = c.rgba[2] = (backEnd.refdef.time & 255);
+	if (r_teleporterFlash->integer == 0) {
+		c.rgba[0] = c.rgba[1] = c.rgba[2] = (backEnd.refdef.time &   0); // fade to black
+	} else {
+		c.rgba[0] = c.rgba[1] = c.rgba[2] = (backEnd.refdef.time & 255); // fade to white
+	}
 	c.rgba[3] = 255;
 
 	RB_AddQuadStamp2( backEnd.refdef.x, backEnd.refdef.y, backEnd.refdef.width, backEnd.refdef.height,
