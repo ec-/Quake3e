@@ -295,8 +295,8 @@ static void RB_Hyperspace( void ) {
 		// do initialization shit
 	}
 
-	if (r_teleporterFlash->integer == 0) {
-		c = ( backEnd.refdef.time &   0 ) / 255.0f; // fade to black
+	if ( r_teleporterFlash->integer == 0 ) {
+		c = 0.0; // fade to black
 	} else {
 		c = ( backEnd.refdef.time & 255 ) / 255.0f; // fade to white
 	}

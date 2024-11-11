@@ -464,8 +464,8 @@ static void RB_Hyperspace( void ) {
 
 	RB_SetGL2D();
 
-	if (r_teleporterFlash->integer == 0) {
-		c.rgba[0] = c.rgba[1] = c.rgba[2] = (backEnd.refdef.time &   0); // fade to black
+	if ( r_teleporterFlash->integer == 0 ) {
+		c.rgba[0] = c.rgba[1] = c.rgba[2] = 0; // fade to black
 	} else {
 		c.rgba[0] = c.rgba[1] = c.rgba[2] = (backEnd.refdef.time & 255); // fade to white
 	}
