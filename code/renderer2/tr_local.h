@@ -1686,6 +1686,8 @@ extern cvar_t	*r_measureOverdraw;		// enables stencil buffer overdraw measuremen
 extern cvar_t	*r_lodbias;				// push/pull LOD transitions
 extern cvar_t	*r_lodscale;
 
+extern cvar_t	*r_teleporterFlash;		// teleport hyperspace visual
+
 extern cvar_t	*r_fastsky;				// controls whether sky should be cleared or drawn
 extern cvar_t	*r_drawSun;				// controls drawing of sun quad
 extern cvar_t	*r_dynamiclight;		// dynamic lights enabled/disabled
