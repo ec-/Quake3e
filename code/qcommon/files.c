@@ -3334,6 +3334,7 @@ static char **FS_ListFilteredFiles( const char *path, const char *extension, con
 	char			zpath[MAX_ZPATH];
 	qboolean		hasPatterns;
 	const char		*x;
+	char	        dirname[MAX_OSPATH*2];
 
 	if ( !fs_searchpaths ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
@@ -3441,9 +3442,12 @@ static char **FS_ListFilteredFiles( const char *path, const char *extension, con
 			const char *netpath;
 			int		numSysFiles;
 			char	**sysFiles;
+			int		numSysDirs;
+			char	**sysDirs;
 			const char *name;
 
 			netpath = FS_BuildOSPath( search->dir->path, search->dir->gamedir, path );
+			sysDirs = Sys_ListFiles( netpath, "", filter, &numSysDirs, qtrue );
 			sysFiles = Sys_ListFiles( netpath, extension, filter, &numSysFiles, qfalse );
 			for ( i = 0 ; i < numSysFiles ; i++ ) {
 				// unique the match
@@ -3458,6 +3462,23 @@ static char **FS_ListFilteredFiles( const char *path, const char *extension, con
 				nfiles = FS_AddFileToList( name, list, nfiles );
 			}
 			Sys_FreeFileList( sysFiles );
+
+			for ( i = 0 ; i < numSysDirs ; i++ ) {
+				name = sysDirs[ i ];
+				// ignore . and ..
+				if ( strcmp(name, "." ) == 0 || strcmp( name, ".." ) == 0 ) {
+					continue;
+				}
+				Com_sprintf( dirname, sizeof(dirname), "%s/", name);
+				if ( fnamecallback ) {
+					// use custom filter
+					if ( !fnamecallback( dirname, strlen(dirname) ) )
+						continue;
+				}
+
+				nfiles = FS_AddFileToList( dirname, list, nfiles );
+			}
+			Sys_FreeFileList( sysDirs );
 		}		
 	}
 

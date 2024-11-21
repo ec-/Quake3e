@@ -4607,7 +4607,8 @@ static qboolean Field_Complete( void )
 
 	if( matchCount == 1 )
 	{
-		Field_AddSpace();
+		if(completionField->buffer[completionField->cursor - 1] != '/')
+			Field_AddSpace();
 		return qtrue;
 	}
 
@@ -4765,6 +4766,12 @@ void Field_CompleteCommand( const char *cmd, qboolean doCommands, qboolean doCva
 	}
 	else
 		completionString = Cmd_Argv( completionArgument - 1 );
+		char *lastSlash = strrchr(completionString, '/');
+		if (lastSlash) {
+			// If a slash is found, set the completion string to everything after the last slash
+			// This is done to ensure that the completion function works with the correct file or directory name
+			completionString = lastSlash + 1;
+		}
 
 #ifndef DEDICATED
 	// Unconditionally add a '\' to the start of the buffer
