@@ -4765,6 +4765,7 @@ void Field_CompleteCommand( const char *cmd, qboolean doCommands, qboolean doCva
 		completionArgument++;
 	}
 	else
+	{
 		completionString = Cmd_Argv( completionArgument - 1 );
 		char *lastSlash = strrchr(completionString, '/');
 		if (lastSlash) {
@@ -4772,6 +4773,7 @@ void Field_CompleteCommand( const char *cmd, qboolean doCommands, qboolean doCva
 			// This is done to ensure that the completion function works with the correct file or directory name
 			completionString = lastSlash + 1;
 		}
+	}
 
 #ifndef DEDICATED
 	// Unconditionally add a '\' to the start of the buffer
