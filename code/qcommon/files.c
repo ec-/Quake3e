@@ -3320,7 +3320,7 @@ Returns a unique list of files that match the given criteria
 from all search paths
 ===============
 */
-static char **FS_ListFilteredFiles( const char *path, const char *extension, const char *filter, int *numfiles, int flags ) {
+static char **FS_ListFilteredFiles( const char *path, const char *extension, const char *filter, int *numfiles, int flags, qboolean includeDirs ) {
 	int				nfiles;
 	char			**listCopy;
 	char			*list[MAX_FOUND_FILES];
@@ -3334,6 +3334,7 @@ static char **FS_ListFilteredFiles( const char *path, const char *extension, con
 	char			zpath[MAX_ZPATH];
 	qboolean		hasPatterns;
 	const char		*x;
+	char	        dirname[MAX_OSPATH*2];
 
 	if ( !fs_searchpaths ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
@@ -3441,6 +3442,8 @@ static char **FS_ListFilteredFiles( const char *path, const char *extension, con
 			const char *netpath;
 			int		numSysFiles;
 			char	**sysFiles;
+			int		numSysDirs;
+			char	**sysDirs;
 			const char *name;
 
 			netpath = FS_BuildOSPath( search->dir->path, search->dir->gamedir, path );
@@ -3458,6 +3461,26 @@ static char **FS_ListFilteredFiles( const char *path, const char *extension, con
 				nfiles = FS_AddFileToList( name, list, nfiles );
 			}
 			Sys_FreeFileList( sysFiles );
+
+			if(includeDirs) {
+				sysDirs = Sys_ListFiles( netpath, "", filter, &numSysDirs, qtrue );
+				for ( i = 0 ; i < numSysDirs ; i++ ) {
+					name = sysDirs[ i ];
+					// ignore . and ..
+					if ( strcmp(name, "." ) == 0 || strcmp( name, ".." ) == 0 ) {
+						continue;
+					}
+					Com_sprintf( dirname, sizeof(dirname), "%s/", name);
+					if ( fnamecallback ) {
+						// use custom filter
+						if ( !fnamecallback( dirname, strlen(dirname) ) )
+							continue;
+					}
+
+					nfiles = FS_AddFileToList( dirname, list, nfiles );
+				}
+				Sys_FreeFileList( sysDirs );
+			}
 		}		
 	}
 
@@ -3485,7 +3508,7 @@ FS_ListFiles
 */
 char **FS_ListFiles( const char *path, const char *extension, int *numfiles ) 
 {
-	return FS_ListFilteredFiles( path, extension, NULL, numfiles, FS_MATCH_ANY );
+	return FS_ListFilteredFiles( path, extension, NULL, numfiles, FS_MATCH_ANY, qfalse );
 }
 
 
@@ -3929,7 +3952,7 @@ static void FS_NewDir_f( void ) {
 
 	Com_Printf( "---------------\n" );
 
-	dirnames = FS_ListFilteredFiles( "", "", filter, &ndirs, FS_MATCH_ANY );
+	dirnames = FS_ListFilteredFiles( "", "", filter, &ndirs, FS_MATCH_ANY, qfalse );
 
 	if ( ndirs >= 2 )
 		FS_SortFileList( dirnames, ndirs - 1 );
@@ -5579,7 +5602,7 @@ void	FS_FilenameCompletion( const char *dir, const char *ext,
 	int		nfiles;
 	int		i;
 
-	filenames = FS_ListFilteredFiles( dir, ext, NULL, &nfiles, flags );
+	filenames = FS_ListFilteredFiles( dir, ext, NULL, &nfiles, flags, qtrue );
 
 	if ( nfiles >= 2 )
 		FS_SortFileList( filenames, nfiles-1 );
