@@ -50,13 +50,16 @@ typedef struct frameBuffer_s {
 	qboolean multiSampled;
 } frameBuffer_t;
 
+#ifdef USE_FBO
 static GLuint commonDepthStencil;
+
 static frameBuffer_t frameBufferMS;
 static frameBuffer_t frameBuffers[ FBO_COUNT ];
 
 static qboolean frameBufferMultiSampling = qfalse;
 
 qboolean blitMSfbo = qfalse;
+#endif
 
 #ifndef GL_TEXTURE_IMAGE_FORMAT
 #define GL_TEXTURE_IMAGE_FORMAT 0x828F
@@ -628,6 +631,7 @@ static const char *spriteFP = {
 };
 
 
+#ifdef USE_FBO
 static char *ARB_BuildGreyscaleProgram( char *buf ) {
 	char *s;
 
@@ -949,6 +953,7 @@ static void ARB_BlurParams( int width, int height, int ksize, qboolean horizonta
 			qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, i, 0.0, offset[i][1], 0.0, weight[i] );
 	}
 }
+#endif // USE_FBO
 
 
 static void ARB_DeletePrograms( void )
@@ -996,7 +1001,9 @@ qboolean ARB_UpdatePrograms( void )
 	const char *program;
 	int i;
 #endif
+#if defined (USE_FBO) || defined (USE_PMLIGHT)
 	char buf[4096];
+#endif
 
 	if ( !qglGenProgramsARB )
 		return qfalse;
@@ -1031,6 +1038,7 @@ qboolean ARB_UpdatePrograms( void )
 	if ( !ARB_CompileProgram( Fragment, spriteFP, programs[ SPRITE_FRAGMENT ] ) )
 		return qfalse;
 
+#ifdef USE_FBO
 	if ( !ARB_CompileProgram( Fragment, va( gammaFP, ARB_BuildGreyscaleProgram( buf ) ), programs[ GAMMA_FRAGMENT ] ) )
 		return qfalse;
 
@@ -1054,11 +1062,14 @@ qboolean ARB_UpdatePrograms( void )
 
 	if ( !ARB_CompileProgram( Fragment, va( blend2gammaFP, ARB_BuildGreyscaleProgram( buf ) ), programs[ BLEND2_GAMMA_FRAGMENT ] ) )
 		return qfalse;
+#endif // USE_FBO
 
 	programCompiled = 1;
 
 	return qtrue;
 }
+
+#ifdef USE_FBO
 
 static void FBO_Bind( GLuint target, GLuint buffer );
 
@@ -1099,7 +1110,7 @@ void FBO_Clean( frameBuffer_t *fb )
 					fb->depthStencil = 0;
 				}
 #else
-				if ( r_stencilbits->integer == 0 )
+				if ( glConfig.stencilBits == 0 )
 					qglFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0 );
 				else
 					qglFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, 0, 0 );
@@ -1154,7 +1165,7 @@ static GLuint FBO_CreateDepthTextureOrBuffer( GLsizei width, GLsizei height )
 	GLuint buffer;
 	qglGenRenderbuffers( 1, &buffer );
 	qglBindRenderbuffer( GL_RENDERBUFFER, buffer );
-	if ( r_stencilbits->integer == 0 )
+	if ( glConfig.stencilBits == 0 )
 		qglRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, width, height );
 	else
 		qglRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height );
@@ -1165,7 +1176,7 @@ static GLuint FBO_CreateDepthTextureOrBuffer( GLsizei width, GLsizei height )
 	GL_BindTexture( 0, tex );
 	qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
 	qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-	if ( r_stencilbits->integer == 0 )
+	if ( glConfig.stencilBits == 0 )
 		qglTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL );
 	else
 		qglTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL );
@@ -1325,12 +1336,12 @@ static qboolean FBO_Create( frameBuffer_t *fb, GLsizei width, GLsizei height, qb
 		fb->depthStencil = FBO_CreateDepthTextureOrBuffer( width, height );
 #endif
 #ifdef DEPTH_RENDER_BUFFER
-		if ( r_stencilbits->integer == 0 )
+		if ( glConfig.stencilBits == 0 )
 			qglFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fb->depthStencil );
 		else
 			qglFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, fb->depthStencil );
 #else
-		if ( r_stencilbits->integer == 0 )
+		if ( glConfig.stencilBits == 0 )
 			qglFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, fb->depthStencil, 0 );
 		else
 			qglFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, fb->depthStencil, 0 );
@@ -1402,7 +1413,7 @@ static qboolean FBO_CreateMS( frameBuffer_t *fb, int width, int height )
 
 	qglGenRenderbuffers( 1, &fb->depthStencil );
 	qglBindRenderbuffer( GL_RENDERBUFFER, fb->depthStencil );
-	if ( r_stencilbits->integer == 0 )
+	if ( glConfig.stencilBits == 0 )
 		qglRenderbufferStorageMultisample( GL_RENDERBUFFER, nSamples, GL_DEPTH_COMPONENT32, width, height );
 	else
 		qglRenderbufferStorageMultisample( GL_RENDERBUFFER, nSamples, GL_DEPTH24_STENCIL8, width, height );
@@ -1413,7 +1424,7 @@ static qboolean FBO_CreateMS( frameBuffer_t *fb, int width, int height )
 		return qfalse;
 	}
 
-	if ( r_stencilbits->integer == 0 )
+	if ( glConfig.stencilBits == 0 )
 		qglFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fb->depthStencil );
 	else
 		qglFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, fb->depthStencil );
@@ -2024,7 +2035,6 @@ void FBO_PostProcess( void )
 }
 
 
-
 void QGL_SetRenderScale( qboolean verbose )
 {
 	windowAdjusted = qfalse;
@@ -2183,21 +2193,25 @@ void QGL_InitFBO( void )
 		QGL_DoneFBO();
 	}
 }
+#endif // USE_FBO
 
 
 void QGL_InitARB( void )
 {
 	ARB_UpdatePrograms();
+#ifdef USE_FBO
 	QGL_SetRenderScale( qtrue );
 	QGL_InitFBO();
+#endif
 	ri.Cvar_ResetGroup( CVG_RENDERER, qtrue );
 }
 
 
 void QGL_DoneARB( void )
 {
+#ifdef USE_FBO
 	QGL_DoneFBO();
-
+#endif
 	if ( programCompiled )
 	{
 		ARB_ProgramDisable();

@@ -34,7 +34,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "../qcommon/q_shared.h"
 #include "../qcommon/qcommon.h"
-#include "../renderer/qgl.h"
 #include "../renderercommon/tr_types.h"
 #include "glw_win.h"
 #include "win_local.h"
@@ -146,7 +145,7 @@ qboolean QVK_Init( void )
 		{
 			glw_state.VulkanLib = load_vulkan_library( dllnames[i] );
 
-			//Com_Printf( "...loading '%s' : %s\n", dllnames[i], glw_state.VulkanLib ? "succeeded" : "failed" );
+			//Com_Printf( "...loading '%s' : %s\n", dllnames[i], glw_state.VulkanLib ? "success" : "failed" );
 			if ( glw_state.VulkanLib )
 			{
 				char libName[1024];
@@ -160,7 +159,7 @@ qboolean QVK_Init( void )
 				GetModuleFileName( glw_state.VulkanLib, libName, sizeof( libName ) );
 				libName[ sizeof( libName ) - 1 ] = '\0';
 #endif
-				Com_Printf( "...loading '%s' : %s\n", libName, "succeeded" );
+				Com_Printf( "...loading '%s' : %s\n", libName, "success" );
 				break;
 			} else {
 				Com_Printf( "...loading '%s' : %s\n", dllnames[i], "failed" );

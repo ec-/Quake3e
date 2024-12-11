@@ -239,6 +239,13 @@ static const keyname_t keynames[] =
 	{"PAD0_LEFTTRIGGER", K_PAD0_LEFTTRIGGER },
 	{"PAD0_RIGHTTRIGGER", K_PAD0_RIGHTTRIGGER },
 
+	{"PAD0_MISC1", K_PAD0_MISC1 },
+	{"PAD0_PADDLE1", K_PAD0_PADDLE1 },
+	{"PAD0_PADDLE2", K_PAD0_PADDLE2 },
+	{"PAD0_PADDLE3", K_PAD0_PADDLE3 },
+	{"PAD0_PADDLE4", K_PAD0_PADDLE4 },
+	{"PAD0_TOUCHPAD", K_PAD0_TOUCHPAD },
+
 	{NULL,0}
 };
 
@@ -621,7 +628,7 @@ void Key_ParseBinding( int key, qboolean down, unsigned time )
 {
 	char buf[ MAX_STRING_CHARS ], *p, *end;
 
-	if( !keys[key].binding || !keys[key].binding[0] )
+	if( !keys[key].binding || keys[key].binding[0] == '\0' )
 		return;
 
 	p = buf;
@@ -641,11 +648,12 @@ void Key_ParseBinding( int key, qboolean down, unsigned time )
 			// so that multiple sources can be discriminated and
 			// subframe corrected
 			char cmd[1024];
-			Com_sprintf( cmd, sizeof( cmd ), "%c%s %d %d\n",
-				( down ) ? '+' : '-', p + 1, key, time );
+			Com_sprintf( cmd, sizeof( cmd ), "%c%s %d %d\n", ( down ) ? '+' : '-', p + 1, key, time );
 			Cbuf_AddText( cmd );
+			if ( down )
+				keys[ key ].bound = qtrue;
 		}
-		else if( down )
+		else if ( down )
 		{
 			// normal commands only execute on key press
 			Cbuf_AddText( p );

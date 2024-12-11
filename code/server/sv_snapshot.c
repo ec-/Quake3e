@@ -277,12 +277,14 @@ static void SV_SortEntityNumbers( entityNum_t *num, const int size ) {
 			d--;
 		}
 	}
+#ifdef _DEBUG
 	// consistency check for delta encoding
 	for ( i = 1 ; i < size; i++ ) {
 		if ( num[i-1] >= num[i] ) {
 			Com_Error( ERR_DROP, "%s: invalid entity number %i", __func__, num[ i ] );
 		}
 	}
+#endif
 }
 
 
@@ -434,7 +436,7 @@ static void SV_AddEntitiesVisibleFromPoint( const vec3_t origin, clientSnapshot_
 	}
 
 	ent = SV_GentityNum( frame->ps.clientNum );
-	// merge second PVS at ent->r.s.origin2
+	// extension: merge second PVS at ent->r.s.origin2
 	if ( ent->r.svFlags & SVF_SELF_PORTAL2 && !portal ) {
 		SV_AddEntitiesVisibleFromPoint( ent->r.s.origin2, frame, eNums, qtrue );
 		eNums->unordered = qtrue;
@@ -754,15 +756,21 @@ void SV_SendClientMessages( void )
 	svs.msgTime = Sys_Milliseconds();
 
 	// send a message to each connected client
-	for( i = 0; i < sv_maxclients->integer; i++ )
+	for ( i = 0; i < sv.maxclients; i++ )
 	{
 		c = &svs.clients[ i ];
-		
+
 		if ( c->state == CS_FREE )
 			continue;		// not connected
 
-		if ( *c->downloadName )
+		//if ( *c->downloadName )
+		//	continue;		// Client is downloading, don't send snapshots
+
+		if ( c->state == CS_CONNECTED )
 			continue;		// Client is downloading, don't send snapshots
+
+		//if ( !c->gamestateAcked )
+		//	continue;		// waiting usercmd/downloading
 
 		// 1. Local clients get snapshots every server frame
 		// 2. Remote clients get snapshots depending from rate and requested number of updates
@@ -775,7 +783,7 @@ void SV_SendClientMessages( void )
 			c->rateDelayed = qtrue;
 			continue;		// Drop this snapshot if the packet queue is still full or delta compression will break
 		}
-	
+
 		if ( SV_RateMsec( c ) > 0 )
 		{
 			// Not enough time since last packet passed through the line

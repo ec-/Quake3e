@@ -52,10 +52,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../client/client.h"
 #include "linux_local.h"
 #include "unix_glw.h"
+
+#ifdef USE_OPENGL_API
 #include "../renderer/qgl.h"
+#endif
 
-#include <GL/glx.h>
-
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #include <X11/keysym.h>
 #include <X11/cursorfont.h>
 #include <X11/Xatom.h>
@@ -100,7 +103,9 @@ Display *dpy = NULL;
 int scrnum;
 
 Window win = 0;
+#ifdef USE_OPENGL_API
 static GLXContext ctx = NULL;
+#endif
 static Atom wmDeleteEvent = None;
 static Atom motifWMHints = None;
 
@@ -1087,6 +1092,7 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 }
 
 
+#ifdef USE_OPENGL_API
 /*
 ** GLimp_Shutdown
 **
@@ -1162,6 +1168,7 @@ void GLimp_Shutdown( qboolean unloadDLL )
 
 	QGL_Shutdown( unloadDLL );
 }
+#endif // USE_OPENGL_API
 
 
 #ifdef USE_VULKAN_API
@@ -1285,24 +1292,27 @@ static rserr_t GLW_StartDriverAndSetMode( int mode, const char *modeFS, qboolean
 }
 
 
+#ifdef USE_OPENGL_API
 static XVisualInfo *GL_SelectVisual( int colorbits, int depthbits, int stencilbits, glconfig_t *config )
 {
 	// these match in the array
-	#define ATTR_RED_IDX 2
-	#define ATTR_GREEN_IDX 4
-	#define ATTR_BLUE_IDX 6
-	#define ATTR_DEPTH_IDX 9
-	#define ATTR_STENCIL_IDX 11
+	#define ATTR_RED_IDX     3
+	#define ATTR_GREEN_IDX   5
+	#define ATTR_BLUE_IDX    7
+	#define ATTR_ALPHA_IDX   9
+	#define ATTR_DEPTH_IDX   11
+	#define ATTR_STENCIL_IDX 13
 
 	static int attrib[] =
 	{
-		GLX_RGBA,         // 0
-		GLX_RED_SIZE, 4,      // 1, 2
-		GLX_GREEN_SIZE, 4,      // 3, 4
-		GLX_BLUE_SIZE, 4,     // 5, 6
-		GLX_DOUBLEBUFFER,     // 7
-		GLX_DEPTH_SIZE, 1,      // 8, 9
-		GLX_STENCIL_SIZE, 1,    // 10, 11
+		GLX_RGBA,             // 0
+		GLX_DOUBLEBUFFER,     // 1
+		GLX_RED_SIZE,     8,  // 2, 3
+		GLX_GREEN_SIZE,   8,  // 4, 5
+		GLX_BLUE_SIZE,    8,  // 6, 7
+		GLX_ALPHA_SIZE,   8,  // 8, 9
+		GLX_DEPTH_SIZE,   24, // 10, 11
+		GLX_STENCIL_SIZE, 8,  // 12, 13
 		None
 	};
 
@@ -1327,13 +1337,9 @@ static XVisualInfo *GL_SelectVisual( int colorbits, int depthbits, int stencilbi
 			case 1 :
 				if ( depthbits == 24 )
 					depthbits = 16;
-				else if ( depthbits == 16 )
-					depthbits = 8;
 			case 3 :
-				if ( stencilbits == 24 )
-					stencilbits = 16;
-				else if ( stencilbits == 16 )
-					stencilbits = 8;
+				if ( stencilbits == 8 )
+					stencilbits = 0;
 			}
 		}
 
@@ -1351,17 +1357,11 @@ static XVisualInfo *GL_SelectVisual( int colorbits, int depthbits, int stencilbi
 		{ // reduce depthbits
 			if ( tdepthbits == 24 )
 				tdepthbits = 16;
-			else if ( tdepthbits == 16 )
-				tdepthbits = 8;
 		}
 
 		if ((i % 4) == 1)
 		{ // reduce stencilbits
-			if ( tstencilbits == 24 )
-				tstencilbits = 16;
-			else if ( tstencilbits == 16 )
-				tstencilbits = 8;
-			else
+			if ( tstencilbits == 8 )
 				tstencilbits = 0;
 		}
 
@@ -1370,6 +1370,7 @@ static XVisualInfo *GL_SelectVisual( int colorbits, int depthbits, int stencilbi
 			attrib[ATTR_RED_IDX] = 8;
 			attrib[ATTR_GREEN_IDX] = 8;
 			attrib[ATTR_BLUE_IDX] = 8;
+			attrib[ATTR_ALPHA_IDX] = 8;
 		}
 		else
 		{
@@ -1377,6 +1378,7 @@ static XVisualInfo *GL_SelectVisual( int colorbits, int depthbits, int stencilbi
 			attrib[ATTR_RED_IDX] = 4;
 			attrib[ATTR_GREEN_IDX] = 4;
 			attrib[ATTR_BLUE_IDX] = 4;
+			attrib[ATTR_ALPHA_IDX] = 0; // prefer smallest available alpha
 		}
 
 		attrib[ATTR_DEPTH_IDX] = tdepthbits; // default to 24 depth
@@ -1399,6 +1401,7 @@ static XVisualInfo *GL_SelectVisual( int colorbits, int depthbits, int stencilbi
 
 	return visinfo;
 }
+#endif // USE_OPENGL_API
 
 
 #ifdef USE_VULKAN_API
@@ -1465,7 +1468,7 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 {
 	glconfig_t *config = glw_state.config;
 	Window root;
-	XVisualInfo *visinfo;
+	XVisualInfo *visinfo = NULL;
 
 	XSetWindowAttributes attr;
 	XSizeHints sizehints;
@@ -1576,9 +1579,11 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 #ifdef USE_VULKAN_API
 	if ( vulkan )
 		visinfo = VK_SelectVisual( colorbits, depthbits, stencilbits, config );
-	else
 #endif
+#ifdef USE_OPENGL_API
+	if ( !vulkan )
 		visinfo = GL_SelectVisual( colorbits, depthbits, stencilbits, config );
+#endif
 
 	if ( !visinfo )
 	{
@@ -1667,13 +1672,8 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 //	XSync( dpy, False );
 
 	// create rendering context
-#ifdef USE_VULKAN_API
-	if ( vulkan )
-	{
-		// nothing to do
-	}
-	else
-#endif
+#ifdef USE_OPENGL_API
+	if ( !vulkan )
 	{
 		ctx = qglXCreateContext( dpy, visinfo, NULL, True );
 
@@ -1690,6 +1690,11 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 			Com_Error( ERR_FATAL, "Error setting GLX context" );
 		}
 	}
+	else
+	{
+		// nothing to do
+	}
+#endif
 
 	Key_ClearStates();
 
@@ -1728,6 +1733,51 @@ void GLimp_InitGamma( glconfig_t *config )
 }
 
 
+/*
+** XErrorHandler
+**   the default X error handler exits the application
+**   I found out that on some hosts some operations would raise X errors (GLXUnsupportedPrivateRequest)
+**   but those don't seem to be fatal .. so the default would be to just ignore them
+**   our implementation mimics the default handler behaviour (not completely cause I'm lazy)
+*/
+static int qXErrorHandler( Display *dpy, XErrorEvent *ev )
+{
+	static char buf[1024];
+
+	XGetErrorText( dpy, ev->error_code, buf, sizeof( buf ) );
+	Com_Printf( "X Error of failed request: %s\n", buf) ;
+	Com_Printf( "  Major opcode of failed request: %d\n", ev->request_code );
+	Com_Printf( "  Minor opcode of failed request: %d\n", ev->minor_code );
+	Com_Printf( "  Serial number of failed request: %d\n", (int)ev->serial );
+
+#ifdef DEBUG
+	raise( SIGABRT );
+#endif
+
+	return 0;
+}
+
+
+static void InitCvars( void )
+{
+	// referenced in GLW_StartDriverAndSetMode() so must be inited there
+	in_nograb = Cvar_Get( "in_nograb", "0", 0 );
+	Cvar_SetDescription( in_nograb, "Do not capture mouse in game, may be useful during online streaming." );
+
+	// turn on-off sub-frame timing of X events, referenced in Sys_XTimeToSysTime
+	in_subframe = Cvar_Get( "in_subframe", "1", CVAR_ARCHIVE_ND );
+	Cvar_SetDescription( in_subframe, "Toggle X sub-frame event handling." );
+
+	in_dgamouse = Cvar_Get( "in_dgamouse", "1", CVAR_ARCHIVE_ND );
+	Cvar_SetDescription( in_dgamouse, "DGA Mouse support." );
+	in_shiftedKeys = Cvar_Get( "in_shiftedKeys", "0", CVAR_ARCHIVE_ND );
+
+	in_forceCharset = Cvar_Get( "in_forceCharset", "1", CVAR_ARCHIVE_ND );
+	Cvar_SetDescription( in_forceCharset, "Try to translate non-ASCII chars in keyboard input or force EN/US keyboard layout." );
+}
+
+
+#ifdef USE_OPENGL_API
 /*
 ** GLW_LoadOpenGL
 **
@@ -1807,50 +1857,6 @@ static qboolean GLW_StartOpenGL( void )
 
 
 /*
-** XErrorHandler
-**   the default X error handler exits the application
-**   I found out that on some hosts some operations would raise X errors (GLXUnsupportedPrivateRequest)
-**   but those don't seem to be fatal .. so the default would be to just ignore them
-**   our implementation mimics the default handler behaviour (not completely cause I'm lazy)
-*/
-int qXErrorHandler( Display *dpy, XErrorEvent *ev )
-{
-	static char buf[1024];
-
-	XGetErrorText( dpy, ev->error_code, buf, sizeof( buf ) );
-	Com_Printf( "X Error of failed request: %s\n", buf) ;
-	Com_Printf( "  Major opcode of failed request: %d\n", ev->request_code );
-	Com_Printf( "  Minor opcode of failed request: %d\n", ev->minor_code );
-	Com_Printf( "  Serial number of failed request: %d\n", (int)ev->serial );
-
-#ifdef DEBUG
-	raise( SIGABRT );
-#endif
-
-	return 0;
-}
-
-
-static void InitCvars( void )
-{
-	// referenced in GLW_StartDriverAndSetMode() so must be inited there
-	in_nograb = Cvar_Get( "in_nograb", "0", 0 );
-	Cvar_SetDescription( in_nograb, "Do not capture mouse in game, may be useful during online streaming." );
-
-	// turn on-off sub-frame timing of X events, referenced in Sys_XTimeToSysTime
-	in_subframe = Cvar_Get( "in_subframe", "1", CVAR_ARCHIVE_ND );
-	Cvar_SetDescription( in_subframe, "Toggle X sub-frame event handling." );
-
-	in_dgamouse = Cvar_Get( "in_dgamouse", "1", CVAR_ARCHIVE_ND );
-	Cvar_SetDescription( in_dgamouse, "DGA Mouse support." );
-	in_shiftedKeys = Cvar_Get( "in_shiftedKeys", "0", CVAR_ARCHIVE_ND );
-
-	in_forceCharset = Cvar_Get( "in_forceCharset", "1", CVAR_ARCHIVE_ND );
-	Cvar_SetDescription( in_forceCharset, "Try to translate non-ASCII chars in keyboard input or force EN/US keyboard layout." );
-}
-
-
-/*
 ** GLimp_Init
 **
 ** This routine is responsible for initializing the OS specific portions
@@ -1898,6 +1904,39 @@ void GLimp_Init( glconfig_t *config )
 
 	IN_Init();
 }
+
+
+/*
+** GLimp_EndFrame
+** 
+** Responsible for doing a swapbuffers and possibly for other stuff
+** as yet to be determined.  Probably better not to make this a GLimp
+** function and instead do a call to GLimp_SwapBuffers.
+*/
+void GLimp_EndFrame( void )
+{
+	//
+	// swapinterval stuff
+	//
+	if ( r_swapInterval->modified ) {
+		r_swapInterval->modified = qfalse;
+
+		if ( qglXSwapIntervalEXT ) {
+			qglXSwapIntervalEXT( dpy, win, r_swapInterval->integer );
+		} else if ( qglXSwapIntervalMESA ) {
+			qglXSwapIntervalMESA( r_swapInterval->integer );
+		} else if ( qglXSwapIntervalSGI ) {
+			qglXSwapIntervalSGI( r_swapInterval->integer );
+		}
+	}
+
+	// don't flip if drawing to front buffer
+	if ( Q_stricmp( cl_drawBuffer->string, "GL_FRONT" ) != 0 )
+	{
+		qglXSwapBuffers( dpy, win );
+	}
+}
+#endif // USE_OPENGL_API
 
 
 #ifdef USE_VULKAN_API
@@ -1980,38 +2019,6 @@ void VKimp_Init( glconfig_t *config )
 	IN_Init();
 }
 #endif // USE_VULKAN_API
-
-
-/*
-** GLimp_EndFrame
-** 
-** Responsible for doing a swapbuffers and possibly for other stuff
-** as yet to be determined.  Probably better not to make this a GLimp
-** function and instead do a call to GLimp_SwapBuffers.
-*/
-void GLimp_EndFrame( void )
-{
-	//
-	// swapinterval stuff
-	//
-	if ( r_swapInterval->modified ) {
-		r_swapInterval->modified = qfalse;
-
-		if ( qglXSwapIntervalEXT ) {
-			qglXSwapIntervalEXT( dpy, win, r_swapInterval->integer );
-		} else if ( qglXSwapIntervalMESA ) {
-			qglXSwapIntervalMESA( r_swapInterval->integer );
-		} else if ( qglXSwapIntervalSGI ) {
-			qglXSwapIntervalSGI( r_swapInterval->integer );
-		}
-	}
-
-	// don't flip if drawing to front buffer
-	if ( Q_stricmp( cl_drawBuffer->string, "GL_FRONT" ) != 0 )
-	{
-		qglXSwapBuffers( dpy, win );
-	}
-}
 
 
 /*****************************************************************************/

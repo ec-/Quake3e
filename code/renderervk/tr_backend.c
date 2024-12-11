@@ -68,7 +68,7 @@ void GL_Bind( image_t *image ) {
 
 	//if ( glState.currenttextures[glState.currenttmu] != texnum ) {
 		image->frameUsed = tr.frameCount;
-		vk_update_descriptor( glState.currenttmu + 2, image->descriptor );
+		vk_update_descriptor( glState.currenttmu + VK_DESC_TEXTURE_BASE, image->descriptor );
 
 	//}
 #else
@@ -464,7 +464,11 @@ static void RB_Hyperspace( void ) {
 
 	RB_SetGL2D();
 
-	c.rgba[0] = c.rgba[1] = c.rgba[2] = (backEnd.refdef.time & 255);
+	if ( r_teleporterFlash->integer == 0 ) {
+		c.rgba[0] = c.rgba[1] = c.rgba[2] = 0; // fade to black
+	} else {
+		c.rgba[0] = c.rgba[1] = c.rgba[2] = (backEnd.refdef.time & 255); // fade to white
+	}
 	c.rgba[3] = 255;
 
 	RB_AddQuadStamp2( backEnd.refdef.x, backEnd.refdef.y, backEnd.refdef.width, backEnd.refdef.height,
@@ -589,7 +593,9 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	int				i;
 	drawSurf_t		*drawSurf;
 	unsigned int	oldSort;
+#ifdef USE_PMLIGHT
 	float			oldShaderSort;
+#endif
 	double			originalTime; // -EC-
 
 	// save original time for entity shader offsets
@@ -604,7 +610,9 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	wasCrosshair = qfalse;
 #endif
 	oldSort = MAX_UINT;
+#ifdef USE_PMLIGHT
 	oldShaderSort = -1;
+#endif
 	depthRange = qfalse;
 
 	backEnd.pc.c_surfaces += numDrawSurfs;
@@ -1113,7 +1121,7 @@ void RE_UploadCinematic( int w, int h, int cols, int rows, byte *data, int clien
 		image->height = image->uploadHeight = rows;
 #ifdef USE_VULKAN
 		vk_create_image( image, cols, rows, 1 );
-		vk_upload_image_data( image, 0, 0, cols, rows, 1, data, cols * rows * 4 );
+		vk_upload_image_data( image, 0, 0, cols, rows, 1, data, cols * rows * 4, qfalse );
 #else
 		qglTexImage2D( GL_TEXTURE_2D, 0, image->internalFormat, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
 		qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
@@ -1125,7 +1133,7 @@ void RE_UploadCinematic( int w, int h, int cols, int rows, byte *data, int clien
 		// otherwise, just subimage upload it so that drivers can tell we are going to be changing
 		// it and don't try and do a texture compression
 #ifdef USE_VULKAN
-		vk_upload_image_data( image, 0, 0, cols, rows, 1, data, cols * rows * 4 );
+		vk_upload_image_data( image, 0, 0, cols, rows, 1, data, cols * rows * 4, qtrue );
 #else
 		qglTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, cols, rows, GL_RGBA, GL_UNSIGNED_BYTE, data );
 #endif
@@ -1728,7 +1736,9 @@ static const void *RB_SwapBuffers( const void *data ) {
 		backEnd.screenshotMask = 0;
 	}
 
-#ifndef USE_VULKAN
+#ifdef USE_VULKAN
+	vk_present_frame();
+#else
 	ri.GLimp_EndFrame();
 #endif
 

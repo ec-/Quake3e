@@ -27,8 +27,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 extern	botlib_export_t	*botlib_export;
 
-static int nestedCmd; // nested command execution flag
-
 //extern qboolean loadCamera(const char *name);
 //extern void startCamera(int time);
 //extern qboolean getCameraInfo(int time, vec3_t *origin, vec3_t *angles);
@@ -511,11 +509,7 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 
 	case CG_SENDCONSOLECOMMAND: {
 		const char *cmd = VMA(1);
-		if ( nestedCmd > 0 ) {
-			Cbuf_InsertText( cmd );
-		} else {
-			Cbuf_AddText( cmd );
-		}
+		Cbuf_NestedAdd( cmd );
 		return 0;
 	}
 	case CG_ADDCOMMAND:
@@ -687,7 +681,7 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		return args[1];
 	case TRAP_STRNCPY:
 		VM_CHECKBOUNDS( cgvm, args[1], args[3] );
-		strncpy( VMA(1), VMA(2), args[3] );
+		Q_strncpy( VMA(1), VMA(2), args[3] );
 		return args[1];
 	case TRAP_SIN:
 		return FloatAsInt( sin( VMF(1) ) );
@@ -833,7 +827,7 @@ void CL_InitCGame( void ) {
 	int					t1, t2;
 	vmInterpret_t		interpret;
 
-	nestedCmd = 0;
+	Cbuf_NestedReset();
 
 	t1 = Sys_Milliseconds();
 
@@ -912,11 +906,9 @@ qboolean CL_GameCommand( void ) {
 		return qfalse;
 	}
 
-	nestedCmd++;
-
 	bRes = (qboolean)VM_Call( cgvm, 0, CG_CONSOLE_COMMAND );
 
-	nestedCmd--;
+	Cbuf_NestedReset();
 
 	return bRes;
 }

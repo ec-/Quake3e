@@ -20,7 +20,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory=".\output"
-			IntermediateDirectory=".\build\quake3e_ded_debug"
+			IntermediateDirectory=".\build\$(ProjectName)_$(ConfigurationName)_$(PlatformName)"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -43,12 +43,10 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="WIN32;DEDICATED;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE"
+				PreprocessorDefinitions="WIN32;DEDICATED;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;DISABLE_IPV6"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				AssemblerListingLocation="$(IntDir)\"
-				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="$(IntDir)\"
 				BrowseInformation="1"
 				BrowseInformationFile="$(IntDir)\"
 				WarningLevel="3"
@@ -108,7 +106,7 @@
 		<Configuration
 			Name="Debug|x64"
 			OutputDirectory=".\output"
-			IntermediateDirectory=".\build\quake3e_ded_debug_x64"
+			IntermediateDirectory=".\build\$(ProjectName)_$(ConfigurationName)_$(PlatformName)"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -135,8 +133,6 @@
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				AssemblerListingLocation="$(IntDir)\"
-				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="$(IntDir)\"
 				BrowseInformation="1"
 				BrowseInformationFile="$(IntDir)\"
 				WarningLevel="3"
@@ -196,7 +192,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory=".\output"
-			IntermediateDirectory=".\build\quake3e_ded_release"
+			IntermediateDirectory=".\build\$(ProjectName)_$(ConfigurationName)_$(PlatformName)"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -219,12 +215,8 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				PreprocessorDefinitions="WIN32;_WIN32;DEDICATED;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE"
+				PreprocessorDefinitions="WIN32;_WIN32;DEDICATED;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;DISABLE_IPV6"
 				AssemblerListingLocation="$(IntDir)\"
-				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="$(IntDir)\"
-				WarningLevel="4"
-				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -279,7 +271,7 @@
 		<Configuration
 			Name="Release|x64"
 			OutputDirectory=".\output"
-			IntermediateDirectory=".\build\quake3e_ded_release_x64"
+			IntermediateDirectory=".\build\$(ProjectName)_$(ConfigurationName)_$(PlatformName)"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -304,10 +296,6 @@
 				Name="VCCLCompilerTool"
 				PreprocessorDefinitions="WIN32;_WIN32;DEDICATED;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE"
 				AssemblerListingLocation="$(IntDir)\"
-				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="$(IntDir)\"
-				WarningLevel="4"
-				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -394,6 +382,46 @@
 			<File
 				RelativePath="..\..\qcommon\common.c"
 				>
+			</File>
+			<File
+				RelativePath="..\..\asm\common_x64.asm"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Assembling..."
+						CommandLine="ml64 /c /Zi /Fo&quot;$(IntDir)\$(InputFileName).obj&quot; &quot;$(InputPath)&quot;&#x0D;&#x0A;"
+						Outputs="&quot;$(IntDir)\$(InputFileName).obj&quot;"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Assembling..."
+						CommandLine="ml64 /c /Zi /Fo&quot;$(IntDir)\$(InputFileName).obj&quot; &quot;$(InputPath)&quot;&#x0D;&#x0A;"
+						Outputs="&quot;$(IntDir)\$(InputFileName).obj&quot;"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\qcommon\cvar.c"

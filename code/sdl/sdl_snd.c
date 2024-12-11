@@ -185,6 +185,7 @@ static int SNDDMA_KHzToHz( int khz )
 		case 48: return 48000;
 		case 44: return 44100;
 		case 11: return 11025;
+		case  8: return  8000;
 	}
 }
 

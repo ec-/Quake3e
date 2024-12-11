@@ -133,10 +133,10 @@ void RB_AddQuadStampExt( const vec3_t origin, const vec3_t left, const vec3_t up
 
 	// constant color all the way around
 	// should this be identity and let the shader specify from entity?
-	tess.vertexColors[ndx + 0].u32 =
-	tess.vertexColors[ndx + 1].u32 =
-	tess.vertexColors[ndx + 2].u32 =
-	tess.vertexColors[ndx + 3].u32 = color.u32;
+	tess.vertexColors[ndx + 0] =
+	tess.vertexColors[ndx + 1] =
+	tess.vertexColors[ndx + 2] =
+	tess.vertexColors[ndx + 3] = color;
 
 	tess.numVertexes += 4;
 	tess.numIndexes += 6;
@@ -170,10 +170,10 @@ void RB_AddQuadStamp2( float x, float y, float w, float h, float s1, float t1, f
 	tess.indexes[numIndexes + 4] = numVerts + 0;
 	tess.indexes[numIndexes + 5] = numVerts + 1;
 
-	tess.vertexColors[numVerts + 0].u32 =
-	tess.vertexColors[numVerts + 1].u32 =
-	tess.vertexColors[numVerts + 2].u32 =
-	tess.vertexColors[numVerts + 3].u32 = color.u32;
+	tess.vertexColors[numVerts + 0] =
+	tess.vertexColors[numVerts + 1] =
+	tess.vertexColors[numVerts + 2] =
+	tess.vertexColors[numVerts + 3] = color;
 
 	tess.xyz[numVerts + 0][0] = x;
 	tess.xyz[numVerts + 0][1] = y;
@@ -274,7 +274,7 @@ static void RB_SurfacePolychain( const srfPoly_t *p ) {
 		VectorCopy( p->verts[i].xyz, tess.xyz[numv] );
 		tess.texCoords[0][numv][0] = p->verts[i].st[0];
 		tess.texCoords[0][numv][1] = p->verts[i].st[1];
-		tess.vertexColors[numv].u32 = p->verts[ i ].modulate.u32;
+		tess.vertexColors[numv] = p->verts[ i ].modulate;
 
 		numv++;
 	}

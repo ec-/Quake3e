@@ -60,6 +60,8 @@ cvar_t	*r_greyscale;
 
 static cvar_t *r_ignorehwgamma;
 
+cvar_t  *r_teleporterFlash;
+
 cvar_t	*r_fastsky;
 cvar_t	*r_neatsky;
 cvar_t	*r_drawSun;
@@ -71,9 +73,15 @@ cvar_t	*r_dlightSpecPower;
 cvar_t	*r_dlightSpecColor;
 cvar_t	*r_dlightScale;
 cvar_t	*r_dlightIntensity;
-#endif
+#endif // USE_PMLIGHT
+
 cvar_t	*r_dlightSaturation;
+
+#ifdef USE_VBO
 cvar_t	*r_vbo;
+#endif
+
+#ifdef USE_FBO
 cvar_t	*r_fbo;
 cvar_t	*r_hdr;
 cvar_t	*r_bloom;
@@ -89,6 +97,7 @@ cvar_t	*r_bloom_reflection;
 cvar_t	*r_renderWidth;
 cvar_t	*r_renderHeight;
 cvar_t	*r_renderScale;
+#endif // USE_FBO
 
 cvar_t	*r_dlightBacks;
 
@@ -117,10 +126,13 @@ cvar_t	*r_ext_max_anisotropy;
 
 cvar_t	*r_ignoreGLErrors;
 
-cvar_t	*r_stencilbits;
+//cvar_t	*r_stencilbits;
 cvar_t	*r_texturebits;
+
+#ifdef USE_FBO
 cvar_t	*r_ext_multisample;
 cvar_t	*r_ext_supersample;
+#endif // USE_FBO
 
 cvar_t	*r_drawBuffer;
 cvar_t	*r_lightmap;
@@ -350,9 +362,12 @@ static void R_InitExtensions( void )
 
 	ri.Printf( PRINT_ALL, "Initializing OpenGL extensions\n" );
 
-	if ( R_HaveExtension( "GL_EXT_texture_edge_clamp" ) ) {
+	if ( R_HaveExtension( "GL_EXT_texture_edge_clamp" ) || R_HaveExtension( "GL_SGIS_texture_edge_clamp" ) ) {
 		gl_clamp_mode = GL_CLAMP_TO_EDGE;
 		ri.Printf( PRINT_ALL, "...using GL_EXT_texture_edge_clamp\n" );
+	} else {
+		ri.Printf( PRINT_ALL, "...GL_EXT_texture_edge_clamp not found\n" );
+		ri.Printf( PRINT_ALL, S_COLOR_YELLOW "...Degraded texture support likely!\n" );
 	}
 
 	// GL_EXT_texture_compression_s3tc
@@ -508,6 +523,7 @@ static void R_InitExtensions( void )
 		}
 	}
 
+#ifdef USE_VBO
 	if ( R_HaveExtension( "ARB_vertex_buffer_object" ) && qglActiveTextureARB )
 	{
 		err = R_ResolveSymbols( vbo_procs, ARRAY_LEN( vbo_procs ) );
@@ -521,7 +537,9 @@ static void R_InitExtensions( void )
 			ri.Printf( PRINT_ALL, "...using ARB vertex buffer objects\n" );
 		}
 	}
+#endif // USE_VBO
 
+#ifdef USE_FBO
 	if ( R_HaveExtension( "GL_EXT_framebuffer_object" ) && R_HaveExtension( "GL_EXT_framebuffer_blit" ) )
 	{
 		err = R_ResolveSymbols( fbo_procs, ARRAY_LEN( fbo_procs ) );
@@ -536,6 +554,7 @@ static void R_InitExtensions( void )
 			R_ResolveSymbols( fbo_opt_procs, ARRAY_LEN( fbo_opt_procs ) );
 		}
 	}
+#endif // USE_FBO
 }
 
 
@@ -564,6 +583,11 @@ static void InitOpenGL( void )
 	{
 		const char *err;
 
+		if ( !ri.GLimp_Init )
+		{
+			ri.Error( ERR_FATAL, "OpenGL interface is not initialized" );
+		}
+
 		ri.GLimp_Init( &glConfig );
 
 		R_ClearSymTables();
@@ -582,6 +606,7 @@ static void InitOpenGL( void )
 
 		ri.CL_SetScaling( 1.0, gls.captureWidth, gls.captureHeight );
 
+#ifdef USE_FBO
 		if ( r_fbo->integer && qglGenProgramsARB && qglGenFramebuffers )
 		{
 			if ( r_renderScale->integer )
@@ -602,6 +627,7 @@ static void InitOpenGL( void )
 				ri.CL_SetScaling( 2.0, gls.captureWidth, gls.captureHeight );
 			}
 		}
+#endif
 
 		QGL_InitARB();
 
@@ -621,7 +647,9 @@ static void InitOpenGL( void )
 	}
 	else
 	{
+#ifdef USE_FBO
 		QGL_SetRenderScale( qfalse );
+#endif
 	}
 
 	if ( !qglViewport ) // might happen after REF_KEEP_WINDOW
@@ -1012,7 +1040,7 @@ static void R_LevelShot( void ) {
 
 	Com_sprintf(checkname, sizeof(checkname), "levelshots/%s.tga", tr.world->baseName);
 
-	allsource = RB_ReadPixels(0, 0, glConfig.vidWidth, glConfig.vidHeight, &offset, &padlen, 0 );
+	allsource = RB_ReadPixels(0, 0, gls.captureWidth, gls.captureHeight, &offset, &padlen, 0 );
 	source = allsource + offset;
 
 	buffer = ri.Hunk_AllocateTempMemory(128 * 128*3 + 18);
@@ -1487,14 +1515,17 @@ static void R_Register( void )
 
 	r_mergeLightmaps = ri.Cvar_Get( "r_mergeLightmaps", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	ri.Cvar_SetDescription( r_mergeLightmaps, "Merge built-in small lightmaps into bigger lightmaps (atlases)." );
+
+#ifdef USE_VBO
 	r_vbo = ri.Cvar_Get( "r_vbo", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	ri.Cvar_SetDescription( r_vbo, "Use Vertex Buffer Objects to cache static map geometry, may improve FPS on modern GPUs, increases hunk memory usage by 15-30MB (map-dependent)." );
+#endif
 
 	r_mapGreyScale = ri.Cvar_Get( "r_mapGreyScale", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	ri.Cvar_CheckRange( r_mapGreyScale, "-1", "1", CV_FLOAT );
 	ri.Cvar_SetDescription(r_mapGreyScale, "Desaturate world map textures only, works independently from \\r_greyscale, negative values only desaturate lightmaps.");
 
-	r_subdivisions = ri.Cvar_Get( "r_subdivisions", "4", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	r_subdivisions = ri.Cvar_Get( "r_subdivisions", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	ri.Cvar_SetDescription(r_subdivisions, "Distance to subdivide bezier curved surfaces. Higher values mean less subdivision and less geometric complexity.");
 
 	r_maxpolys = ri.Cvar_Get( "r_maxpolys", XSTRING( MAX_POLYS ), CVAR_LATCH );
@@ -1507,9 +1538,9 @@ static void R_Register( void )
 	//
 	r_lodCurveError = ri.Cvar_Get( "r_lodCurveError", "250", CVAR_ARCHIVE_ND );
 	ri.Cvar_CheckRange( r_lodCurveError, "-1", "8192", CV_FLOAT );
-	ri.Cvar_SetDescription( r_lodCurveError, "Level of detail error on curved surface grids." );
-	r_lodbias = ri.Cvar_Get( "r_lodbias", "0", CVAR_ARCHIVE_ND );
-	ri.Cvar_SetDescription( r_lodbias, "Sets the level of detail of in-game models:\n 0: High\n 1: Medium\n 2: Low" );
+	ri.Cvar_SetDescription( r_lodCurveError, "Level of detail error on curved surface grids. Higher values result in better quality at a distance." );
+	r_lodbias = ri.Cvar_Get( "r_lodbias", "-2", CVAR_ARCHIVE_ND );
+	ri.Cvar_SetDescription( r_lodbias, "Sets the level of detail of in-game models:\n -2: Ultra (further delays LOD transition in the distance)\n -1: Very High (delays LOD transition in the distance)\n 0: High\n 1: Medium\n 2: Low" );
 	r_znear = ri.Cvar_Get( "r_znear", "4", CVAR_CHEAT );
 	ri.Cvar_CheckRange( r_znear, "0.001", "200", CV_FLOAT );
 	ri.Cvar_SetDescription( r_znear, "Viewport distance from view origin (how close objects can be to the player before they're clipped out of the scene)." );
@@ -1519,6 +1550,8 @@ static void R_Register( void )
 	ri.Cvar_SetDescription( r_stereoSeparation, "Control eye separation. Resulting separation is \\r_zproj divided by this value in standard units." );
 	r_ignoreGLErrors = ri.Cvar_Get( "r_ignoreGLErrors", "1", CVAR_ARCHIVE_ND );
 	ri.Cvar_SetDescription( r_ignoreGLErrors, "Ignore OpenGL errors." );
+	r_teleporterFlash = ri.Cvar_Get( "r_teleporterFlash", "1", CVAR_ARCHIVE );
+	ri.Cvar_SetDescription( r_teleporterFlash, "Show a white screen instead of a black screen when being teleported in hyperspace." );
 	r_fastsky = ri.Cvar_Get( "r_fastsky", "0", CVAR_ARCHIVE_ND );
 	ri.Cvar_SetDescription( r_fastsky, "Draw flat colored skies." );
 	r_drawSun = ri.Cvar_Get( "r_drawSun", "0", CVAR_ARCHIVE_ND );
@@ -1551,6 +1584,7 @@ static void R_Register( void )
 	r_dlightSaturation = ri.Cvar_Get( "r_dlightSaturation", "1", CVAR_ARCHIVE_ND );
 	ri.Cvar_CheckRange( r_dlightSaturation, "0", "1", CV_FLOAT );
 
+#ifdef USE_FBO
 	r_ext_multisample = ri.Cvar_Get( "r_ext_multisample", "0", CVAR_ARCHIVE_ND );
 	ri.Cvar_CheckRange( r_ext_multisample, "0", "8", CV_INTEGER );
 	ri.Cvar_SetDescription( r_ext_multisample, "For anti-aliasing geometry edges, valid values: 0|2|4|6|8. Requires \\r_fbo 1." );
@@ -1560,6 +1594,7 @@ static void R_Register( void )
 	ri.Cvar_SetGroup( r_hdr, CVG_RENDERER );
 	// bloom
 	r_bloom = ri.Cvar_Get( "r_bloom", "0", CVAR_ARCHIVE_ND );
+	r_bloom->flags &= ~CVAR_LATCH; // If we were running renderervk before, we need to remove latch
 	ri.Cvar_SetDescription(r_bloom, "Enables bloom post-processing effect. Requires \\r_fbo 1.");
 	r_bloom_threshold = ri.Cvar_Get( "r_bloom_threshold", "0.6", CVAR_ARCHIVE_ND );
 	ri.Cvar_SetDescription(r_bloom_threshold, "Color level to extract to bloom texture, default is 0.6.");
@@ -1587,9 +1622,10 @@ static void R_Register( void )
 	r_bloom_reflection = ri.Cvar_Get( "r_bloom_reflection", "0", CVAR_ARCHIVE_ND );
 	ri.Cvar_CheckRange( r_bloom_reflection, "-4", "4", CV_FLOAT );
 	ri.Cvar_SetDescription( r_bloom_reflection, "Bloom lens reflection effect, value is an intensity factor of the effect, negative value means blend only reflection and skip main bloom texture." );
+#endif // USE_FBO
 
 	r_dlightBacks = ri.Cvar_Get( "r_dlightBacks", "1", CVAR_ARCHIVE_ND );
-	ri.Cvar_SetDescription( r_dlightBacks, "Whether or not dynamic lights should light up back-face culled geometry." );
+	ri.Cvar_SetDescription( r_dlightBacks, "Whether or not dynamic lights should light up back-face culled geometry, affects only VQ3 dynamic lights." );
 	r_finish = ri.Cvar_Get( "r_finish", "0", CVAR_ARCHIVE_ND );
 	ri.Cvar_SetDescription( r_finish, "Force a glFinish call after rendering a scene." );
 	r_textureMode = ri.Cvar_Get( "r_textureMode", "GL_LINEAR_MIPMAP_NEAREST", CVAR_ARCHIVE );
@@ -1727,8 +1763,7 @@ static void R_Register( void )
 	ri.Cvar_CheckRange( r_ext_max_anisotropy, "1", NULL, CV_INTEGER );
 	ri.Cvar_SetDescription( r_ext_max_anisotropy, "Sets maximum anisotropic level for your graphics driver. Requires \\r_ext_texture_filter_anisotropic." );
 
-	r_stencilbits = ri.Cvar_Get( "r_stencilbits", "8", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	ri.Cvar_SetDescription( r_stencilbits, "Stencil buffer size, value decreases Z-buffer depth." );
+	//r_stencilbits = ri.Cvar_Get( "r_stencilbits", "8", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	r_ignorehwgamma = ri.Cvar_Get( "r_ignorehwgamma", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	ri.Cvar_CheckRange( r_ignorehwgamma, "0", "1", CV_INTEGER );
 	ri.Cvar_SetDescription( r_ignorehwgamma, "Overrides hardware gamma capabilities." );
@@ -1736,6 +1771,7 @@ static void R_Register( void )
 	r_flares = ri.Cvar_Get( "r_flares", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	ri.Cvar_SetDescription( r_flares, "Enables corona effects on light sources." );
 
+#ifdef USE_FBO
 	r_fbo = ri.Cvar_Get( "r_fbo", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	ri.Cvar_SetDescription( r_fbo, "Use framebuffer objects, enables gamma correction in windowed mode and allows arbitrary video size and screenshot/video capture.\n Required for bloom, HDR rendering, anti-aliasing and greyscale effects.\n OpenGL 3.0+ required." );
 
@@ -1758,6 +1794,7 @@ static void R_Register( void )
 		" 2 - nearest filtering, preserve aspect ratio (black bars on sides)\n"
 		" 3 - linear filtering, stretch to full size\n"
 		" 4 - linear filtering, preserve aspect ratio (black bars on sides)\n" );
+#endif // USE_FBO
 }
 
 #define EPSILON 1e-6f
@@ -1890,7 +1927,9 @@ static void RE_Shutdown( refShutdownCode_t code ) {
 
 		QGL_DoneARB();
 
+#ifdef USE_VBO
 		VBO_Cleanup();
+#endif
 
 		R_ClearSymTables();
 

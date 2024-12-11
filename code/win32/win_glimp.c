@@ -39,11 +39,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "resource.h"
 #include "win_local.h"
 #include "glw_win.h"
+
+#ifdef USE_OPENGL_API
 #include "../renderer/qgl.h"
 
 // Enable High Performance Graphics while using Integrated Graphics.
 Q_EXPORT DWORD NvOptimusEnablement = 0x00000001;		// Nvidia
 Q_EXPORT int AmdPowerXpressRequestHighPerformance = 1;	// AMD
+#endif
 
 typedef enum {
 	RSERR_OK,
@@ -68,13 +71,13 @@ static DEVMODE dm_current;
 static rserr_t	GLW_SetMode( int mode, const char *modeFS, int colorbits,
 							 qboolean cdsFullscreen, qboolean vulkan );
 
-static qboolean s_classRegistered = qfalse;
-
 //
 // function declaration
 //
+#ifdef USE_OPENGL_API
 qboolean	QGL_Init( const char *dllname );
 void		QGL_Shutdown( qboolean unloadDLL );
+#endif
 
 #ifdef USE_VULKAN_API
 qboolean	QVK_Init( void );
@@ -87,9 +90,11 @@ void		QVK_Shutdown( qboolean unloadDLL );
 glwstate_t glw_state;
 
 // GLimp-specific cvars
+#ifdef USE_OPENGL_API
 static cvar_t *r_maskMinidriver;		// allow a different dll name to be treated as if it were opengl32.dll
 static cvar_t *r_stereoEnabled;
 static cvar_t *r_verbose;				// used for verbose debug spew
+#endif
 
 /*
 ** GLW_StartDriverAndSetMode
@@ -117,6 +122,7 @@ static rserr_t GLW_StartDriverAndSetMode( int mode, const char *modeFS, int colo
 }
 
 
+#ifdef USE_OPENGL_API
 /*
 ** GLW_ChoosePFD
 **
@@ -145,7 +151,7 @@ static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR *pPFD )
 
 	pfds = Z_Malloc( ( maxPFD + 1 ) * sizeof( PIXELFORMATDESCRIPTOR ) );
 
-	Com_Printf( "...%d PFDs found\n", maxPFD - 1 );
+	Com_Printf( "...%d PFDs found\n", maxPFD );
 
 	// grab information
 	for ( i = 1; i <= maxPFD; i++ )
@@ -386,8 +392,6 @@ static void GLW_CreatePFD( PIXELFORMATDESCRIPTOR *pPFD, int colorbits, int depth
 */
 static int GLW_MakeContext( PIXELFORMATDESCRIPTOR *pPFD )
 {
-	int pixelformat;
-
 	//
 	// don't putz around with pixelformat if it's already set (e.g. this is a soft
 	// reset of the graphics system)
@@ -399,7 +403,8 @@ static int GLW_MakeContext( PIXELFORMATDESCRIPTOR *pPFD )
 		// using a minidriver then we need to bypass the GDI functions,
 		// otherwise use the GDI functions.
 		//
-		if ( ( pixelformat = GLW_ChoosePFD( glw_state.hDC, pPFD ) ) == 0 )
+		int pixelformat = GLW_ChoosePFD( glw_state.hDC, pPFD );
+		if ( pixelformat == 0 )
 		{
 			Com_Printf( "...GLW_ChoosePFD failed\n" );
 			return TRY_PFD_FAIL_SOFT;
@@ -492,8 +497,7 @@ static qboolean GLW_InitOpenGLDriver( int colorbits )
 	// do not allow stencil if Z-buffer depth likely won't contain it
 	//
 	stencilbits = cl_stencilbits->integer;
-	if ( depthbits < 24 )
-	{
+	if ( depthbits < 16 ) { // was < 24 before, some win9X drivers have 16/8 depth/stencil buffers
 		stencilbits = 0;
 	}
 
@@ -565,12 +569,13 @@ static qboolean GLW_InitOpenGLDriver( int colorbits )
 	** store PFD specifics 
 	*/
 
-	glw_state.config->colorBits = ( int ) pfd.cColorBits;
+	glw_state.config->colorBits = ( int ) pfd.cRedBits + ( int ) pfd.cGreenBits + ( int ) pfd.cBlueBits;
 	glw_state.config->depthBits = ( int ) pfd.cDepthBits;
 	glw_state.config->stencilBits = ( int ) pfd.cStencilBits;
 
 	return qtrue;
 }
+#endif // USE_OPENGL_API
 
 
 /*
@@ -615,12 +620,13 @@ static qboolean GLW_InitVulkanDriver( int colorbits )
 */
 static qboolean GLW_CreateWindow( int width, int height, int colorbits, qboolean cdsFullscreen, qboolean vulkan )
 {
+	static qboolean s_classRegistered = qfalse;
 	RECT			r;
 	int				stylebits;
 	int				x, y, w, h;
 	int				exstyle;
 	qboolean		oldFullscreen;
-	qboolean		res;
+	qboolean		res = qfalse;
 
 	//
 	// register the window class if necessary
@@ -756,9 +762,11 @@ static qboolean GLW_CreateWindow( int width, int height, int colorbits, qboolean
 #ifdef USE_VULKAN_API
 	if ( vulkan )
 		res = GLW_InitVulkanDriver( colorbits );
-	else
 #endif
+#ifdef USE_OPENGL_API
+	if ( !vulkan )
 		res = GLW_InitOpenGLDriver( colorbits );
+#endif
 
 	if ( !res )
 	{
@@ -1203,12 +1211,13 @@ static rserr_t GLW_SetMode( int mode, const char *modeFS, int colorbits, qboolea
 
 	// NOTE: this is overridden later on standalone 3Dfx drivers
 	glw_state.config->isFullscreen = cdsFullscreen;
-	glw_state.config->colorBits = dm.dmBitsPerPel;
+	//glw_state.config->colorBits = dm.dmBitsPerPel;
 
 	return RSERR_OK;
 }
 
 
+#ifdef USE_OPENGL_API
 /*
 ** GLW_LoadOpenGL
 **
@@ -1447,6 +1456,7 @@ void GLimp_Shutdown( qboolean unloadDLL )
 	// shutdown QGL subsystem
 	QGL_Shutdown( unloadDLL );
 }
+#endif // USE_OPENGL_API
 
 
 #ifdef USE_VULKAN_API

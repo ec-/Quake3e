@@ -112,6 +112,9 @@
     <ClCompile Include="..\..\client\snd_codec_wav.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\client\snd_codec_ogg.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\client\snd_dma.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -318,6 +321,9 @@
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\asm\snd_mix_x64.asm">
+      <Filter>Source Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\asm\common_x64.asm">
       <Filter>Source Files</Filter>
     </CustomBuild>
   </ItemGroup>

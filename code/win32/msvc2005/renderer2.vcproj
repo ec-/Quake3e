@@ -18,8 +18,8 @@
 	<Configurations>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory=".\build\renderer2_release"
-			IntermediateDirectory=".\build\renderer2_release"
+			OutputDirectory=".\build\$(ProjectName)_$(ConfigurationName)_$(PlatformName)"
+			IntermediateDirectory=".\build\$(ProjectName)_$(ConfigurationName)_$(PlatformName)"
 			ConfigurationType="4"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -46,8 +46,6 @@
 				Name="VCCLCompilerTool"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;USE_RENDERER2"
 				AssemblerListingLocation="$(IntDir)\"
-				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="$(IntDir)\"
 				WarningLevel="4"
 				DebugInformationFormat="3"
 			/>
@@ -64,7 +62,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\renderer2.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -84,8 +81,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory=".\build\renderer2_release_x64"
-			IntermediateDirectory=".\build\renderer2_release_x64"
+			OutputDirectory=".\build\$(ProjectName)_$(ConfigurationName)_$(PlatformName)"
+			IntermediateDirectory=".\build\$(ProjectName)_$(ConfigurationName)_$(PlatformName)"
 			ConfigurationType="4"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -113,10 +110,7 @@
 				Name="VCCLCompilerTool"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;USE_RENDERER2"
 				AssemblerListingLocation="$(IntDir)\"
-				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="$(IntDir)\"
 				WarningLevel="4"
-				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -131,7 +125,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\renderer2.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -151,8 +144,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\build\renderer2_debug"
-			IntermediateDirectory=".\build\renderer2_debug"
+			OutputDirectory=".\build\$(ProjectName)_$(ConfigurationName)_$(PlatformName)"
+			IntermediateDirectory=".\build\$(ProjectName)_$(ConfigurationName)_$(PlatformName)"
 			ConfigurationType="4"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -182,11 +175,8 @@
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				AssemblerListingLocation="$(IntDir)\"
-				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="$(IntDir)\"
 				BrowseInformation="1"
 				WarningLevel="3"
-				SuppressStartupBanner="true"
 				DebugInformationFormat="4"
 			/>
 			<Tool
@@ -202,7 +192,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\renderer2.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -222,8 +211,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory=".\build\renderer2_debug_x64"
-			IntermediateDirectory=".\build\renderer2_debug_x64"
+			OutputDirectory=".\build\$(ProjectName)_$(ConfigurationName)_$(PlatformName)"
+			IntermediateDirectory=".\build\$(ProjectName)_$(ConfigurationName)_$(PlatformName)"
 			ConfigurationType="4"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -254,11 +243,8 @@
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				AssemblerListingLocation="$(IntDir)\"
-				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="$(IntDir)\"
 				BrowseInformation="1"
 				WarningLevel="3"
-				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -274,7 +260,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\renderer2.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"

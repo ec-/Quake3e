@@ -984,14 +984,15 @@ static void set_rx_var( uint32_t reg, const var_addr_t *v ) {
 #endif
 }
 
+
 static void set_rx_ext( uint32_t reg, ext_t ext ) {
 #ifdef LOAD_OPTIMIZE
 	if ( reg >= ARRAY_LEN( rx_regs ) )
-		DROP( "register value %i s out of range", reg );
-	rx_regs[reg].ext = ext;
+		DROP( "register index %i is out of range", reg );
+	else
+		rx_regs[reg].ext = ext;
 #endif
 }
-
 
 
 static void set_sx_var( uint32_t reg, const var_addr_t *v ) {
@@ -3046,7 +3047,7 @@ __recompile:
 							case OP_LOAD1:
 								if ( reg->ext != Z_EXT8 ) {
 									emit( UXTB( rx[0], rx[0] ) ); // r0 = (unsigned byte) r0
-									// invalidate any mappings that overlaps with high [8..31] bits 
+									// invalidate any mappings that overlaps with high [8..31] bits
 									//var.addr += 1; var.size = 3;
 									//wipe_reg_range( rx_regs + rx[0], &var );
 									reduce_map_size( reg, 1 );
@@ -3530,7 +3531,7 @@ int32_t VM_CallCompiled( vm_t *vm, int nargs, int32_t *args )
 		Com_Error( ERR_DROP, "%s(%s): opStack corrupted in compiled code", __func__, vm->name );
 	}
 
-	if ( vm->programStack != stackOnEntry - ( MAX_VMMAIN_CALL_ARGS + 2 ) * sizeof( int32_t ) ) {
+	if ( vm->programStack != (int32_t)( stackOnEntry - ( MAX_VMMAIN_CALL_ARGS + 2 ) * sizeof( int32_t ) ) ) {
 		Com_Error( ERR_DROP, "%s(%s): programStack corrupted in compiled code", __func__, vm->name );
 	}
 #endif

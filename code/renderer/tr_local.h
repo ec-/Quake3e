@@ -24,14 +24,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define TR_LOCAL_H
 
 #define USE_LEGACY_DLIGHTS	// vq3 dynamic lights
-#define USE_PMLIGHT			// promode dynamic lights via \r_dlightMode 1
+#define USE_PMLIGHT			// promode dynamic lights via \r_dlightMode 1|2
 #define MAX_REAL_DLIGHTS	(MAX_DLIGHTS*2)
 #define MAX_LITSURFS		(MAX_DRAWSURFS)
 
 #define MAX_TEXTURE_SIZE	2048 // must be less or equal to 32768
 
+#define USE_VBO
 #define USE_TESS_NEEDS_NORMAL
 //#define USE_TESS_NEEDS_ST2
+#define USE_FBO
 
 #include "../qcommon/q_shared.h"
 #include "../qcommon/qfiles.h"
@@ -235,7 +237,10 @@ typedef enum {
 	TMOD_SCALE,
 	TMOD_STRETCH,
 	TMOD_ROTATE,
-	TMOD_ENTITY_TRANSLATE
+	TMOD_ENTITY_TRANSLATE,
+	TMOD_OFFSET,
+	TMOD_SCALE_OFFSET,
+	TMOD_OFFSET_SCALE,
 } texMod_t;
 
 #define	MAX_SHADER_DEFORMS	3
@@ -255,30 +260,42 @@ typedef struct {
 typedef struct {
 	texMod_t		type;
 
-	// used for TMOD_TURBULENT and TMOD_STRETCH
-	waveForm_t		wave;
+	union {
 
-	// used for TMOD_TRANSFORM
-	float			matrix[2][2];		// s' = s * m[0][0] + t * m[1][0] + trans[0]
-	float			translate[2];		// t' = s * m[0][1] + t * m[0][1] + trans[1]
+		// used for TMOD_TURBULENT and TMOD_STRETCH
+		waveForm_t		wave;
 
-	// used for TMOD_SCALE
-	float			scale[2];			// s *= scale[0]
-	                                    // t *= scale[1]
+		// used for TMOD_TRANSFORM
+		struct {
+			float		matrix[2][2];	// s' = s * m[0][0] + t * m[1][0] + trans[0]
+			float		translate[2];	// t' = s * m[0][1] + t * m[0][1] + trans[1]
+		};
 
-	// used for TMOD_SCROLL
-	float			scroll[2];			// s' = s + scroll[0] * time
+		// used for TMOD_SCALE, TMOD_OFFSET, TMOD_SCALE_OFFSET
+		struct {
+			float		scale[2];		// s' = s * scale[0] + offset[0]
+			float		offset[2];		// t' = t * scale[1] + offset[1]
+		};
+
+		// used for TMOD_SCROLL
+		float			scroll[2];		// s' = s + scroll[0] * time
 										// t' = t + scroll[1] * time
+		// used for TMOD_ROTATE
+		// + = clockwise
+		// - = counterclockwise
+		float			rotateSpeed;
 
-	// + = clockwise
-	// - = counterclockwise
-	float			rotateSpeed;
+	};
 
 } texModInfo_t;
 
 
 #define MAX_IMAGE_ANIMATIONS		24
 #define MAX_IMAGE_ANIMATIONS_VQ3	8
+
+#define LIGHTMAP_INDEX_NONE			0
+#define LIGHTMAP_INDEX_SHADER		1
+#define LIGHTMAP_INDEX_OFFSET		2
 
 typedef struct {
 	image_t			*image[MAX_IMAGE_ANIMATIONS];
@@ -292,7 +309,7 @@ typedef struct {
 	texModInfo_t	*texMods;
 
 	int				videoMapHandle;
-	qboolean		isLightmap;
+	int				lightmap;				// LIGHTMAP_INDEX_NONE, LIGHTMAP_INDEX_SHADER, LIGHTMAP_INDEX_OFFSET
 	qboolean		isVideoMap;
 	qboolean		isScreenMap;
 } textureBundle_t;
@@ -422,8 +439,6 @@ typedef struct shader_s {
 	int			curIndexes;
 
 	int			hasScreenMap;
-
-	float		lightmapOffset[2];	// within merged lightmap
 
 	void	(*optimalStageIteratorFunc)( void );
 
@@ -1105,7 +1120,11 @@ typedef struct {
 
 	int						numLightmaps;
 	image_t					**lightmaps;
-	float					lightmapScale[2];
+
+	qboolean				mergeLightmaps;
+	float					lightmapOffset[2];	// current shader lightmap offset
+	float					lightmapScale[2];	// for lightmap atlases
+	int						lightmapMod;		// for lightmap atlases
 
 	trRefEntity_t			*currentEntity;
 	trRefEntity_t			worldEntity;		// point currentEntity at this when rendering world
@@ -1176,8 +1195,10 @@ extern glstate_t	glState;		// outside of TR since it shouldn't be cleared during
 
 extern glstatic_t gls;
 
+#ifdef USE_FBO
 extern	qboolean			windowAdjusted;
 extern	qboolean			superSampled;
+#endif
 
 //
 // cvars
@@ -1197,6 +1218,8 @@ extern cvar_t	*r_stereoSeparation;			// separation of cameras for stereo renderi
 extern cvar_t	*r_lodbias;				// push/pull LOD transitions
 extern cvar_t	*r_lodscale;
 
+extern cvar_t	*r_teleporterFlash;		// teleport hyperspace visual
+
 extern cvar_t	*r_fastsky;				// controls whether sky should be cleared or drawn
 extern cvar_t	*r_neatsky;				// nomip and nopicmip for skyboxes, cnq3 like look
 extern cvar_t	*r_drawSun;				// controls drawing of sun quad
@@ -1210,7 +1233,10 @@ extern cvar_t	*r_dlightScale;			// 0.1 - 1.0
 extern cvar_t	*r_dlightIntensity;		// 0.1 - 1.0
 #endif
 extern cvar_t	*r_dlightSaturation;	// 0.0 - 1.0
+#ifdef USE_VBO
 extern cvar_t	*r_vbo;
+#endif
+#ifdef USE_FBO
 extern cvar_t	*r_fbo;
 extern cvar_t	*r_hdr;
 extern cvar_t	*r_bloom;
@@ -1226,6 +1252,7 @@ extern cvar_t	*r_bloom_reflection;
 extern cvar_t	*r_renderWidth;
 extern cvar_t	*r_renderHeight;
 extern cvar_t	*r_renderScale;
+#endif // USE_FBO
 
 extern cvar_t	*r_dlightBacks;			// dlight non-facing surfaces for continuity
 
@@ -1577,13 +1604,16 @@ void R_ComputeTexCoords( const int b, const textureBundle_t *bundle );
 
 void QGL_InitARB( void );
 void QGL_DoneARB( void );
+#ifdef USE_FBO
 void QGL_InitFBO( void );
+#endif
 qboolean ARB_UpdatePrograms( void );
 
 qboolean GL_ProgramAvailable( void );
 void GL_ProgramDisable( void );
 void GL_ProgramEnable( void );
 
+#ifdef USE_FBO
 extern qboolean		fboEnabled;
 extern qboolean		blitMSfbo;
 
@@ -1594,6 +1624,7 @@ void FBO_BlitSS( void );
 qboolean FBO_Bloom( const float gamma, const float obScale, qboolean finalPass );
 void FBO_CopyScreen( void );
 GLuint FBO_ScreenTexture( void );
+#endif //  USE_FBO
 
 /*
 ============================================================
@@ -1829,7 +1860,9 @@ typedef enum {
 	RC_DRAW_SURFS,
 	RC_DRAW_BUFFER,
 	RC_SWAP_BUFFERS,
+#ifdef USE_FBO
 	RC_FINISHBLOOM,
+#endif
 	RC_COLORMASK,
 	RC_CLEARDEPTH,
 	RC_CLEARCOLOR
@@ -1906,7 +1939,7 @@ void R_BloomScreen( void );
 #undef GLE
 
 // VBO functions
-
+#ifdef USE_VBO
 extern void RB_StageIteratorVBO( void );
 extern void R_BuildWorldVBO( msurface_t *surf, int surfCount );
 
@@ -1918,6 +1951,7 @@ extern void VBO_Cleanup( void );
 extern void VBO_QueueItem( int itemIndex );
 extern void VBO_ClearQueue( void );
 extern void VBO_Flush( void );
+#endif
 
 // ARB shaders definitions
 
@@ -1954,6 +1988,7 @@ typedef enum {
 	DLIGHT_LINEAR_ABS_FRAGMENT_FOG,
 #endif
 	SPRITE_FRAGMENT,
+#ifdef USE_FBO
 	GAMMA_FRAGMENT,
 	BLOOM_EXTRACT_FRAGMENT,
 	BLUR_FRAGMENT,
@@ -1961,7 +1996,7 @@ typedef enum {
 	BLENDX_FRAGMENT,
 	BLEND2_FRAGMENT,
 	BLEND2_GAMMA_FRAGMENT,
-
+#endif
 	PROGRAM_COUNT
 
 } programNum;
@@ -1973,5 +2008,7 @@ qboolean ARB_CompileProgram( programType ptype, const char *text, GLuint program
 void ARB_ProgramEnableExt( GLuint vertexProgram, GLuint fragmentProgram );
 
 void QGL_SetRenderScale( qboolean verbose );
+
+int R_GetLightmapCoords( const int lightmapIndex, float *x, float *y );
 
 #endif //TR_LOCAL_H

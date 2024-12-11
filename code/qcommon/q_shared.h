@@ -104,6 +104,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define Q_EXPORT
 #endif
 
+#if defined(__GNUC__) || defined(__clang__)
+#define NORETURN __attribute__((noreturn))
+#define NORETURN_PTR __attribute__((noreturn))
+#elif defined(_MSC_VER)
+#define NORETURN __declspec(noreturn)
+// __declspec doesn't work on function pointers
+#define NORETURN_PTR /* nothing */
+#else
+#define NORETURN /* nothing */
+#define NORETURN_PTR /* nothing */
+#endif
+
+#if defined(__GNUC__) || defined(__clang__)
+#define FORMAT_PRINTF(x, y) __attribute__((format (printf, x, y)))
+#else
+#define FORMAT_PRINTF(x, y) /* nothing */
+#endif
+
 /**********************************************************************
   VM Considerations
 
@@ -151,8 +169,7 @@ float FloatSwap( const float *f );
 #ifdef Q3_VM
 	typedef int intptr_t;
 #else
-	#ifdef _MSC_VER
-		#include <io.h>
+	#if defined (_MSC_VER) && !defined(__clang__)
 		typedef __int64 int64_t;
 		typedef __int32 int32_t;
 		typedef __int16 int16_t;
@@ -174,10 +191,22 @@ float FloatSwap( const float *f );
 	#endif
 #endif
 
-#if defined (_WIN32) && !defined(_MSC_VER)
+#if defined (_WIN32)
+#if !defined(_MSC_VER)
+// use GCC/Clang functions
 #define Q_setjmp __builtin_setjmp
 #define Q_longjmp __builtin_longjmp
-#else
+#elif idx64 && (_MSC_VER >= 1910)
+// use custom setjmp()/longjmp() implementations
+#define Q_setjmp Q_setjmp_c
+#define Q_longjmp Q_longjmp_c
+int Q_setjmp_c(void *);
+int Q_longjmp_c(void *, int);
+#else // !idx64 || MSVC<2017
+#define Q_setjmp setjmp
+#define Q_longjmp longjmp
+#endif
+#else // !_WIN32
 #define Q_setjmp setjmp
 #define Q_longjmp longjmp
 #endif
@@ -382,7 +411,7 @@ typedef	int	fixed16_t;
 #endif
 
 #ifndef M_LN2
-#define M_LN2      0.693147180559945309417
+#define M_LN2      0.693147180559945309417f
 #endif
 
 #ifdef __linux__
@@ -813,6 +842,7 @@ void	Q_strcat( char *dest, int size, const char *src );
 int     Q_replace( const char *str1, const char *str2, char *src, int max_len );
 
 char	*Q_stradd( char *dst, const char *src );
+char	*Q_strncpy( char *dest, char *src, int destsize );
 
 // strlen that discounts Quake color sequences
 int Q_PrintStrlen( const char *string );
@@ -871,8 +901,8 @@ const char *Info_NextPair( const char *s, char *key, char *value );
 int Info_RemoveKey( char *s, const char *key );
 
 // this is only here so the functions in q_shared.c and bg_*.c can link
-void	QDECL Com_Error( errorParm_t level, const char *fmt, ... ) __attribute__ ((noreturn, format (printf, 2, 3)));
-void	QDECL Com_Printf( const char *msg, ... ) __attribute__ ((format (printf, 1, 2)));
+void NORETURN FORMAT_PRINTF(2, 3) QDECL Com_Error( errorParm_t level, const char *fmt, ... );
+void FORMAT_PRINTF(1, 2) QDECL Com_Printf( const char *msg, ... );
 
 
 /*

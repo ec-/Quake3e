@@ -67,10 +67,12 @@ void R_BindAnimatedImage( const textureBundle_t *bundle ) {
 		return;
 	}
 
+#ifdef USE_FBO
 	if ( bundle->isScreenMap && backEnd.viewParms.frameSceneNum == 1 ) {
 		GL_BindTexNum( FBO_ScreenTexture() );
 		return;
 	}
+#endif
 
 	if ( bundle->numImageAnimations <= 1 ) {
 		GL_Bind( bundle->image[0] );
@@ -111,7 +113,10 @@ static void DrawTris( const shaderCommands_t *input ) {
 		return;
 
 	GL_ProgramDisable();
+
+#ifdef USE_PMLIGHT
 	tess.dlightUpdateParams = qtrue;
+#endif
 
 	GL_ClientState( 0, CLS_NONE );
 	qglDisable( GL_TEXTURE_2D );
@@ -304,6 +309,7 @@ static void DrawMultitextured( const shaderCommands_t *input, int stage ) {
 	//
 	// disable texturing on TEXTURE1, then select TEXTURE0
 	//
+#ifdef USE_VBO
 	if ( r_vbo->integer ) {
 		// some drivers may try to load texcoord[1] data even with multi-texturing disabled
 		// (and actually gpu shaders doesn't care about conventional GL_TEXTURE_2D states)
@@ -312,6 +318,7 @@ static void DrawMultitextured( const shaderCommands_t *input, int stage ) {
 		// or smaller set - which will cause out-of-bounds index access/crash during non-multitexture rendering
 		// GL_ClientState( 1, GLS_NONE );
 	}
+#endif // USE_VBO
 
 	qglDisable( GL_TEXTURE_2D );
 
@@ -327,7 +334,7 @@ ProjectDlightTexture
 Perform dynamic lighting with another rendering pass
 ===================
 */
-static void ProjectDlightTexture_scalar( void ) {
+static void ProjectDlightTexture( void ) {
 	int		i, l;
 	vec3_t	origin;
 	float	*texCoords;
@@ -456,11 +463,6 @@ static void ProjectDlightTexture_scalar( void ) {
 		backEnd.pc.c_dlightIndexes += numIndexes;
 	}
 }
-
-
-static void ProjectDlightTexture( void ) {
-	ProjectDlightTexture_scalar();
-}
 #endif // USE_LEGACY_DLIGHTS
 
 
@@ -472,13 +474,11 @@ Blends a fog texture on top of everything else
 ===================
 */
 static void RB_FogPass( void ) {
-	const fog_t	*fog;
-	int			i;
-
-	fog = tr.world->fogs + tess.fogNum;
+	const fog_t *fog = tr.world->fogs + tess.fogNum;
+	int i;
 
 	for ( i = 0; i < tess.numVertexes; i++ ) {
-		tess.svars.colors[i].u32 = fog->colorInt.u32;
+		tess.svars.colors[i] = fog->colorInt;
 	}
 
 	RB_CalcFogTexCoords( ( float * ) tess.svars.texcoords[0] );
@@ -511,7 +511,7 @@ void R_ComputeColors( const shaderStage_t *pStage )
 {
 	int		i;
 
-	if ( !tess.numVertexes )
+	if ( tess.numVertexes == 0 )
 		return;
 
 	//
@@ -534,7 +534,7 @@ void R_ComputeColors( const shaderStage_t *pStage )
 			break;
 		case CGEN_CONST:
 			for ( i = 0; i < tess.numVertexes; i++ ) {
-				tess.svars.colors[i].u32 = pStage->constantColor.u32;
+				tess.svars.colors[i] = pStage->constantColor;
 			}
 			break;
 		case CGEN_VERTEX:
@@ -580,7 +580,7 @@ void R_ComputeColors( const shaderStage_t *pStage )
 				fog = tr.world->fogs + tess.fogNum;
 
 				for ( i = 0; i < tess.numVertexes; i++ ) {
-					tess.svars.colors[i].u32 = fog->colorInt.u32;
+					tess.svars.colors[i] = fog->colorInt;
 				}
 			}
 			break;
@@ -765,6 +765,30 @@ void R_ComputeTexCoords( const int b, const textureBundle_t *bundle ) {
 			src = dst;
 			break;
 
+		case TMOD_OFFSET:
+			for ( i = 0; i < tess.numVertexes; i++ ) {
+				dst[i][0] = src[i][0] + bundle->texMods[tm].offset[0];
+				dst[i][1] = src[i][1] + bundle->texMods[tm].offset[1];
+			}
+			src = dst;
+			break;
+
+		case TMOD_SCALE_OFFSET:
+			for ( i = 0; i < tess.numVertexes; i++ ) {
+				dst[i][0] = (src[i][0] * bundle->texMods[tm].scale[0] ) + bundle->texMods[tm].offset[0];
+				dst[i][1] = (src[i][1] * bundle->texMods[tm].scale[1] ) + bundle->texMods[tm].offset[1];
+			}
+			src = dst;
+			break;
+
+		case TMOD_OFFSET_SCALE:
+			for ( i = 0; i < tess.numVertexes; i++ ) {
+				dst[i][0] = (src[i][0] + bundle->texMods[tm].offset[0]) * bundle->texMods[tm].scale[0];
+				dst[i][1] = (src[i][1] + bundle->texMods[tm].offset[1]) * bundle->texMods[tm].scale[1];
+			}
+			src = dst;
+			break;
+
 		case TMOD_STRETCH:
 			RB_CalcStretchTexCoords( &bundle->texMods[tm].wave, (float *)src, (float *) dst );
 			src = dst;
@@ -784,15 +808,6 @@ void R_ComputeTexCoords( const int b, const textureBundle_t *bundle ) {
 			ri.Error( ERR_DROP, "ERROR: unknown texmod '%d' in shader '%s'", bundle->texMods[tm].type, tess.shader->name );
 			break;
 		}
-	}
-
-	if ( r_mergeLightmaps->integer && bundle->isLightmap && bundle->tcGen != TCGEN_LIGHTMAP ) {
-		// adjust texture coordinates to map on proper lightmap
-		for ( i = 0 ; i < tess.numVertexes ; i++ ) {
-			dst[i][0] = (src[i][0] * tr.lightmapScale[0] ) + tess.shader->lightmapOffset[0];
-			dst[i][1] = (src[i][1] * tr.lightmapScale[1] ) + tess.shader->lightmapOffset[1];
-		}
-		src = dst;
 	}
 
 	tess.svars.texcoordPtr[ b ] = src;
@@ -855,7 +870,7 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 		}
 
 		// allow skipping out to show just lightmaps during development
-		if ( r_lightmap->integer && ( pStage->bundle[0].isLightmap || pStage->bundle[1].isLightmap ) )
+		if ( r_lightmap->integer && ( pStage->bundle[0].lightmap != LIGHTMAP_INDEX_NONE || pStage->bundle[1].lightmap != LIGHTMAP_INDEX_NONE ) )
 			break;
 	}
 }
@@ -879,6 +894,7 @@ void RB_StageIteratorGeneric( void )
 	GL_ProgramDisable();
 #endif // USE_PMLIGHT
 
+#ifdef USE_VBO
 	if ( tess.vboIndex )
 	{
 		RB_StageIteratorVBO();
@@ -886,6 +902,7 @@ void RB_StageIteratorGeneric( void )
 	}
 
 	VBO_UnBind();
+#endif
 
 	input = &tess;
 	shader = input->shader;
@@ -1008,7 +1025,9 @@ void RB_EndSurface( void ) {
 	input = &tess;
 
 	if ( input->numIndexes == 0 ) {
+#ifdef USE_VBO
 		VBO_UnBind();
+#endif
 		return;
 	}
 
@@ -1027,7 +1046,9 @@ void RB_EndSurface( void ) {
 
 	// for debugging of sort order issues, stop rendering after a given sort value
 	if ( r_debugSort->integer && r_debugSort->integer < tess.shader->sort && !backEnd.doneSurfaces ) {
+#ifdef USE_VBO
 		VBO_UnBind();
+#endif
 		return;
 	}
 
@@ -1056,7 +1077,11 @@ void RB_EndSurface( void ) {
 	//
 	// draw debugging stuff
 	//
+#ifdef USE_VBO
 	if ( !VBO_Active() ) {
+#else
+	{
+#endif
 		if ( r_showtris->integer ) {
 			DrawTris( input );
 		}

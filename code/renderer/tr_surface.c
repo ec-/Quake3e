@@ -74,7 +74,9 @@ void RB_AddQuadStampExt( const vec3_t origin, const vec3_t left, const vec3_t up
 	vec3_t		normal;
 	int			ndx;
 
+#ifdef USE_VBO
 	VBO_Flush();
+#endif
 
 	RB_CHECKOVERFLOW( 4, 6 );
 
@@ -129,10 +131,10 @@ void RB_AddQuadStampExt( const vec3_t origin, const vec3_t left, const vec3_t up
 
 	// constant color all the way around
 	// should this be identity and let the shader specify from entity?
-	tess.vertexColors[ndx + 0].u32 =
-	tess.vertexColors[ndx + 1].u32 =
-	tess.vertexColors[ndx + 2].u32 =
-	tess.vertexColors[ndx + 3].u32 = color.u32;
+	tess.vertexColors[ndx + 0] =
+	tess.vertexColors[ndx + 1] =
+	tess.vertexColors[ndx + 2] =
+	tess.vertexColors[ndx + 3] = color;
 
 	tess.numVertexes += 4;
 	tess.numIndexes += 6;
@@ -143,7 +145,9 @@ void RB_AddQuadStamp2( float x, float y, float w, float h, float s1, float t1, f
 	int			numIndexes;
 	int			numVerts;
 
+#ifdef USE_VBO
 	VBO_Flush();
+#endif
 
 	RB_CHECKOVERFLOW( 4, 6 );
 
@@ -162,10 +166,10 @@ void RB_AddQuadStamp2( float x, float y, float w, float h, float s1, float t1, f
 	tess.indexes[numIndexes + 4] = numVerts + 0;
 	tess.indexes[numIndexes + 5] = numVerts + 1;
 
-	tess.vertexColors[numVerts + 0].u32 =
-	tess.vertexColors[numVerts + 1].u32 =
-	tess.vertexColors[numVerts + 2].u32 =
-	tess.vertexColors[numVerts + 3].u32 = color.u32;
+	tess.vertexColors[numVerts + 0] =
+	tess.vertexColors[numVerts + 1] =
+	tess.vertexColors[numVerts + 2] =
+	tess.vertexColors[numVerts + 3] = color;
 
 	tess.xyz[numVerts + 0][0] = x;
 	tess.xyz[numVerts + 0][1] = y;
@@ -250,7 +254,9 @@ static void RB_SurfacePolychain( const srfPoly_t *p ) {
 	int		i;
 	int		numv;
 
+#ifdef USE_VBO
 	VBO_Flush();
+#endif
 
 	RB_CHECKOVERFLOW( p->numVerts, 3*(p->numVerts - 2) );
 
@@ -262,7 +268,7 @@ static void RB_SurfacePolychain( const srfPoly_t *p ) {
 		VectorCopy( p->verts[i].xyz, tess.xyz[numv] );
 		tess.texCoords[0][numv][0] = p->verts[i].st[0];
 		tess.texCoords[0][numv][1] = p->verts[i].st[1];
-		tess.vertexColors[numv].u32 = p->verts[ i ].modulate.u32;
+		tess.vertexColors[numv] = p->verts[ i ].modulate;
 
 		numv++;
 	}
@@ -295,6 +301,7 @@ static void RB_SurfaceTriangles( const srfTriangles_t *srf ) {
 	int			dlightBits;
 #endif
 
+#ifdef USE_VBO
 #ifdef USE_LEGACY_DLIGHTS
 	if ( tess.allowVBO && srf->vboItemIndex && !srf->dlightBits ) {
 #else
@@ -316,6 +323,7 @@ static void RB_SurfaceTriangles( const srfTriangles_t *srf ) {
 	}
 
 	VBO_Flush();
+#endif // USE_VBO
 
 	RB_CHECKOVERFLOW( srf->numVerts, srf->numIndexes );
 
@@ -792,7 +800,9 @@ static void RB_SurfaceMesh(md3Surface_t *surface) {
 	int				Bob, Doug;
 	int				numVerts;
 
+#ifdef USE_VBO
 	VBO_Flush();
+#endif
 
 	RB_CHECKOVERFLOW( surface->numVerts, surface->numTriangles * 3 );
 
@@ -847,6 +857,7 @@ static void RB_SurfaceFace( const srfSurfaceFace_t *surf ) {
 	int			dlightBits;
 #endif
 
+#ifdef USE_VBO
 #ifdef USE_LEGACY_DLIGHTS
 	if ( tess.allowVBO && surf->vboItemIndex && !surf->dlightBits ) {
 #else
@@ -868,6 +879,7 @@ static void RB_SurfaceFace( const srfSurfaceFace_t *surf ) {
 	}
 
 	VBO_Flush();
+#endif // USE_VBO
 
 	RB_CHECKOVERFLOW( surf->numPoints, surf->numIndices );
 
@@ -1049,6 +1061,7 @@ static void RB_SurfaceGrid( srfGridMesh_t *cv ) {
 	int		*vDlightBits;
 #endif
 
+#ifdef USE_VBO
 #ifdef USE_LEGACY_DLIGHTS
 	if ( tess.allowVBO && cv->vboItemIndex && !cv->dlightBits ) {
 #else
@@ -1070,6 +1083,7 @@ static void RB_SurfaceGrid( srfGridMesh_t *cv ) {
 	}
 
 	VBO_Flush();
+#endif // USE_VBO
 
 #ifdef USE_LEGACY_DLIGHTS
 	dlightBits = cv->dlightBits;
@@ -1125,14 +1139,15 @@ static void RB_SurfaceGrid( srfGridMesh_t *cv ) {
 			// if we don't have enough space for at least one strip, flush the buffer
 			if ( vrows < 2 || irows < 1 ) {
 				if ( tr.mapLoading ) {
+#ifdef USE_VBO
 					// estimate and flush
 					if ( cv->vboItemIndex ) {
 						VBO_PushData( cv->vboItemIndex, &tess );
 						tess.numIndexes = 0;
 						tess.numVertexes = 0;
-					} else {
-						ri.Error( ERR_DROP, "Unexpected grid flush during map loading!\n" );
-					}
+					} else
+#endif
+					ri.Error( ERR_DROP, "Unexpected grid flush during map loading!\n" );
 				} else {
 					RB_EndSurface();
 					RB_BeginSurface( tess.shader, tess.fogNum );
@@ -1300,7 +1315,9 @@ Entities that have a single procedurally generated surface
 ====================
 */
 static void RB_SurfaceEntity( const surfaceType_t *surfType ) {
+#ifdef USE_VBO
 	VBO_Flush();
+#endif
 	switch( backEnd.currentEntity->e.reType ) {
 	case RT_SPRITE:
 		RB_SurfaceSprite();
@@ -1332,7 +1349,9 @@ static void RB_SurfaceBad( const surfaceType_t *surfType ) {
 
 static void RB_SurfaceFlare( srfFlare_t *surf ) {
 	if ( r_flares->integer ) {
+#ifdef USE_VBO
 		VBO_Flush();
+#endif
 		tess.surfType = SF_FLARE;
 		RB_AddFlare( surf, tess.fogNum, surf->origin, surf->color, surf->normal );
 	}

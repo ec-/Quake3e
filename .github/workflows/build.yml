@@ -43,7 +43,7 @@ jobs:
             rule: install
 
           - btype: Debug
-            rule: debug install
+            rule: debug
 
     defaults:
       run:
@@ -59,18 +59,19 @@ jobs:
         release: false
         update: false
 
-    - uses: actions/checkout@v3.1.0
+    - uses: actions/checkout@v4
       with:
         submodules: recursive
 
     - name: Build
       if: ${{ github.event_name != 'release' || matrix.btype != 'Debug' }} # skip Debug configuration in Release build
       run: |
-        make ${{ matrix.rule }} -j 8 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_SDL=0 USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=vulkan CNAME=quake3e-vulkan BUILD_SERVER=0
         make clean ARCH=${{ matrix.arch }}
-        make ${{ matrix.rule }} -j 8 ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_SDL=0 USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=opengl
+        make ${{ matrix.rule }} -j$(nproc) ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_SDL=0 USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=vulkan CNAME=quake3e-vulkan BUILD_SERVER=0
+        make clean ARCH=${{ matrix.arch }}
+        make ${{ matrix.rule }} -j$(nproc) ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_SDL=0 USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=opengl
 
-    - uses: actions/upload-artifact@v3.1.1
+    - uses: actions/upload-artifact@v4
       if: matrix.cc == 'gcc' && matrix.btype == 'release'
       with:
         name: windows-mingw-${{ matrix.arch }}
@@ -103,9 +104,9 @@ jobs:
 
     steps:
 
-    - uses: microsoft/setup-msbuild@v1.1.3
+    - uses: microsoft/setup-msbuild@v2
 
-    - uses: actions/checkout@v3.1.0
+    - uses: actions/checkout@v4
       with:
         submodules: recursive
 
@@ -130,7 +131,7 @@ jobs:
         msbuild code\win32\msvc2017\renderervk.vcxproj -p:Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }} -t:Clean
         msbuild code\win32\msvc2017\quake3e.vcxproj -p:TargetName=quake3e,Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }},UseWasapi=USE_WASAPI=0 -t:Clean
 
-    - uses: actions/upload-artifact@v3.1.1
+    - uses: actions/upload-artifact@v4
       if: ${{ matrix.btype == 'release' }}
       with:
         name: windows-msvc-${{ matrix.pkg_suffix }}
@@ -138,26 +139,27 @@ jobs:
         if-no-files-found: error
         retention-days: 5
         
+
   create-testing:
     if: github.ref == 'refs/heads/master' && github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: [windows-msys, windows-msvc]
     runs-on: ubuntu-latest
     steps:
       - name: Download Artifacts
-        uses: actions/download-artifact@v3.0.1
+        uses: actions/download-artifact@v4
 
       - name: Create binary archives
         run: |
+
           7z a -r quake3e-windows-mingw-x86.zip    ./windows-mingw-x86/*
           7z a -r quake3e-windows-mingw-x86_64.zip ./windows-mingw-x86_64/*
           7z a -r quake3e-windows-msvc-x86.zip     ./windows-msvc-x86/*
           7z a -r quake3e-windows-msvc-x86_64.zip  ./windows-msvc-x86_64/*
           7z a -r quake3e-windows-msvc-arm64.zip   ./windows-msvc-arm64/*
-#         7z a -r quake3e-linux-aarch64.zip  ./linux-aarch64/*
-#         7z a -r quake3e-linux-armv7.zip    ./linux-armv7/*
+
 
       - name: Create latest build
-        uses: marvinpinto/action-automatic-releases@latest
+        uses: czietz/action-automatic-releases@latest
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           automatic_release_tag: "latest"
@@ -174,11 +176,11 @@ jobs:
     strategy:
       matrix:
         include:
-          # - artifact_dir: linux-aarch64
-          #   artifact_name: quake3e-linux-aarch64.zip
+#         - artifact_dir: linux-aarch64
+#           artifact_name: quake3e-linux-aarch64.zip
 
-          # - artifact_dir: linux-armv7
-          #  artifact_name: quake3e-linux-armv7.zip
+#         - artifact_dir: linux-armv7
+#           artifact_name: quake3e-linux-armv7.zip
 
           - artifact_dir: windows-mingw-x86
 #           artifact_name: quake3e-windows-mingw-x86.zip
@@ -198,9 +200,10 @@ jobs:
 #           artifact_name: quake3e-windows-msvc-arm64.zip
             artifact_name: quake3e-windows-arm64.zip
 
+
     steps:
       - name: Download Artifacts
-        uses: actions/download-artifact@v3.0.1
+        uses: actions/download-artifact@v4
 
       - name: Create archive
         run: 7z a -r ${{ matrix.artifact_name }} ./${{ matrix.artifact_dir }}/*

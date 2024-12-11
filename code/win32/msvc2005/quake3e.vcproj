@@ -20,7 +20,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory=".\output"
-			IntermediateDirectory=".\build\quake3e_debug"
+			IntermediateDirectory=".\build\$(ProjectName)_$(ConfigurationName)_$(PlatformName)"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -43,13 +43,11 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\libcurl\windows\include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;USE_CURL;CURL_STATICLIB;USE_VULKAN_API;_CRT_SECURE_NO_DEPRECATE"
+				AdditionalIncludeDirectories="..\..\libogg\include;..\..\libvorbis\include;..\..\libcurl\windows\include;$(NOINHERIT)"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;USE_CURL;CURL_STATICLIB;USE_OPENGL_API;USE_VULKAN_API;USE_OGG_VORBIS;USE_WIN32_ASM;_CRT_SECURE_NO_DEPRECATE;DISABLE_IPV6;$(NOINHERIT)"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				AssemblerListingLocation="$(IntDir)\"
-				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="$(IntDir)\"
 				BrowseInformation="1"
 				BrowseInformationFile="$(IntDir)\"
 				WarningLevel="3"
@@ -109,7 +107,7 @@
 		<Configuration
 			Name="Debug|x64"
 			OutputDirectory=".\output"
-			IntermediateDirectory=".\build\quake3e_debug_x64"
+			IntermediateDirectory=".\build\$(ProjectName)_$(ConfigurationName)_$(PlatformName)"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -132,13 +130,11 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\libcurl\windows\include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;USE_CURL;CURL_STATICLIB;USE_VULKAN_API;_CRT_SECURE_NO_DEPRECATE"
+				AdditionalIncludeDirectories="..\..\libogg\include;..\..\libvorbis\include;..\..\libcurl\windows\include;$(NOINHERIT)"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;USE_CURL;CURL_STATICLIB;USE_OPENGL_API;USE_VULKAN_API;USE_OGG_VORBIS;USE_WIN32_ASM;_CRT_SECURE_NO_DEPRECATE;$(NOINHERIT)"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				AssemblerListingLocation="$(IntDir)\"
-				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="$(IntDir)\"
 				BrowseInformation="1"
 				BrowseInformationFile="$(IntDir)\"
 				WarningLevel="3"
@@ -158,7 +154,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="comctl32.lib winmm.lib wsock32.lib ws2_32.lib ..\..\libcurl\windows\vs2005\lib64\libcurl_a_debug.lib"
+				AdditionalDependencies="comctl32.lib winmm.lib wsock32.lib ws2_32.lib crypt32.lib ..\..\libcurl\windows\vs2005\lib64\libcurl_a_debug.lib"
 				OutputFile="$(OutDir)\quake3e-debug.x64.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
@@ -198,7 +194,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory=".\output"
-			IntermediateDirectory=".\build\quake3e_release"
+			IntermediateDirectory=".\build\$(ProjectName)_$(ConfigurationName)_$(PlatformName)"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -221,13 +217,9 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="..\..\libcurl\windows\include"
-				PreprocessorDefinitions="WIN32;_WIN32;NDEBUG;_WINDOWS;USE_SKIPIDLOGO;USE_CURL;CURL_STATICLIB;USE_VULKAN_API;_CRT_SECURE_NO_DEPRECATE"
+				AdditionalIncludeDirectories="..\..\libogg\include;..\..\libvorbis\include;..\..\libcurl\windows\include;$(NOINHERIT)"
+				PreprocessorDefinitions="WIN32;_WIN32;NDEBUG;_WINDOWS;USE_SKIPIDLOGO;USE_CURL;CURL_STATICLIB;USE_OPENGL_API;USE_VULKAN_API;USE_OGG_VORBIS;USE_WIN32_ASM;_CRT_SECURE_NO_DEPRECATE;DISABLE_IPV6;$(NOINHERIT)"
 				AssemblerListingLocation="$(IntDir)\"
-				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="$(IntDir)\"
-				WarningLevel="4"
-				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -282,7 +274,7 @@
 		<Configuration
 			Name="Release|x64"
 			OutputDirectory=".\output"
-			IntermediateDirectory=".\build\quake3e_release_x64"
+			IntermediateDirectory=".\build\$(ProjectName)_$(ConfigurationName)_$(PlatformName)"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -305,13 +297,9 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="..\..\libcurl\windows\include"
-				PreprocessorDefinitions="WIN32;_WIN32;NDEBUG;_WINDOWS;USE_SKIPIDLOGO;USE_CURL;CURL_STATICLIB;USE_VULKAN_API;_CRT_SECURE_NO_DEPRECATE"
+				AdditionalIncludeDirectories="..\..\libogg\include;..\..\libvorbis\include;..\..\libcurl\windows\include;$(NOINHERIT)"
+				PreprocessorDefinitions="WIN32;_WIN32;NDEBUG;_WINDOWS;USE_SKIPIDLOGO;USE_CURL;CURL_STATICLIB;USE_OPENGL_API;USE_VULKAN_API;USE_OGG_VORBIS;USE_WIN32_ASM;_CRT_SECURE_NO_DEPRECATE;$(NOINHERIT)"
 				AssemblerListingLocation="$(IntDir)\"
-				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="$(IntDir)\"
-				WarningLevel="4"
-				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -325,7 +313,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/DYNAMICBASE"
-				AdditionalDependencies="comctl32.lib winmm.lib wsock32.lib ws2_32.lib ..\..\libcurl\windows\vs2005\lib64\libcurl_a.lib"
+				AdditionalDependencies="comctl32.lib winmm.lib wsock32.lib ws2_32.lib crypt32.lib ..\..\libcurl\windows\vs2005\lib64\libcurl_a.lib"
 				OutputFile="$(OutDir)\quake3e.x64.exe"
 				GenerateMapFile="true"
 				MapFileName="$(IntDir)\quake3e.x64.map"
@@ -452,6 +440,46 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\asm\common_x64.asm"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Assembling..."
+						CommandLine="ml64 /c /Zi /Fo&quot;$(IntDir)\$(InputFileName).obj&quot; &quot;$(InputPath)&quot;&#x0D;&#x0A;"
+						Outputs="&quot;$(IntDir)\$(InputFileName).obj&quot;"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Assembling..."
+						CommandLine="ml64 /c /Zi /Fo&quot;$(IntDir)\$(InputFileName).obj&quot; &quot;$(InputPath)&quot;&#x0D;&#x0A;"
+						Outputs="&quot;$(IntDir)\$(InputFileName).obj&quot;"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\..\qcommon\cvar.c"
 				>
 			</File>
@@ -513,6 +541,10 @@
 			</File>
 			<File
 				RelativePath="..\..\client\snd_codec.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\client\snd_codec_ogg.c"
 				>
 			</File>
 			<File

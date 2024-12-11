@@ -1306,7 +1306,65 @@ void Q_strncpyz( char *dest, const char *src, int destsize )
 }
 
 
-int Q_stricmpn (const char *s1, const char *s2, int n) {
+/*
+=============
+Q_strncpy
+
+allows src and dest to be overlapped for QVM compatibility purposes
+=============
+*/
+char *Q_strncpy( char *dest, char *src, int destsize )
+{
+	char *s = src, *start = dest;
+	int src_len;
+
+	while ( *s != '\0' )
+		++s;
+	src_len = (int)(s - src);
+	
+	if ( src_len > destsize ) {
+		src_len = destsize;
+	}
+	destsize -= src_len;
+
+	if ( dest > src && dest < src + src_len ) {
+		int i;
+#ifdef _DEBUG
+		Com_Printf( S_COLOR_YELLOW "Q_strncpy: overlapped (dest > src) buffers\n" );
+#endif
+		for ( i = src_len - 1; i >= 0; --i ) {
+			dest[i] = src[i]; // back overlapping
+		}
+		dest += src_len;
+	} else {
+#ifdef _DEBUG
+		if ( src >= dest && src < dest + src_len ) {
+			Com_Printf( S_COLOR_YELLOW "Q_strncpy: overlapped (src >= dst) buffers\n" );
+#ifdef _MSC_VER
+			// __debugbreak();
+#endif 
+		}
+#endif
+		while ( src_len > 0 ) {
+			*dest++ = *src++;
+			--src_len;
+		}
+	}
+
+	while ( destsize > 0 ) {
+		*dest++ = '\0';
+		--destsize;
+	}
+
+	return start;
+}
+
+/*
+=============
+Q_stricmpn
+=============
+*/
+int Q_stricmpn( const char *s1, const char *s2, int n ) {
 	int		c1, c2;
 
 	// bk001129 - moved in 1.17 fix not in id codebase
@@ -1956,45 +2014,56 @@ const char *Info_NextPair( const char *s, char *key, char *value ) {
 /*
 ===================
 Info_RemoveKey
+
+return removed character count
 ===================
 */
 int Info_RemoveKey( char *s, const char *key )
 {
-	char	*start;
-	const char 	*pkey;
-	int		key_len, len;
+	char *start;
+	const char *pkey;
+	int	key_len, len, ret;
 
-	key_len = (int) strlen( key );
+	key_len = (int)strlen( key );
+	ret = 0;
 
-	while (1)
-	{
+	while ( 1 ) {
 		start = s;
-		if ( *s == '\\' )
-			s++;
+		if ( *s == '\\' ) {
+			++s;
+		}
 		pkey = s;
-		while ( *s != '\\' )
-		{
-			if ( *s == '\0' )
-				return 0;
+		while ( *s != '\\' ) {
+			if ( *s == '\0' ) {
+				if ( s != start ) {
+					// remove any trailing empty keys
+					*start = '\0';
+					ret += (int)(s - start);
+				}
+				return ret;
+			}
 			++s;
 		}
 		len = (int)(s - pkey);
 		++s; // skip '\\'
 
-		while ( *s != '\\' && *s != '\0' )
+		while ( *s != '\\' && *s != '\0' ) {
 			++s;
-
-		if ( len == key_len && Q_strkey( pkey, key, key_len ) )
-		{
-			memmove( start, s, strlen( s ) + 1 ); // remove this part
-			return (int)(s - start);
 		}
 
-		if ( *s == '\0' )
+		if ( len == key_len && Q_strkey( pkey, key, key_len ) ) {
+			memmove( start, s, strlen( s ) + 1 ); // remove this part
+			ret += (int)(s - start);
+			s = start;
+		}
+
+		if ( *s == '\0' ) {
 			break;
+		}
+
 	}
 
-	return 0;
+	return ret;
 }
 
 
@@ -2080,13 +2149,13 @@ qboolean Info_SetValueForKey_s( char *s, int slen, const char *key, const char *
 	}
 
 	len1 -= Info_RemoveKey( s, key );
-	if ( !value || !*value )
+	if ( value == NULL || *value == '\0' ) {
 		return qtrue;
+	}
 
 	len2 = Com_sprintf( newi, sizeof( newi ), "\\%s\\%s", key, value );
 
-	if ( len1 + len2 >= slen )
-	{
+	if ( len1 + len2 >= slen ) {
 		Com_Printf( S_COLOR_YELLOW "Info string length exceeded for key '%s'\n", key );
 		return qfalse;
 	}

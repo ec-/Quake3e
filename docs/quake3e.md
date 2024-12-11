@@ -1,0 +1,265 @@
+# Quake3e
+<html>
+<p>
+This client aims to be fully compatible with original baseq3 and other mods
+while trying to be fast, reliable and bug-free.
+<br>
+It is based on ioquake3-r1160 (latest non-SDL revision) with upstream patches an many custom improvements.<br>
+<br>
+<b>Common changes/additions:</b>
+<ul>
+<li>a lot of security, performance and bug fixes</li>
+<li>much improved autocompletion (map, demo, exec and other commands), in-game <b>\callvote</b> argument autocompletion</li>
+<li><b>\com_affinityMask</b> - bind Quake3e process to bitmask-specified CPU core(s)</li>
+<li>raized filesystem limits, much faster startup with 1000+ pk3 files in use, level restart times were also reduced as well</li>
+<li><b>\fs_locked</b> <font color=silver><b>0</b>|1</font> - keep opened pk3 files locked or not, removes pk3 file limit when unlocked</li>
+</ul>
+<b>Client-specific changes/additions:</b>
+<ul>
+<li>raw mouse input support, enabled automatically instead of DirectInput(<b>\in_mouse 1</b>) on Windows XP and newer windows operating systems</li>
+<li>unlagged mouse processing, can be reverted by setting <b>\in_lagged 1</b></li>
+<li>MOUSE4 and MOUSE5 works in <b>\in_mouse -1</b> mode</li>
+<li><b>\minimize</b> in-game command to minimize main window, can be used with binds/scripting</li>
+<li><a href="#in_minimize"><b>\in_minimize</b><a> - hotkey for minimize/restore main window (direct replacement for Q3Minimizer)</li>
+<li><b>\in_forceCharset</b> <font color=silver>0|<b>1</b>|2</font> - try to translate non-ASCII chars in keyboard input (<b>1</b>) or force EN/US keyboard layout (2)</li>
+<li><b>\in_nograb</b> <font color=silver><b>0</b>|1</font> - do not capture mouse in game, may be useful during online streaming</li>
+<li><b>\s_muteWhenUnfocused</b> <font color=silver>0|<b>1</b></font></li>
+<li><b>\s_muteWhenMinimized</b> <font color=silver>0|<b>1</b></font></li>
+<li><b>\s_device</b> - linux-only, specified sound device to use with ALSA, enter <font color=green>aplay -L</font> in your shell to see all available options</li>
+<li><b>\screenshotBMP</b> and <b>\screenshotBMP clipboard</b> commands</li>
+<li>hardcoded PrintScreen key - for "\screenshotBMP clipboard"</li>
+<li>hardcoded Shift+PrintScreen - for "\screenshotBMP"</li>
+<li><b>\com_maxfpsUnfocused</b> - will save cpu when inactive,set to your desktop refresh rate, for example</li>
+<li><b>\com_skipIdLogo</b> <font color=silver><b>0</b>|1</font>- skip playing idlogo movie at startup</li>
+<li><b>\com_yieldCPU </b>&lt;milliseconds&gt; - try to sleep specified amout of time between rendered frames when game is active, this will greatly reduce CPU load, use <b>0</b> only if you're experiencing some lags (also it is usually reduces performance on integrated graphics because CPU steals GPU's power budget)</li>
+<li><b>\r_defaultImage</b> <font color=silver>&lt;filename&gt;|#rgb|#rrggbb</font> - replace default (missing) image texture by either exact file or solid #rgb|#rrggbb background color</li>
+<li><b>\r_vbo</b> <font color=silver><b>0</b>|1</font> - use Vertex Buffer Objects to cache static map geometry, may improve FPS on modern GPUs, increases hunk memory usage by 15-30MB (map-dependent)</li>
+<div id="r_fbo"></div>
+<li><b>\r_fbo</b> <font color=silver><b>0</b>|1</font> - use framebuffer objects, enables gamma correction in windowed mode and allows arbitrary size (i.e. greater than logical desktop resolution) screenshot/video capture, required for bloom, hdr rendering, anti-aliasing, greyscale effects, OpenGL 3.0+ required</li>
+<li><b>\r_hdr</b> <font color=silver>-1|<b>0</b>|1</font> - select texture format for framebuffer:<br>
+&nbsp;&nbsp;-1 - 4-bit, for testing purposes, heavy color banding, might not work on all systems<br>
+&nbsp;&nbsp; 0 - 8 bit, default, moderate color banding with multi-stage shaders<br>
+&nbsp;&nbsp; 1 - 16 bit, enhanced blending precision, no color banding, might decrease performance on AMD/Intel GPUs<br>
+</li>
+<li><b><a href="#r_bloom">\r_bloom</a></b> <font color=silver><b>0</b>|1|2</font> - high-quality light bloom postprocessing effect</li>
+<li><b>\r_dlightMode</b> <font color=silver>0|<b>1</b>|2</font> - dynamic light mode</li>
+&nbsp;&nbsp; 0 - VQ3 'fake' dynamic lights<br>
+&nbsp;&nbsp; 1 - new high-quality per-pixel dynamic lights, slightly faster than VQ3's on modern hardware<br>
+&nbsp;&nbsp; 2 - same as 1 but applies to all MD3 models too<br>
+<li><b>\r_modeFullscreen</b> - dedicated mode string for fullscreen mode, set to -2 to use desktop resolution, set empty to use <b>\r_mode</b> in all cases</li>
+<li><b>\r_nomip</b> <font color=silver><b>0</b>|1</font>- apply picmip only on worldspawn textures</li>
+<li><b>\r_neatsky</b> <font color=silver><b>0</b>|1</font> - nopicmip for skyboxes</li>
+<li><b>\r_greyscale</b> <font color=silver>[<b>0</b>..1.0]</font> - desaturates rendered frame, requires <b><a href="#r_fbo">\r_fbo 1</a></b>, can be changed on 	the fly</li>
+<li><b>\r_mapGreyScale</b> <font color=silver>[-1.0..1.0]</font> - desaturate world map textures only, works independently from <b>\r_greyscale</b>, negative values desaturates lightmaps only</li>
+<li><b>\r_ext_multisample</b> <font color=silver><b>0</b>|2|4|6|8</font> - multi-sample anti-aliasing, requires <b><a href="#r_fbo">\r_fbo 1</a></b>, can be changed on the fly</li>
+<li><b>\r_ext_supersample</b> <font color=silver><b>0</b>|1</font> - super-sample anti-aliasing, requires <b><a href="#r_fbo">\r_fbo 1</a></b></li>
+<li><b>\r_noborder</b> <font color=silver><b>0</b>|1</font> - to draw game window without border, hold ALT to drag & drop it with opened console</li>
+<li><b>\r_noportals</b> <font color=silver><b>0</b>|1|2</font> - disable in-game portals (1), and mirrors too (2)</li>
+<li>negative <b>\r_overBrightBits</b> - force hardware gamma in windowed mode <i>(not actual with <b><a href="#r_fbo">\r_fbo 1</a></b>)</i></li>
+<li><a href="#video-pipe"><b>\video-pipe</b></a>&nbsp;<font color=silver>&lt;filename&gt;</font> - redirect captured video to ffmpeg input pipe and save encoded file as &lt;filename&gt;</li>
+<li><a href="#arr"><b>\r_renderWidth</b> &amp; <b>\r_renderHeight</b></a> - arbitrary resolution rendering, requires <b><a href="#r_fbo">\r_fbo 1</a></b></li>
+<li><b>\cl_conColor [RRR GGG BBB AAA]</b> - custom console color, <u>non-archived, use <b>\seta</b> command to set archive flag and store in config</u></li>
+<li><b>\cl_autoNudge</b> <font color=silver>[<b>0</b>..1]</font> - automatic time nudge that uses your average ping as the time nudge, values:<br>
+&nbsp;&nbsp; 0 - use fixed <b>\cl_timeNudge</b><br>
+&nbsp;&nbsp; (0..1] - factor of median average ping to use as timenudge
+</li>
+<li><b>\cl_mapAutoDownload</b> <font color=silver><b>0</b>|1</font> - automatic map download for play and demo playback (via automatic <a href="#dlmap"><b>\dlmap</b></a> call)</li>
+<li>less spam in console (try to set "\developer 1" to see what important things you missing)</li>
+</li>
+<li>faster shader loading, tolerant to non-fatal errors</li>
+<li><b>fast client downloads (http/ftp redirection)</b></li>
+<li><a href="#dlmap"><b>\download</b> and <b>dlmap</b> commands</a> - fast client-initiated downloads from specified map server</li>
+<li><b>you can use \record during \demo playback</b></li>
+<li><a href="#condstages"><b>conditional shader stages</b></a></li>
+<li><b>linear dynamic lights</b></li>
+</ul>
+
+<b>Server-specific changes/additions:</b>
+<ul>
+<li><b>\sv_levelTimeReset</b> <font color=silver><b>0</b>|1</font> - reset or do not reset leveltime after new map loads, when enabled - fixes gfx for clients affected by "frameloss" bug, however it may be necessary disable in case of troubles with GTV</li>
+<li><b>\sv_maxclientsPerIP</b> - limit number of simultaneous connections from the same IP address</li>
+<li>much improved DDoS protection</li>
+<li><b>\sv_minPing</b> and <b>\sv_maxPing</b> were removed because of new much better client connecion code</li>
+<li>userinfo filtering system, see docs/filter.txt</li>
+<li><b>rcon</b> now is always available on dedicated servers</li>
+<li><b>rconPassword2</b> - hidden master rcon password that can be set only from command line, i.e.<br>
+&nbsp;&nbsp;<b> +set rconPassword2 "123456"</b><br>
+can be used to change/revoke compromised <b>rconPassword</b></li>
+<li>significally reduced memory usage for client slots</li>
+</li>
+</ul>
+
+<hr>
+<div id="in_minimize"></div>
+<p><b>\in_minimize</b>
+<br>
+<br>
+	cvar that specifies hotkey for fast minimize/restore main windows, set values in form <br>
+	&nbsp;&nbsp;<b>\in_minimize <font color="green">&quot;ctrl+z&quot;</font></b><br>
+	&nbsp;&nbsp;<b>\in_minimize <font color="green">&quot;lshift+ralt+\&quot;</font></b><br>
+    &nbsp;&nbsp;or so then do <b>\in_restart</b> to apply changes.</li>
+<br>
+<br>
+
+<hr>
+<p><b>Fast client downloads</b><br><br>
+Usually downloads in Q3 is slow because all dowloaded data is requested/revieced from game server directly.
+So called `download redirection' allows very fast downloads because game server just tells you from where you should download all required mods/maps etc. - it can be internet or local http/ftp server<br>
+So what you need:
+<ul>
+<li>set <b>sv_dlURL</b> cvar to download location, for example:<br>
+	&nbsp;<b>sets sv_dlURL "ftp://myftp.com/games/q3"</b><br>
+	<u>Please note that your link should point on root game directory not particular mod or so</u>
+	<br>
+</li>
+
+<li>Fill your download location with files.<br>
+ &nbsp;&nbsp;Please note that you should post <u>ALL</u> files that client may download, don't worry about pk3 overflows etc. on client side as client will download and use only required files
+</li>
+</ul>
+<br>
+<hr>
+<div id="dlmap"></div>
+<p><b>Fast client-initiated downloads</b><br><br>
+You can easy download pk3 files you need from any ftp/http/etc resource via following commands: <br>
+
+<b>\download</b> <b>filename</b>[.pk3]<br>
+<b>\dlmap</b> <b>mapname</b>[.pk3]<br>
+<br>
+<b>\dlmap</b> is the same as <b>\download</b> but also will check for map existence
+<br>
+<br>
+<b>cl_dlURL</b> cvar must points to download location, where (optional) <b>%1</b> pattern will be replaced by <b>\download|dlmap</b> command argument (filename/mapmane) and HTTP header may be analysed to obtain destination filename<br><br>
+
+For example: <br><br>
+&nbsp;&nbsp;1) If <b>cl_dlURL</b> is <b>http://127.0.0.1</b> and you type <b>\download <u>promaps.pk3</u></b> -
+&nbsp;&nbsp;resulting download url will be <b>http://127.0.0.1/promaps.pk3</b><br>
+&nbsp;&nbsp;2) If <b>cl_dlURL</b> is <b>http://127.0.0.1/%1</b> and you type <b>\dlmap dm17</b> -
+&nbsp;&nbsp;resulting download url will be <b>http://127.0.0.1/dm17</b><br>
+&nbsp;&nbsp;Also in this case HTTP-header will be analysed and resulting filename may be changed<br>
+
+<br>
+To stop download just specify '-' as argument:<br>
+<br>
+&nbsp;&nbsp;<b>\dlmap -</b>
+<br><br>
+<b>cl_dlDirectory</b> cvar specifies where to save downloaded files:<br><br>
+&nbsp;&nbsp;<b>0</b> - save in current game directory<br>
+&nbsp;&nbsp;<b>1</b> - save in fs_basegame (baseq3) directory<br>
+<br>
+<hr>
+<p> <b>Built-in URL-filter</b><br><br>
+There is ability to launch Quake3 1.32e client directly from your browser
+by just clicking on URL that contains <b>q3a://</b>
+instead of usual <b>http://</b> or <b>ftp://</b> protocol headers<br><br>
+
+What you need to do:
+<ul>
+<li>copy <b>q3url_add.cmd</b>/<b>q3url_rem.cmd</b> in quake3e.exe directory </li>
+<li>run <b>q3url_add.cmd</b> if you want to add protocol binding or <b>q3url_add.cmd</b> if you want to remove it</li>
+<li>type in your browser <a href="q3a://127.0.0.1"><b>q3a://</b>127.0.0.1</a> and follow it - if you see quake3e launching and trying to connect then everything is fine
+</li>
+</ul>
+<br>
+<hr>
+<p><b><div id="condstages"></div>Condifional shader stages</b><br><br>
+Optional "if"-"elif"-"else" keywords can be used to control which shaders stages can be loaded depending from some cvar values.<br>
+For example, old shader:
+<pre>
+console
+{
+ nopicmip
+ nomipmaps
+ {
+  map image1.tga
+  blendFunc blend
+  tcmod scale 1 1
+  }
+}
+</pre>
+New shader:
+<pre>
+console
+{
+ nopicmip
+ nomipmaps
+ if ( $r_vertexLight == 1 && $r_dynamicLight )
+ {
+  map image1.tga
+  blendFunc blend
+  tcmod scale 1 1
+ }
+ else
+ {
+  map image2.tga
+  blendFunc add
+  tcmod scale 1 1
+ }
+}
+</pre>
+lvalue-only conditions are supported, count of conditions inside if()/elif() is not limited
+<br>
+<br>
+<hr>
+<p><b><div id="video-pipe"></div>Redurect captured video to ffmpeg input pipe</b><br><br>
+In order to use this functionality you need to install ffmpeg package (on linux) or put ffmpeg binary near quake3e executable (on windows).<br>
+<br>
+Use <b>\cl_aviPipeFormat</b> to control encoder parameters passed to ffmpeg, see ffmpeg documentation for details, default value is set according to YouTube recommendations:<br>
+<pre>
+-preset medium -crf 23 -c:v libx264 -flags +cgop -pix_fmt yuvj420p -bf 2 -c:a aac -strict -2 -b:a 160k -movflags faststart</pre>
+If you need higher bitrate - decrease <b>-crf</b> parameter, if you need better compression at cost of cpu time - set <b>-preset</b> to <i>slow</i> or <i>slower</i>.<br>
+<br>
+And since ffmpeg can utilize all available CPU cores for faster encoding - make sure you have <b>\com_affinityMask</b> set to 0.
+<br>
+<br>
+<hr>
+<div id="arr"></div><b>Arbitrary resolution rendering</b><br>
+<br>
+Use <b>\r_renderWidth</b> and <b>\r_renderHeight</b> cvars to set persistant rendering resolution, i.e. game frame will be rendered at this resolution and later upscaled/downscaled to window size set by either <b>\r_mode</b> or <b>\r_modeFullscreen</b> cvars.<br>
+Cvar <b>\r_renderScale</b> controls upscale/downscale behavior:
+<ul>
+<li>0 - disabled</li>
+<li>1 - nearest filtering, stretch to full size</li>
+<li>2 - nearest filtering, preserve aspect ratio (black bars on sides)</li>
+<li>3 - linear filtering, stretch to full size</li>
+<li>4 - linear filtering, preserve aspect ratio (black bars on sides)</li>
+</ul>
+It may be useful if you want to render and record 4k+ video on HD display or if you're preferring playing at low resolution but your monitor or GPU driver can't set video|scaling mode properly.<br>
+<br>
+<hr>
+<div id="r_bloom"></div><b>High-Quality Bloom</b><br><br>
+Requires <b><a href="#r_fbo">\r_fbo 1</a></b>, available operation modes via <b>\r_bloom</b> cvar:
+<ul>
+<li>0 - disabled</li>
+<li>1 - enabled</li>
+<li>2 - enabled + applies to 2D/HUD elements too</li>
+</ul>
+<b>\r_bloom_threshold</b> - color level to extract to bloom texture, default is 0.6<br>
+<br>
+<b>\r_bloom_threshold_mode</b> - color extraction mode:<br>
+<ul>
+<li>0 - (r|g|b) >= threshold</li>
+<li>1 - (r+g+b)/3 >= threshold</li>
+<li>2 - luma(r,g,b) >= threshold</li>
+</ul>
+<b>\r_bloom_modulate</b> - modulate extracted color:<br>
+<ul>
+<li>0 - off (color=color, i.e. no changes)</li>
+<li>1 - by itself (color=color*color)</li>
+<li>2 - by intensity (color=color*luma(color))</li>
+</ul>
+<b>\r_bloom_intensity</b> - final bloom blend factor, default is 0.5<br>
+<br>
+<b>\r_bloom_passes</b> - count of downsampled passes (framebuffers) to blend on final bloom image, default is 5<br>
+<br>
+<b>\r_bloom_blend_base</b> - 0-based, topmost downsampled framebuffer to use for final image, high values can be used for stronger haze effect, results in overall weaker intensity<br>
+<br>
+<b>\r_bloom_filter_size</b> - filter size of Gaussian Blur effect for each pass, bigger filter size means stronger and wider blur, lower value are faster, default is 6<br>
+<br>
+<b>\r_bloom_reflection</b> - bloom lens reflection effect, value is an intensity factor of the effect, negative value means blend only reflection and skip main bloom texture<br>
+<br>
+
+<hr>
+End Of Document
+<hr>
+</html>

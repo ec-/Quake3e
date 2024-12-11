@@ -22,10 +22,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #ifndef __LINUX_LOCAL_H__
 #define __LINUX_LOCAL_H__
 
-// linux_local.h: Linux-specific Quake3 header file
-
-void HandleEvents( void );
-
 // Input subsystem
 
 void IN_Init (void);

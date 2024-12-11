@@ -62,8 +62,33 @@ for %%f in (*.frag) do (
 "%cl%" -S vert -V -o "%tmpf%" gen_vert.tmpl -DUSE_FOG -DUSE_ENV
 "%bh%" "%tmpf%" %outf% vert_tx0_env_fog
 
-"%cl%" -S vert -V -o "%tmpf%" gen_vert.tmpl -DUSE_CL0_IDENT
-"%bh%" "%tmpf%" %outf% vert_tx0_ident
+@rem single-texture vertex, identity (1.0) colors 
+
+"%cl%" -S vert -V -o "%tmpf%" gen_vert.tmpl -DUSE_CLX_IDENT
+"%bh%" "%tmpf%" %outf% vert_tx0_ident1
+
+"%cl%" -S vert -V -o "%tmpf%" gen_vert.tmpl -DUSE_CLX_IDENT -DUSE_FOG
+"%bh%" "%tmpf%" %outf% vert_tx0_ident1_fog
+
+"%cl%" -S vert -V -o "%tmpf%" gen_vert.tmpl -DUSE_CLX_IDENT -DUSE_ENV
+"%bh%" "%tmpf%" %outf% vert_tx0_ident1_env
+
+"%cl%" -S vert -V -o "%tmpf%" gen_vert.tmpl -DUSE_CLX_IDENT -DUSE_FOG -DUSE_ENV
+"%bh%" "%tmpf%" %outf% vert_tx0_ident1_env_fog
+
+@rem single-texture vertex with fixed (rgb+a) colors
+
+"%cl%" -S vert -V -o "%tmpf%" gen_vert.tmpl -DUSE_FIXED_COLOR
+"%bh%" "%tmpf%" %outf% vert_tx0_fixed
+
+"%cl%" -S vert -V -o "%tmpf%" gen_vert.tmpl -DUSE_FIXED_COLOR -DUSE_FOG
+"%bh%" "%tmpf%" %outf% vert_tx0_fixed_fog
+
+"%cl%" -S vert -V -o "%tmpf%" gen_vert.tmpl -DUSE_FIXED_COLOR -DUSE_ENV
+"%bh%" "%tmpf%" %outf% vert_tx0_fixed_env
+
+"%cl%" -S vert -V -o "%tmpf%" gen_vert.tmpl -DUSE_FIXED_COLOR -DUSE_FOG -DUSE_ENV
+"%bh%" "%tmpf%" %outf% vert_tx0_fixed_env_fog
 
 @rem double-texture vertex
 
@@ -78,6 +103,34 @@ for %%f in (*.frag) do (
 
 "%cl%" -S vert -V -o "%tmpf%" gen_vert.tmpl -DUSE_TX1 -DUSE_FOG -DUSE_ENV
 "%bh%" "%tmpf%" %outf% vert_tx1_env_fog
+
+@rem double-texture vertex, identity (1.0) colors 
+
+"%cl%" -S vert -V -o "%tmpf%" gen_vert.tmpl -DUSE_CLX_IDENT -DUSE_TX1
+"%bh%" "%tmpf%" %outf% vert_tx1_ident1
+
+"%cl%" -S vert -V -o "%tmpf%" gen_vert.tmpl -DUSE_CLX_IDENT -DUSE_TX1 -DUSE_FOG
+"%bh%" "%tmpf%" %outf% vert_tx1_ident1_fog
+
+"%cl%" -S vert -V -o "%tmpf%" gen_vert.tmpl -DUSE_CLX_IDENT -DUSE_TX1 -DUSE_ENV
+"%bh%" "%tmpf%" %outf% vert_tx1_ident1_env
+
+"%cl%" -S vert -V -o "%tmpf%" gen_vert.tmpl -DUSE_CLX_IDENT -DUSE_TX1 -DUSE_FOG -DUSE_ENV
+"%bh%" "%tmpf%" %outf% vert_tx1_ident1_env_fog
+
+@rem double-texture vertex, fixed (rgb+a) colors 
+
+"%cl%" -S vert -V -o "%tmpf%" gen_vert.tmpl -DUSE_FIXED_COLOR -DUSE_TX1
+"%bh%" "%tmpf%" %outf% vert_tx1_fixed
+
+"%cl%" -S vert -V -o "%tmpf%" gen_vert.tmpl -DUSE_FIXED_COLOR -DUSE_TX1 -DUSE_FOG
+"%bh%" "%tmpf%" %outf% vert_tx1_fixed_fog
+
+"%cl%" -S vert -V -o "%tmpf%" gen_vert.tmpl -DUSE_FIXED_COLOR -DUSE_TX1 -DUSE_ENV
+"%bh%" "%tmpf%" %outf% vert_tx1_fixed_env
+
+"%cl%" -S vert -V -o "%tmpf%" gen_vert.tmpl -DUSE_FIXED_COLOR -DUSE_TX1 -DUSE_FOG -DUSE_ENV
+"%bh%" "%tmpf%" %outf% vert_tx1_fixed_env_fog
 
 @rem double-texture vertex, non-identical colors
 
@@ -121,19 +174,42 @@ for %%f in (*.frag) do (
 "%cl%" -S vert -V -o "%tmpf%" gen_vert.tmpl -DUSE_CL2 -DUSE_TX2 -DUSE_ENV -DUSE_FOG
 "%bh%" "%tmpf%" %outf% vert_tx2_cl_env_fog
 
-@rem single-texture fragment
-
-"%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_CL0_IDENT
-"%bh%" "%tmpf%" %outf% frag_tx0_ident
-
-"%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_ATEST -DUSE_DF
-"%bh%" "%tmpf%" %outf% frag_tx0_df
+@rem single-texture fragment, generic
 
 "%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_ATEST
 "%bh%" "%tmpf%" %outf% frag_tx0
 
 "%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_ATEST -DUSE_FOG
 "%bh%" "%tmpf%" %outf% frag_tx0_fog
+
+@rem single-texture fragment, identity (1.0) color
+
+"%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_CLX_IDENT -DUSE_ATEST
+"%bh%" "%tmpf%" %outf% frag_tx0_ident1
+
+"%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_CLX_IDENT -DUSE_ATEST -DUSE_FOG
+"%bh%" "%tmpf%" %outf% frag_tx0_ident1_fog
+
+@rem single-texture fragment, fixed (rgb+a) color
+
+"%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_FIXED_COLOR -DUSE_ATEST
+"%bh%" "%tmpf%" %outf% frag_tx0_fixed
+
+"%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_FIXED_COLOR -DUSE_ATEST -DUSE_FOG
+"%bh%" "%tmpf%" %outf% frag_tx0_fixed_fog
+
+@rem single-texture fragment, entity color
+
+"%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_ENT_COLOR -DUSE_ATEST
+"%bh%" "%tmpf%" %outf% frag_tx0_ent
+
+"%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_ENT_COLOR -DUSE_ATEST -DUSE_FOG
+"%bh%" "%tmpf%" %outf% frag_tx0_ent_fog
+
+@rem single-texture fragment, depth-fragment
+
+"%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_CLX_IDENT -DUSE_ATEST -DUSE_DF
+"%bh%" "%tmpf%" %outf% frag_tx0_df
 
 @rem double-texture fragment
 
@@ -142,6 +218,30 @@ for %%f in (*.frag) do (
 
 "%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_TX1 -DUSE_FOG
 "%bh%" "%tmpf%" %outf% frag_tx1_fog
+
+@rem double-texture fragment, identity colors (1.0)
+
+"%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_CLX_IDENT -DUSE_TX1
+"%bh%" "%tmpf%" %outf% frag_tx1_ident1
+
+"%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_CLX_IDENT -DUSE_TX1 -DUSE_FOG
+"%bh%" "%tmpf%" %outf% frag_tx1_ident1_fog
+
+@rem double-texture fragment, fixed (rgb+a) colors
+
+"%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_FIXED_COLOR -DUSE_TX1
+"%bh%" "%tmpf%" %outf% frag_tx1_fixed
+
+"%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_FIXED_COLOR -DUSE_TX1 -DUSE_FOG
+"%bh%" "%tmpf%" %outf% frag_tx1_fixed_fog
+
+@rem double-texture fragment, entity colors
+
+@rem "%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_ENT_COLOR -DUSE_TX1
+@rem "%bh%" "%tmpf%" %outf% frag_tx1_ent
+
+@rem "%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_ENT_COLOR -DUSE_TX1 -DUSE_FOG
+@rem "%bh%" "%tmpf%" %outf% frag_tx1_ent_fog
 
 @rem double-texture fragment, non-identical colors
 

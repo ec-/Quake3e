@@ -29,6 +29,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ** QGL_Init() - loads libraries, assigns function pointers, etc.
 ** QGL_Shutdown() - unloads libraries, NULLs function pointers
 */
+
+#ifdef USE_OPENGL_API
+
 #include "../qcommon/q_shared.h"
 #include "../qcommon/qcommon.h"
 #include "../renderer/qgl.h"
@@ -148,3 +151,5 @@ qboolean QGL_Init( const char *dllname )
 
 	return qtrue;
 }
+
+#endif // USE_OPENGL_API

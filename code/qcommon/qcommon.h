@@ -101,8 +101,6 @@ int MSG_HashKey(const char *string, int maxlen);
 void	MSG_BeginReading (msg_t *sb);
 void	MSG_BeginReadingOOB(msg_t *sb);
 
-int		MSG_ReadBits( msg_t *msg, int bits );
-
 int		MSG_ReadChar (msg_t *sb);
 int		MSG_ReadByte (msg_t *sb);
 int		MSG_ReadShort (msg_t *sb);
@@ -111,8 +109,9 @@ float	MSG_ReadFloat (msg_t *sb);
 const char *MSG_ReadString (msg_t *sb);
 const char *MSG_ReadBigString (msg_t *sb);
 const char *MSG_ReadStringLine (msg_t *sb);
-float	MSG_ReadAngle16 (msg_t *sb);
-void	MSG_ReadData (msg_t *sb, void *buffer, int size);
+float MSG_ReadAngle16 (msg_t *sb);
+void  MSG_ReadData(msg_t *sb, void *buffer, int size);
+int   MSG_ReadEntitynum(msg_t *sb);
 
 void MSG_WriteDeltaUsercmdKey( msg_t *msg, int key, const usercmd_t *from, const usercmd_t *to );
 void MSG_ReadDeltaUsercmdKey( msg_t *msg, int key, const usercmd_t *from, usercmd_t *to );
@@ -134,7 +133,9 @@ NET
 
 ==============================================================
 */
+#ifndef DISABLE_IPV6
 #define USE_IPV6
+#endif
 
 #define NET_ENABLEV4            0x01
 #define NET_ENABLEV6            0x02
@@ -188,13 +189,14 @@ typedef struct {
 	} ipv;
 	uint16_t	port;
 #ifdef USE_IPV6
-	unsigned long	scope_id;	// Needed for IPv6 link-local addresses
+	uint32_t	scope_id;	// Needed for IPv6 link-local addresses
 #endif
 } netadr_t;
 
 void		NET_Init( void );
 void		NET_Shutdown( void );
-void		NET_FlushPacketQueue(void);
+void		NET_FlushPacketQueue( int time_diff );
+void		NET_QueuePacket( netsrc_t sock, int length, const void *data, const netadr_t *to, int offset );
 void		NET_SendPacket( netsrc_t sock, int length, const void *data, const netadr_t *to );
 void		QDECL NET_OutOfBandPrint( netsrc_t net_socket, const netadr_t *adr, const char *format, ...) __attribute__ ((format (printf, 3, 4)));
 void		NET_OutOfBandCompress( netsrc_t sock, const netadr_t *adr, const byte *data, int len );
@@ -206,7 +208,9 @@ qboolean	NET_IsLocalAddress( const netadr_t *adr );
 const char	*NET_AdrToString( const netadr_t *a );
 const char	*NET_AdrToStringwPort( const netadr_t *a );
 int         NET_StringToAdr( const char *s, netadr_t *a, netadrtype_t family );
+#ifndef DEDICATED
 qboolean	NET_GetLoopPacket( netsrc_t sock, netadr_t *net_from, msg_t *net_message );
+#endif
 #ifdef USE_IPV6
 void		NET_JoinMulticast6( void );
 void		NET_LeaveMulticast6( void );
@@ -269,6 +273,7 @@ void Netchan_Setup( netsrc_t sock, netchan_t *chan, const netadr_t *adr, int por
 
 void Netchan_Transmit( netchan_t *chan, int length, const byte *data );
 void Netchan_TransmitNextFragment( netchan_t *chan );
+void Netchan_Enqueue( netchan_t *chan, int length, const byte *data );
 
 qboolean Netchan_Process( netchan_t *chan, msg_t *msg );
 
@@ -455,6 +460,12 @@ void Cbuf_Init( void );
 void Cbuf_AddText( const char *text );
 // Adds command text at the end of the buffer, does NOT add a final \n
 
+void Cbuf_NestedAdd( const char *text );
+// Adds nested command text at the specified position of the buffer, adds \n when needed
+
+void Cbuf_NestedReset( void );
+// Resets nested cmd offset
+
 void Cbuf_InsertText( const char *text );
 // Adds command text at the beginning of the buffer, add \n
 
@@ -466,6 +477,9 @@ void Cbuf_Execute( void );
 // them through Cmd_ExecuteString.  Stops when the buffer is empty.
 // Normally called once per frame, but may be explicitly invoked.
 // Do not call inside a command function, or current args will be destroyed.
+
+void Cbuf_Wait( void );
+// Checks if wait command timeout remaining
 
 //===========================================================================
 
@@ -847,9 +861,7 @@ void FS_VM_CloseFiles( handleOwner_t owner );
 const char *FS_GetCurrentGameDir( void );
 const char *FS_GetBaseGameDir( void );
 
-const char *FS_GetBasePath( void );
 const char *FS_GetHomePath( void );
-const char *FS_GetGamePath( void );
 
 qboolean FS_StripExt( char *filename, const char *ext );
 qboolean FS_AllowedExtension( const char *fileName, qboolean allowPk3s, const char **ext );
@@ -1109,10 +1121,11 @@ void Hunk_FreeTempMemory( void *buf );
 int	Hunk_MemoryRemaining( void );
 void Hunk_Log( void);
 
-void Com_TouchMemory( void );
+unsigned int Com_TouchMemory( void );
 
 // commandLine should not include the executable name (argv[0])
 void Com_Init( char *commandLine );
+void Com_FrameInit( void );
 void Com_Frame( qboolean noDelay );
 
 /*
@@ -1254,8 +1267,8 @@ void	Sys_SendKeyEvents( void );
 void	Sys_Sleep( int msec );
 char	*Sys_ConsoleInput( void );
 
-void	QDECL Sys_Error( const char *error, ...) __attribute__ ((noreturn, format (printf, 1, 2)));
-void	Sys_Quit (void) __attribute__ ((noreturn));
+void	NORETURN FORMAT_PRINTF(1, 2) QDECL Sys_Error( const char *error, ... );
+void	NORETURN Sys_Quit( void );
 char	*Sys_GetClipboardData( void );	// note that this isn't journaled...
 void	Sys_SetClipboardBitmap( const byte *bitmap, int length );
 
@@ -1265,7 +1278,8 @@ void	Sys_Print( const char *msg );
 void	QDECL Sys_SetStatus( const char *format, ...) __attribute__ ((format (printf, 1, 2)));
 
 #ifdef USE_AFFINITY_MASK
-void	Sys_SetAffinityMask( int mask );
+uint64_t Sys_GetAffinityMask( void );
+qboolean Sys_SetAffinityMask( const uint64_t mask );
 #endif
 
 // Sys_Milliseconds should only be used for profiling purposes,
@@ -1291,7 +1305,7 @@ qboolean	Sys_StringToAdr( const char *s, netadr_t *a, netadrtype_t family );
 qboolean	Sys_IsLANAddress(const netadr_t *adr);
 void		Sys_ShowIP(void);
 
-void	Sys_Mkdir( const char *path );
+qboolean	Sys_Mkdir( const char *path );
 FILE	*Sys_FOpen( const char *ospath, const char *mode );
 qboolean Sys_ResetReadOnlyAttribute( const char *ospath );
 
@@ -1299,6 +1313,10 @@ const char *Sys_Pwd( void );
 const char *Sys_DefaultBasePath( void );
 const char *Sys_DefaultHomePath( void );
 const char *Sys_SteamPath( void );
+
+#ifdef __APPLE__
+char    *Sys_DefaultAppPath( void );
+#endif
 
 char **Sys_ListFiles( const char *directory, const char *extension, const char *filter, int *numfiles, qboolean wantsubs );
 void Sys_FreeFileList( char **list );

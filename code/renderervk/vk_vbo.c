@@ -141,13 +141,19 @@ static qboolean isStaticTCgen( const shaderStage_t *stage, int bundle )
 
 static qboolean isStaticTCmod( const textureBundle_t *bundle )
 {
-	texMod_t type;
 	int i;
 
 	for ( i = 0; i < bundle->numTexMods; i++ ) {
-		type = bundle->texMods[i].type;
-		if ( type != TMOD_NONE && type != TMOD_SCALE && type != TMOD_TRANSFORM ) {
-			return qfalse;
+		switch ( bundle->texMods[i].type ) {
+			case TMOD_NONE:
+			case TMOD_SCALE:
+			case TMOD_TRANSFORM:
+			case TMOD_OFFSET:
+			case TMOD_SCALE_OFFSET:
+			case TMOD_OFFSET_SCALE:
+				break;
+			default:
+				return qfalse;
 		}
 	}
 

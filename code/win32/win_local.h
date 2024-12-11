@@ -37,14 +37,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #endif
 
-#if defined (_MSC_VER) && (_MSC_VER >= 1200)
-#pragma warning(disable : 4201)
-#pragma warning( push )
-#endif
+//#if defined (_MSC_VER) && (_MSC_VER >= 1200)
+//#pragma warning(disable : 4201)
+//#pragma warning( push )
+//#endif
 #include <windows.h>
-#if defined (_MSC_VER) && (_MSC_VER >= 1200)
-#pragma warning( pop )
-#endif
+//#if defined (_MSC_VER) && (_MSC_VER >= 1200)
+//#pragma warning( pop )
+//#endif
 
 #define HK_MOD_ALT		0x00100
 #define HK_MOD_CONTROL  0x00200
@@ -160,3 +160,6 @@ void WIN_DisableAltTab( void );
 void WIN_EnableAltTab( void );
 
 void WIN_Minimize( void );
+
+void GLW_HideFullscreenWindow( void );
+void GLW_RestoreGamma( void );

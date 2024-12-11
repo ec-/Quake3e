@@ -412,10 +412,12 @@ void RB_RenderFlares (void) {
 	backEnd.currentEntity = &tr.worldEntity;
 	backEnd.or = backEnd.viewParms.world;
 
+#ifdef USE_FBO
 	// we can't read from multisampled renderbuffer storage
 	if ( blitMSfbo ) {
 		FBO_BlitMS( qtrue );
 	}
+#endif
 
 	// RB_AddDlightFlares();
 
@@ -424,7 +426,7 @@ void RB_RenderFlares (void) {
 	prev = &r_activeFlares;
 	while ( ( f = *prev ) != NULL ) {
 		// throw out any flares that weren't added last frame
-		if ( f->addedFrame < backEnd.viewParms.frameCount - 1 ) {
+		if ( backEnd.viewParms.frameCount - f->addedFrame > 0 && f->portalView == backEnd.viewParms.portalView ) {
 			*prev = f->next;
 			f->next = r_inactiveFlares;
 			r_inactiveFlares = f;
@@ -449,10 +451,12 @@ void RB_RenderFlares (void) {
 		prev = &f->next;
 	}
 
+#ifdef USE_FBO
 	// bind primary framebuffer again
 	if ( blitMSfbo ) {
 		FBO_BindMain();
 	}
+#endif
 
 	if ( !draw ) {
 		return;		// none visible

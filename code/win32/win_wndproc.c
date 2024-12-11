@@ -708,7 +708,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 		active = (LOWORD( wParam ) != WA_INACTIVE) ? qtrue : qfalse;
 		minimized = (BOOL)HIWORD( wParam ) ? qtrue : qfalse;
 
-		// We can recieve Active & Minimized when restoring from minimized state
+		// We can receive Active & Minimized when restoring from minimized state
 		if ( active && minimized ) {
 			gw_minimized = qtrue;
 			break;
@@ -823,6 +823,8 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 			WINDOWPLACEMENT wp;
 
 			// set minimized flag as early as possible
+			Com_Memset( &wp, 0, sizeof( wp ) );
+			wp.length = sizeof( WINDOWPLACEMENT );
 			if ( GetWindowPlacement( hWnd, &wp ) && wp.showCmd == SW_SHOWMINIMIZED )
 				gw_minimized = qtrue;
 
@@ -991,6 +993,18 @@ void HandleEvents( void ) {
 
 		TranslateMessage( &msg );
 		DispatchMessage( &msg );
+	}
+}
+
+
+/*
+================
+GLW_HideFullscreenWindow
+================
+*/
+void GLW_HideFullscreenWindow( void ) {
+	if ( g_wv.hWnd && glw_state.cdsFullscreen ) {
+		ShowWindow( g_wv.hWnd, SW_HIDE );
 	}
 }
 

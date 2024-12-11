@@ -65,17 +65,17 @@ client_t *SV_GetPlayerByHandle( void ) {
 		int plid = atoi(s);
 
 		// Check for numeric playerid match
-		if(plid >= 0 && plid < sv_maxclients->integer)
+		if(plid >= 0 && plid < sv.maxclients)
 		{
 			cl = &svs.clients[plid];
 			
-			if(cl->state)
+			if (cl->state >= CS_CONNECTED)
 				return cl;
 		}
 	}
 
 	// check for a name match
-	for ( i=0, cl=svs.clients ; i < sv_maxclients->integer ; i++,cl++ ) {
+	for ( i = 0, cl = svs.clients; i < sv.maxclients; i++, cl++ ) {
 		if ( cl->state < CS_CONNECTED ) {
 			continue;
 		}
@@ -128,13 +128,13 @@ static client_t *SV_GetPlayerByNum( void ) {
 		}
 	}
 	idnum = atoi( s );
-	if ( idnum < 0 || idnum >= sv_maxclients->integer ) {
+	if ( idnum < 0 || idnum >= sv.maxclients ) {
 		Com_Printf( "Bad client slot: %i\n", idnum );
 		return NULL;
 	}
 
 	cl = &svs.clients[idnum];
-	if ( !cl->state ) {
+	if ( cl->state < CS_CONNECTED ) {
 		Com_Printf( "Client %i is not active\n", idnum );
 		return NULL;
 	}
@@ -242,7 +242,7 @@ static void SV_MapRestart_f( void ) {
 	int			delay;
 
 	// make sure we aren't restarting twice in the same frame
-	if ( com_frameTime == sv.serverId ) {
+	if ( com_frameTime == sv.restartedServerId ) {
 		return;
 	}
 
@@ -252,7 +252,7 @@ static void SV_MapRestart_f( void ) {
 		return;
 	}
 
-	if ( sv.restartTime ) {
+	if ( sv.restartTime != 0 ) {
 		return;
 	}
 
@@ -262,7 +262,7 @@ static void SV_MapRestart_f( void ) {
 		delay = 5;
 	}
 
-	if ( delay && !Cvar_VariableIntegerValue( "g_doWarmup" ) ) {
+	if ( delay != 0 && Cvar_VariableIntegerValue( "g_doWarmup" ) == 0 ) {
 		sv.restartTime = sv.time + delay * 1000;
 		if ( sv.restartTime == 0 ) {
 			sv.restartTime = 1;
@@ -288,16 +288,14 @@ static void SV_MapRestart_f( void ) {
 	// map_restart has happened
 	svs.snapFlagServerBit ^= SNAPFLAG_SERVERCOUNT;
 
-	// generate a new serverid	
-	// TTimo - don't update restartedserverId there, otherwise we won't deal correctly with multiple map_restart
-	sv.serverId = com_frameTime;
-	Cvar_Set( "sv_serverid", va("%i", sv.serverId ) );
+	// generate a new restartedServerid
+	sv.restartedServerId = com_frameTime;
 
 	// if a map_restart occurs while a client is changing maps, we need
 	// to give them the correct time so that when they finish loading
 	// they don't violate the backwards time check in cl_cgame.c
-	for (i=0 ; i<sv_maxclients->integer ; i++) {
-		if (svs.clients[i].state == CS_PRIMED) {
+	for ( i = 0; i < sv.maxclients; i++ ) {
+		if ( svs.clients[i].state == CS_PRIMED ) {
 			svs.clients[i].oldServerTime = sv.restartTime;
 		}
 	}
@@ -316,6 +314,7 @@ static void SV_MapRestart_f( void ) {
 	// run a few frames to allow everything to settle
 	for ( i = 0; i < 3; i++ )
 	{
+		Cbuf_Wait();
 		sv.time += 100;
 		VM_Call( gvm, 1, GAME_RUN_FRAME, sv.time );
 	}
@@ -324,7 +323,7 @@ static void SV_MapRestart_f( void ) {
 	sv.restarting = qfalse;
 
 	// connect and begin all the clients
-	for ( i = 0 ; i < sv_maxclients->integer ; i++ ) {
+	for ( i = 0; i < sv.maxclients; i++ ) {
 		client = &svs.clients[i];
 
 		// send the new gamestate to all connected clients
@@ -351,20 +350,26 @@ static void SV_MapRestart_f( void ) {
 			continue;
 		}
 
-		if ( client->state == CS_ACTIVE )
-			SV_ClientEnterWorld( client, &client->lastUsercmd );
-		else {
-			// If we don't reset client->lastUsercmd and are restarting during map load,
-			// the client will hang because we'll use the last Usercmd from the previous map,
-			// which is wrong obviously.
-			SV_ClientEnterWorld( client, NULL );
+		if ( client->state == CS_ACTIVE ) {
+			SV_ClientEnterWorld( client );
 		}
 	}
 
 	// run another frame to allow things to look at all the players
+	Cbuf_Wait();
 	sv.time += 100;
 	VM_Call( gvm, 1, GAME_RUN_FRAME, sv.time );
 	svs.time += 100;
+
+	for ( i = 0; i < sv.maxclients; i++ ) {
+		client = &svs.clients[i];
+		if ( client->state >= CS_PRIMED ) {
+			// accept usercmds starting from current server time only
+			// to emulate original behavior which dropped pre-restart commands via serverid check
+			Com_Memset( &client->lastUsercmd, 0x0, sizeof( client->lastUsercmd ) );
+			client->lastUsercmd.serverTime = sv.time - 1;
+		}
+	}
 }
 
 
@@ -392,24 +397,24 @@ static void SV_Kick_f( void ) {
 
 	cl = SV_GetPlayerByHandle();
 	if ( !cl ) {
-		if ( !Q_stricmp(Cmd_Argv(1), "all") ) {
-			for ( i=0, cl=svs.clients ; i < sv_maxclients->integer ; i++,cl++ ) {
-				if ( !cl->state ) {
+		if ( !Q_stricmp( Cmd_Argv( 1 ), "all" ) ) {
+			for ( i = 0, cl = svs.clients; i < sv.maxclients; i++, cl++ ) {
+				if ( cl->state < CS_CONNECTED ) {
 					continue;
 				}
-				if( cl->netchan.remoteAddress.type == NA_LOOPBACK ) {
+				if ( cl->netchan.remoteAddress.type == NA_LOOPBACK ) {
 					continue;
 				}
 				SV_DropClient( cl, "was kicked" );
 				cl->lastPacketTime = svs.time;	// in case there is a funny zombie
 			}
 		}
-		else if ( !Q_stricmp(Cmd_Argv(1), "allbots") ) {
-			for ( i=0, cl=svs.clients ; i < sv_maxclients->integer ; i++,cl++ ) {
-				if ( !cl->state ) {
+		else if ( !Q_stricmp( Cmd_Argv( 1 ), "allbots" ) ) {
+			for ( i = 0, cl = svs.clients; i < sv.maxclients; i++, cl++ ) {
+				if ( cl->state < CS_CONNECTED ) {
 					continue;
 				}
-				if( cl->netchan.remoteAddress.type != NA_BOT ) {
+				if ( cl->netchan.remoteAddress.type != NA_BOT ) {
 					continue;
 				}
 				SV_DropClient( cl, "was kicked" );
@@ -418,8 +423,8 @@ static void SV_Kick_f( void ) {
 		}
 		return;
 	}
-	if( cl->netchan.remoteAddress.type == NA_LOOPBACK ) {
-		Com_Printf("Cannot kick host player\n");
+	if ( cl->netchan.remoteAddress.type == NA_LOOPBACK ) {
+		Com_Printf( "Cannot kick host player\n" );
 		return;
 	}
 
@@ -444,7 +449,7 @@ static void SV_KickBots_f( void ) {
 		return;
 	}
 
-	for( i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++ ) {
+	for( i = 0, cl = svs.clients; i < sv.maxclients; i++, cl++ ) {
 		if ( cl->state < CS_CONNECTED ) {
 			continue;
 		}
@@ -474,7 +479,7 @@ static void SV_KickAll_f( void ) {
 		return;
 	}
 
-	for( i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++ ) {
+	for( i = 0, cl = svs.clients; i < sv.maxclients; i++, cl++ ) {
 		if ( cl->state < CS_CONNECTED ) {
 			continue;
 		}
@@ -1213,7 +1218,7 @@ static void SV_Status_f( void ) {
 	Com_Memset( al, 0, sizeof( al ) );
 
 	// first pass: save and determine max.lengths of name/address fields
-	for ( i = 0, cl = svs.clients ; i < sv_maxclients->integer ; i++, cl++ )
+	for ( i = 0, cl = svs.clients; i < sv.maxclients; i++, cl++ )
 	{
 		if ( cl->state == CS_FREE )
 			continue;
@@ -1257,7 +1262,7 @@ static void SV_Status_f( void ) {
 	Com_Printf( " -----\n" );
 #endif
 
-	for ( i = 0, cl = svs.clients ; i < sv_maxclients->integer ; i++, cl++ )
+	for ( i = 0, cl = svs.clients; i < sv.maxclients; i++, cl++ )
 	{
 		if ( cl->state == CS_FREE )
 			continue;
@@ -1268,11 +1273,11 @@ static void SV_Status_f( void ) {
 
 		// ping/status
 		if ( cl->state == CS_PRIMED )
-			Com_Printf( "PRM " );
+			Com_Printf( " PRM " );
 		else if ( cl->state == CS_CONNECTED )
-			Com_Printf( "CON " );
+			Com_Printf( " CON " );
 		else if ( cl->state == CS_ZOMBIE )
-			Com_Printf( "ZMB " );
+			Com_Printf( " ZMB " );
 		else
 			Com_Printf( "%4i ", cl->ping < 999 ? cl->ping : 999 );
 	
@@ -1305,7 +1310,8 @@ SV_ConSay_f
 */
 static void SV_ConSay_f( void ) {
 	char	*p;
-	char	text[1024];
+	char	text[MAX_STRING_CHARS];
+	int		len;
 
 	// make sure server is running
 	if ( !com_sv_running->integer ) {
@@ -1317,18 +1323,19 @@ static void SV_ConSay_f( void ) {
 		return;
 	}
 
-	strcpy( text, "console: " );
 	p = Cmd_ArgsFrom( 1 );
+	len = (int)strlen( p );
 
-	if ( strlen( p ) > 1000 ) {
+	if ( len > 1000 ) {
 		return;
 	}
 
 	if ( *p == '"' ) {
+		p[len-1] = '\0';
 		p++;
-		p[strlen(p)-1] = '\0';
 	}
 
+	strcpy( text, "console: " );
 	strcat( text, p );
 
 	SV_SendServerCommand( NULL, "chat \"%s\"", text );
@@ -1342,8 +1349,9 @@ SV_ConTell_f
 */
 static void SV_ConTell_f( void ) {
 	char	*p;
-	char	text[1024];
+	char	text[MAX_STRING_CHARS];
 	client_t	*cl;
+	int		len;
 
 	// make sure server is running
 	if ( !com_sv_running->integer ) {
@@ -1361,18 +1369,19 @@ static void SV_ConTell_f( void ) {
 		return;
 	}
 
-	strcpy( text, S_COLOR_MAGENTA "console: " );
 	p = Cmd_ArgsFrom( 2 );
+	len = (int)strlen( p );
 
-	if ( strlen( p ) > 1000 ) {
+	if ( len > 1000 ) {
 		return;
 	}
 
 	if ( *p == '"' ) {
+		p[len-1] = '\0';
 		p++;
-		p[strlen(p)-1] = '\0';
 	}
 
+	strcpy( text, S_COLOR_MAGENTA "console: " );
 	strcat( text, p );
 
 	Com_Printf( "%s\n", text );
@@ -1510,7 +1519,7 @@ SV_CompleteMapName
 */
 static void SV_CompleteMapName( const char *args, int argNum ) {
 	if ( argNum == 2 ) 	{
-		if ( sv_pure->integer ) {
+		if ( sv.pure != 0 ) {
 			Field_CompleteFilename( "maps", "bsp", qtrue, FS_MATCH_PK3s | FS_MATCH_STICK );
 		} else {
 			Field_CompleteFilename( "maps", "bsp", qtrue, FS_MATCH_ANY | FS_MATCH_STICK );

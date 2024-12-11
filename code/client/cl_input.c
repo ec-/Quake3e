@@ -746,7 +746,7 @@ During normal gameplay, a client packet will contain something like:
 
 ===================
 */
-void CL_WritePacket( void ) {
+void CL_WritePacket( int repeat ) {
 	msg_t		buf;
 	byte		data[ MAX_MSGLEN_BUF ];
 	int			i, j, n;
@@ -804,11 +804,10 @@ void CL_WritePacket( void ) {
 		}
 
 		// begin a client move command
-		if ( cl_nodelta->integer || !cl.snap.valid || clc.demowaiting
-			|| clc.serverMessageSequence != cl.snap.messageNum ) {
-			MSG_WriteByte (&buf, clc_moveNoDelta);
+		if ( cl_nodelta->integer || !cl.snap.valid || clc.demowaiting || clc.serverMessageSequence != cl.snap.messageNum ) {
+			MSG_WriteByte( &buf, clc_moveNoDelta );
 		} else {
-			MSG_WriteByte (&buf, clc_move);
+			MSG_WriteByte( &buf, clc_move );
 		}
 
 		// write the command count
@@ -843,7 +842,21 @@ void CL_WritePacket( void ) {
 		Com_Printf( "%i ", buf.cursize );
 	}
 
-	CL_Netchan_Transmit( &clc.netchan, &buf );
+	MSG_WriteByte( &buf, clc_EOF );
+
+	if ( buf.overflowed ) {
+		if ( cls.state >= CA_CONNECTED && cls.state != CA_CINEMATIC ) {
+			cls.state = CA_CONNECTING; // to avoid recursive error
+		}
+		Com_Error( ERR_DROP, "%s: message overflowed", __func__ );
+	}
+
+	if ( repeat == 0 || clc.netchan.remoteAddress.type == NA_LOOPBACK ) {
+		CL_Netchan_Transmit( &clc.netchan, &buf );
+	} else {
+		CL_Netchan_Enqueue( &clc.netchan, &buf, repeat + 1 );
+		NET_FlushPacketQueue( 0 );
+	}
 }
 
 
@@ -876,7 +889,7 @@ void CL_SendCmd( void ) {
 		return;
 	}
 
-	CL_WritePacket();
+	CL_WritePacket( 0 );
 }
 
 
@@ -965,7 +978,7 @@ void CL_InitInput( void ) {
 	cl_anglespeedkey = Cvar_Get( "cl_anglespeedkey", "1.5", 0 );
 	Cvar_SetDescription( cl_anglespeedkey, "Set the speed that the direction keys (not mouse) change the view angle." );
 
-	cl_maxpackets = Cvar_Get ("cl_maxpackets", "60", CVAR_ARCHIVE );
+	cl_maxpackets = Cvar_Get ("cl_maxpackets", "125", CVAR_ARCHIVE );
 	Cvar_CheckRange( cl_maxpackets, "15", "125", CV_INTEGER );
 	Cvar_SetDescription( cl_maxpackets, "Set how many client packets are sent to the server per second, can't exceed \\com_maxFPS." );
 	cl_packetdup = Cvar_Get( "cl_packetdup", "1", CVAR_ARCHIVE_ND );

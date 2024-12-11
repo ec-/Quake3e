@@ -112,14 +112,14 @@ static void CL_ParsePacketEntities( msg_t *msg, const clSnapshot_t *oldframe, cl
 
 	while ( 1 ) {
 		// read the entity index number
-		newnum = MSG_ReadBits( msg, GENTITYNUM_BITS );
+		newnum = MSG_ReadEntitynum( msg );
+
+		if ( newnum < 0 ) {
+			Com_Error( ERR_DROP, "CL_ParsePacketEntities: end of message" );
+		}
 
 		if ( newnum == (MAX_GENTITIES-1) ) {
 			break;
-		}
-
-		if ( msg->readcount > msg->cursize ) {
-			Com_Error (ERR_DROP,"CL_ParsePacketEntities: end of message");
 		}
 
 		while ( oldnum < newnum ) {
@@ -546,14 +546,14 @@ static void CL_ParseGamestate( msg_t *msg ) {
 
 			i = MSG_ReadShort( msg );
 			if ( i < 0 || i >= MAX_CONFIGSTRINGS ) {
-				Com_Error( ERR_DROP, "configstring > MAX_CONFIGSTRINGS" );
+				Com_Error( ERR_DROP, "%s: configstring > MAX_CONFIGSTRINGS", __func__ );
 			}
 
 			s = MSG_ReadBigString( msg );
 			len = strlen( s );
 
 			if ( len + 1 + cl.gameState.dataCount > MAX_GAMESTATE_CHARS ) {
-				Com_Error( ERR_DROP, "MAX_GAMESTATE_CHARS exceeded: %i",
+				Com_Error( ERR_DROP, "%s: MAX_GAMESTATE_CHARS exceeded: %i", __func__,
 					len + 1 + cl.gameState.dataCount );
 			}
 
@@ -562,15 +562,21 @@ static void CL_ParseGamestate( msg_t *msg ) {
 			Com_Memcpy( cl.gameState.stringData + cl.gameState.dataCount, s, len + 1 );
 			cl.gameState.dataCount += len + 1;
 		} else if ( cmd == svc_baseline ) {
-			newnum = MSG_ReadBits( msg, GENTITYNUM_BITS );
-			if ( newnum < 0 || newnum >= MAX_GENTITIES ) {
-				Com_Error( ERR_DROP, "Baseline number out of range: %i", newnum );
+			newnum = MSG_ReadEntitynum( msg );
+
+			if ( newnum < 0 ) {
+				Com_Error( ERR_DROP, "%s: end of message", __func__ );
 			}
+
+			if ( newnum >= MAX_GENTITIES ) {
+				Com_Error( ERR_DROP, "%s: baseline number out of range: %i", __func__, newnum );
+			}
+
 			es = &cl.entityBaselines[ newnum ];
 			MSG_ReadDeltaEntity( msg, &nullstate, es, newnum );
 			cl.baselineUsed[ newnum ] = 1;
 		} else {
-			Com_Error( ERR_DROP, "CL_ParseGamestate: bad command byte" );
+			Com_Error( ERR_DROP, "%s: bad command byte", __func__ );
 		}
 	}
 
@@ -748,7 +754,7 @@ static void CL_ParseDownload( msg_t *msg ) {
 	// So UI gets access to it
 	Cvar_SetIntegerValue( "cl_downloadCount", clc.downloadCount );
 
-	if (!size) { // A zero length block means EOF
+	if ( size == 0 ) { // A zero length block means EOF
 		if ( clc.download != FS_INVALID_HANDLE ) {
 			FS_FCloseFile( clc.download );
 			clc.download = FS_INVALID_HANDLE;
@@ -762,8 +768,7 @@ static void CL_ParseDownload( msg_t *msg ) {
 		// loading right away.  If we take a while to load, the server is happily trying
 		// to send us that last block over and over.
 		// Write it twice to help make sure we acknowledge the download
-		CL_WritePacket();
-		CL_WritePacket();
+		CL_WritePacket( 1 );
 
 		// get another file if needed
 		CL_NextDownload();

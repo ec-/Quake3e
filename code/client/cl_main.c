@@ -42,6 +42,7 @@ cvar_t	*cl_showTimeDelta;
 
 cvar_t	*cl_shownet;
 cvar_t	*cl_autoRecordDemo;
+cvar_t	*cl_drawRecording;
 
 cvar_t	*cl_aviFrameRate;
 cvar_t	*cl_aviMotionJpeg;
@@ -134,7 +135,9 @@ static void CL_ServerStatus_f( void );
 static void CL_ServerStatusResponse( const netadr_t *from, msg_t *msg );
 static void CL_ServerInfoPacket( const netadr_t *from, msg_t *msg );
 
+#ifdef USE_CURL
 static void CL_Download_f( void );
+#endif
 static void CL_LocalServers_f( void );
 static void CL_GlobalServers_f( void );
 static void CL_Ping_f( void );
@@ -300,11 +303,12 @@ CL_WriteServerCommands
 static void CL_WriteServerCommands( msg_t *msg ) {
 	int i;
 
-	if ( clc.demoCommandSequence < clc.serverCommandSequence ) {
+	if ( clc.serverCommandSequence - clc.demoCommandSequence > 0 ) {
 
 		// do not write more than MAX_RELIABLE_COMMANDS
-		if ( clc.serverCommandSequence - clc.demoCommandSequence > MAX_RELIABLE_COMMANDS )
+		if ( clc.serverCommandSequence - clc.demoCommandSequence > MAX_RELIABLE_COMMANDS ) {
 			clc.demoCommandSequence = clc.serverCommandSequence - MAX_RELIABLE_COMMANDS;
+		}
 
 		for ( i = clc.demoCommandSequence + 1 ; i <= clc.serverCommandSequence; i++ ) {
 			MSG_WriteByte( msg, svc_serverCommand );
@@ -1089,7 +1093,7 @@ void CL_MapLoading( void ) {
 		Com_Memset( cls.updateInfoString, 0, sizeof( cls.updateInfoString ) );
 		Com_Memset( clc.serverMessage, 0, sizeof( clc.serverMessage ) );
 		Com_Memset( &cl.gameState, 0, sizeof( cl.gameState ) );
-		clc.lastPacketSentTime = -9999;
+		clc.lastPacketSentTime = cls.realtime - 9999;  // send packet immediately
 		cls.framecount++;
 		SCR_UpdateScreen();
 	} else {
@@ -1263,9 +1267,7 @@ qboolean CL_Disconnect( qboolean showMainMenu ) {
 	// send it a few times in case one is dropped
 	if ( cls.state >= CA_CONNECTED && cls.state != CA_CINEMATIC && !clc.demoplaying ) {
 		CL_AddReliableCommand( "disconnect", qtrue );
-		CL_WritePacket();
-		CL_WritePacket();
-		CL_WritePacket();
+		CL_WritePacket( 2 );
 	}
 
 	CL_ClearState();
@@ -1778,7 +1780,7 @@ we also have to reload the UI and CGame because the renderer
 doesn't know what graphics to reload
 =================
 */
-static void CL_Vid_Restart( qboolean keepWindow ) {
+static void CL_Vid_Restart( refShutdownCode_t shutdownCode ) {
 
 	// Settings may have changed so stop recording now
 	if ( CL_VideoRecording() )
@@ -1794,7 +1796,7 @@ static void CL_Vid_Restart( qboolean keepWindow ) {
 	CL_ShutdownVMs();
 
 	// shutdown the renderer and clear the renderer interface
-	CL_ShutdownRef( keepWindow ? REF_KEEP_WINDOW : REF_DESTROY_WINDOW );
+	CL_ShutdownRef( shutdownCode ); // REF_KEEP_CONTEXT, REF_KEEP_WINDOW, REF_DESTROY_WINDOW
 
 	// client is no longer pure until new checksums are sent
 	CL_ResetPureClientAtServer();
@@ -1837,15 +1839,18 @@ Wrapper for CL_Vid_Restart
 */
 static void CL_Vid_Restart_f( void ) {
 
-	 // hack for OSP mod: do not allow vid restart right after cgame init
-	if ( cls.lastVidRestart )
-		if ( abs( cls.lastVidRestart - Sys_Milliseconds() ) < 500 )
-			return;
-
-	if ( Q_stricmp( Cmd_Argv(1), "keep_window" ) == 0 )
-		CL_Vid_Restart( qtrue );
-	else
-		CL_Vid_Restart( qfalse );
+	if ( Q_stricmp( Cmd_Argv( 1 ), "keep_window" ) == 0 || Q_stricmp( Cmd_Argv( 1 ), "fast" ) == 0 ) {
+		// fast path: keep window
+		CL_Vid_Restart( REF_KEEP_WINDOW );
+	} else {
+		if ( cls.lastVidRestart ) {
+			if ( abs( cls.lastVidRestart - Sys_Milliseconds() ) < 500 ) {
+				// hack for OSP mod: do not allow vid restart right after cgame init
+				return;
+			}
+		}
+		CL_Vid_Restart( REF_DESTROY_WINDOW );
+	}
 }
 
 
@@ -1863,7 +1868,7 @@ static void CL_Snd_Restart_f( void )
 	S_Shutdown();
 
 	// sound will be reinitialized by vid_restart
-	CL_Vid_Restart( qtrue );
+	CL_Vid_Restart( REF_KEEP_CONTEXT /*REF_KEEP_WINDOW*/ );
 }
 
 
@@ -2046,9 +2051,7 @@ static void CL_DownloadsComplete( void ) {
 	// set pure checksums
 	CL_SendPureChecksums();
 
-	CL_WritePacket();
-	CL_WritePacket();
-	CL_WritePacket();
+	CL_WritePacket( 2 );
 }
 
 
@@ -2105,7 +2108,7 @@ void CL_NextDownload( void )
 			Com_Error(ERR_DROP, "Incorrect checksum for file: %s", clc.downloadName);
 	}
 
-	*clc.downloadTempName = *clc.downloadName = 0;
+	*clc.downloadTempName = *clc.downloadName = '\0';
 	Cvar_Set("cl_downloadName", "");
 
 	// We are looking to start a download here
@@ -2750,7 +2753,7 @@ static qboolean CL_ConnectionlessPacket( const netadr_t *from, msg_t *msg ) {
 		Netchan_Setup( NS_CLIENT, &clc.netchan, from, Cvar_VariableIntegerValue( "net_qport" ), clc.challenge, clc.compat );
 
 		cls.state = CA_CONNECTED;
-		clc.lastPacketSentTime = -9999;		// send first packet immediately
+		clc.lastPacketSentTime = cls.realtime - 9999; // send first packet immediately
 		return qtrue;
 	}
 
@@ -2977,8 +2980,6 @@ CL_Frame
 ==================
 */
 void CL_Frame( int msec, int realMsec ) {
-	float fps;
-	float frameDuration;
 
 #ifdef USE_CURL
 	if ( download.cURL ) {
@@ -3026,6 +3027,7 @@ void CL_Frame( int msec, int realMsec ) {
 	if ( CL_VideoRecording() && msec ) {
 		// save the current screen
 		if ( cls.state == CA_ACTIVE || cl_forceavidemo->integer ) {
+			float fps, frameDuration;
 
 			if ( com_timescale->value > 0.0001f )
 				fps = MIN( cl_aviFrameRate->value / com_timescale->value, 1000.0f );
@@ -3065,7 +3067,7 @@ void CL_Frame( int msec, int realMsec ) {
 			// Replace the ":" in the address as it is not a valid
 			// file name character
 			p = strchr( serverName, ':' );
-			if( p ) {
+			if ( p ) {
 				*p = '.';
 			}
 
@@ -3075,9 +3077,9 @@ void CL_Frame( int msec, int realMsec ) {
 			Cbuf_ExecuteText( EXEC_NOW,
 					va( "record %s-%s-%s", nowString, serverName, mapName ) );
 		}
-		else if( cls.state != CA_ACTIVE && clc.demorecording ) {
+		else if ( cls.state != CA_ACTIVE && clc.demorecording ) {
 			// Recording, but not CA_ACTIVE, so stop recording
-			CL_StopRecord_f( );
+			CL_StopRecord_f();
 		}
 	}
 
@@ -3127,7 +3129,7 @@ void CL_Frame( int msec, int realMsec ) {
 CL_RefPrintf
 ================
 */
-static __attribute__ ((format (printf, 2, 3))) void QDECL CL_RefPrintf( printParm_t level, const char *fmt, ... ) {
+static void FORMAT_PRINTF(2, 3) QDECL CL_RefPrintf( printParm_t level, const char *fmt, ... ) {
 	va_list		argptr;
 	char		msg[MAXPRINTMSG];
 
@@ -3192,6 +3194,11 @@ CL_InitRenderer
 */
 static void CL_InitRenderer( void ) {
 
+	// fixup renderer -EC-
+	if ( !re.BeginRegistration ) {
+		CL_InitRef();
+	}
+
 	// this sets up the renderer and calls R_Init
 	re.BeginRegistration( &cls.glconfig );
 
@@ -3236,9 +3243,25 @@ void CL_StartHunkUsers( void ) {
 		return;
 	}
 
-	// fixup renderer -EC-
-	if ( !re.BeginRegistration ) {
-		CL_InitRef();
+	if ( cls.state >= CA_LOADING ) {
+		// try to apply map-depending configuration from cvar cl_mapConfig_<mapname> cvars
+		const char *info = cl.gameState.stringData + cl.gameState.stringOffsets[ CS_SERVERINFO ];
+		const char *mapname = Info_ValueForKey( info, "mapname" );
+		if ( mapname && *mapname != '\0' ) {
+			const char *fmt = "cl_mapConfig_%s";
+			const char *cmd = Cvar_VariableString( va( fmt, mapname ) );
+			if ( cmd && *cmd != '\0' ) {
+				Cbuf_AddText( cmd );
+				Cbuf_AddText( "\n" );
+			} else {
+				// apply mapname "default" if present
+				cmd = Cvar_VariableString( va( fmt, "default" ) );
+				if ( cmd && *cmd != '\0' ) {
+					Cbuf_AddText( cmd );
+					Cbuf_AddText( "\n" );
+				}
+			}
+		}
 	}
 
 	if ( !cls.rendererStarted ) {
@@ -3437,14 +3460,16 @@ static void CL_InitRef( void ) {
 	rimp.Sys_LowPhysicalMemory = Sys_LowPhysicalMemory;
 	rimp.Com_RealTime = Com_RealTime;
 
+	rimp.GLimp_InitGamma = GLimp_InitGamma;
+	rimp.GLimp_SetGamma = GLimp_SetGamma;
+
 	// OpenGL API
+#ifdef USE_OPENGL_API
 	rimp.GLimp_Init = GLimp_Init;
 	rimp.GLimp_Shutdown = GLimp_Shutdown;
 	rimp.GL_GetProcAddress = GL_GetProcAddress;
-
 	rimp.GLimp_EndFrame = GLimp_EndFrame;
-	rimp.GLimp_InitGamma = GLimp_InitGamma;
-	rimp.GLimp_SetGamma = GLimp_SetGamma;
+#endif
 
 	// Vulkan API
 #ifdef USE_VULKAN_API
@@ -3793,7 +3818,7 @@ static void CL_InitGLimp_Cvars( void )
 	// shared with renderer:
 	cl_stencilbits = Cvar_Get( "r_stencilbits", "8", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	Cvar_CheckRange( cl_stencilbits, "0", "8", CV_INTEGER );
-	Cvar_SetDescription( cl_stencilbits, "Stencil buffer size, value decreases Z-buffer depth." );
+	Cvar_SetDescription( cl_stencilbits, "Stencil buffer size, required to be 8 for stencil shadows." );
 	cl_depthbits = Cvar_Get( "r_depthbits", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	Cvar_CheckRange( cl_depthbits, "0", "32", CV_INTEGER );
 	Cvar_SetDescription( cl_depthbits, "Sets precision of Z-buffer." );
@@ -3867,6 +3892,8 @@ void CL_Init( void ) {
 
 	cl_autoRecordDemo = Cvar_Get ("cl_autoRecordDemo", "0", CVAR_ARCHIVE);
 	Cvar_SetDescription( cl_autoRecordDemo, "Auto-record demos when starting or joining a game." );
+	cl_drawRecording = Cvar_Get("cl_drawRecording", "1", CVAR_ARCHIVE);
+	Cvar_SetDescription( cl_drawRecording, "Hide (0) or shorten (1) \"RECORDING\" HUD message when recording demo." );
 
 	cl_aviFrameRate = Cvar_Get ("cl_aviFrameRate", "25", CVAR_ARCHIVE);
 	Cvar_CheckRange( cl_aviFrameRate, "1", "1000", CV_INTEGER );
@@ -3877,8 +3904,8 @@ void CL_Init( void ) {
 	Cvar_SetDescription( cl_forceavidemo, "Forces all demo recording into a sequence of screenshots in TGA format." );
 
 	cl_aviPipeFormat = Cvar_Get( "cl_aviPipeFormat",
-		"-preset medium -crf 23 -vcodec libx264 -flags +cgop -pix_fmt yuvj420p "
-		"-bf 2 -codec:a aac -strict -2 -b:a 160k -movflags faststart",
+		"-preset medium -crf 23 -c:v libx264 -flags +cgop -pix_fmt yuvj420p "
+		"-bf 2 -c:a aac -strict -2 -b:a 160k -movflags faststart",
 		CVAR_ARCHIVE );
 	Cvar_SetDescription( cl_aviPipeFormat, "Encoder parameters used for \\video-pipe." );
 
@@ -3936,7 +3963,7 @@ void CL_Init( void ) {
 	Cvar_CheckRange( cl_dlDirectory, "0", "1", CV_INTEGER );
 	s = va( "Save downloads initiated by \\dlmap and \\download commands in:\n"
 		" 0 - current game directory\n"
-		" 1 - fs_basegame (%s) directory\n", FS_GetBaseGameDir() );
+		" 1 - basegame (%s) directory\n", FS_GetBaseGameDir() );
 	Cvar_SetDescription( cl_dlDirectory, s );
 
 	cl_reconnectArgs = Cvar_Get( "cl_reconnectArgs", "", CVAR_ARCHIVE_ND | CVAR_NOTABCOMPLETE );

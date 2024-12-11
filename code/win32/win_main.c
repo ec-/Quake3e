@@ -21,14 +21,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 // win_main.c
 
-#include "../client/client.h"
+#include "../qcommon/q_shared.h"
 #include "../qcommon/qcommon.h"
+#ifndef DEDICATED
+#include "../client/client.h"
+#endif
 #include "win_local.h"
-#include "glw_win.h"
 #include "resource.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <errno.h>
 #include <direct.h>
+#include <io.h>
+
 
 #define MEM_THRESHOLD (96*1024*1024)
 
@@ -40,9 +45,20 @@ Sys_LowPhysicalMemory
 ==================
 */
 qboolean Sys_LowPhysicalMemory( void ) {
+#if	_MSC_VER < 1600 // MSVC 2008 and lower, assume win9x compatibility builds
 	MEMORYSTATUS stat;
 	GlobalMemoryStatus( &stat );
 	return (stat.dwTotalPhys <= MEM_THRESHOLD) ? qtrue : qfalse;
+#else
+	MEMORYSTATUSEX stat;
+	stat.dwLength = sizeof(stat);
+
+	if ( !GlobalMemoryStatusEx( &stat ) ) {
+		return qfalse;
+	}
+
+	return (stat.ullAvailPhys <= MEM_THRESHOLD) ? qtrue : qfalse;
+#endif
 }
 
 
@@ -63,7 +79,7 @@ Sys_Error
 Show the early console as an error dialog
 =============
 */
-void QDECL Sys_Error( const char *error, ... ) {
+void NORETURN FORMAT_PRINTF(1, 2) QDECL Sys_Error( const char *error, ... ) {
 	va_list	argptr;
 	char	text[4096];
 	MSG		msg;
@@ -105,7 +121,7 @@ void QDECL Sys_Error( const char *error, ... ) {
 Sys_Quit
 ==============
 */
-void Sys_Quit( void ) {
+void NORETURN Sys_Quit( void ) {
 
 	timeEndPeriod( 1 );
 
@@ -130,9 +146,17 @@ void Sys_Print( const char *msg )
 Sys_Mkdir
 ==============
 */
-void Sys_Mkdir( const char *path )
+qboolean Sys_Mkdir( const char *path )
 {
-	_mkdir( path );
+	if ( _mkdir( path ) == 0 ) {
+		return qtrue;
+	} else {
+		if ( errno == EEXIST ) {
+			return qtrue;
+		} else {
+			return qfalse;
+		}
+	}
 }
 
 
@@ -695,35 +719,57 @@ static LONG WINAPI ExceptionFilter( struct _EXCEPTION_POINTERS *ExceptionInfo )
 			// assume we can restart client module
 		} else {
 			GLW_RestoreGamma();
-
-			if ( g_wv.hWnd && glw_state.cdsFullscreen )
-				ShowWindow( g_wv.hWnd, SW_HIDE );
+			GLW_HideFullscreenWindow();
 		}
 	}
 #endif
 
 	if ( ExceptionInfo->ExceptionRecord->ExceptionCode != EXCEPTION_BREAKPOINT )
 	{
-		char msg[128];
-		byte *addr, *base;
-		qboolean vma;
+		char msg[128], name[MAX_OSPATH];
+		const char *basename;
+		HMODULE hModule, hKernel32;
+		byte *addr;
 
+		hModule = NULL;
+		name[0] = '\0';
+		basename = name;
 		addr = (byte*)ExceptionInfo->ExceptionRecord->ExceptionAddress;
-		base = (byte*)GetModuleHandle( NULL );
 
-		if ( addr >= base )
-		{
-			addr = (byte*)(addr - base);
-			vma = qtrue;
-		}
-		else
-		{
-			vma = qfalse;
+		hKernel32 = GetModuleHandleA( "kernel32" );
+		if ( hKernel32 != NULL ) {
+			typedef BOOL (WINAPI *PFN_GetModuleHandleExA)( DWORD dwFlags, LPCSTR lpModuleName, HMODULE *phModule );
+			PFN_GetModuleHandleExA pGetModuleHandleExA;
+
+			pGetModuleHandleExA = (PFN_GetModuleHandleExA) GetProcAddress( hKernel32, "GetModuleHandleExA" );
+			if ( pGetModuleHandleExA != NULL ) {
+				if ( pGetModuleHandleExA( GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCTSTR)addr, &hModule ) ) {
+					if (GetModuleFileNameA( hModule, name, ARRAY_LEN(name) - 1) != 0 ) {
+						name[ARRAY_LEN(name) - 1] = '\0';
+						basename = strrchr( name, '\\' );
+						if ( basename ) {
+							basename = basename + 1;
+						}
+						else {
+							basename = strrchr( name, '/' );
+							if ( basename ) {
+								basename = basename + 1;
+							}
+						}
+					}
+				}
+			}
 		}
 
-		sprintf( msg, "Exception Code: %s\nException Address: %p%s",
-			GetExceptionName( ExceptionInfo->ExceptionRecord->ExceptionCode ),
-			addr, vma ? " (VMA)" : "" );
+		if ( basename && *basename ) {
+			Com_sprintf( msg, sizeof( msg ), "Exception Code: %s\nException Address: %s@%x",
+				GetExceptionName( ExceptionInfo->ExceptionRecord->ExceptionCode ),
+				basename, (uint32_t)(addr - (byte*)hModule) );
+		} else {
+			Com_sprintf( msg, sizeof( msg ), "Exception Code: %s\nException Address: %p",
+				GetExceptionName( ExceptionInfo->ExceptionRecord->ExceptionCode ),
+				addr );
+		}
 
 		Com_Error( ERR_DROP, "Unhandled exception caught\n%s", msg );
 	}
@@ -773,13 +819,7 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 
 	SetUnhandledExceptionFilter( ExceptionFilter );
 
-	// get the initial time base
-	Sys_Milliseconds();
-
 	Com_Init( sys_cmdline );
-	NET_Init();
-
-	Com_Printf( "Working directory: %s\n", Sys_Pwd() );
 
 	// hide the early console since we've reached the point where we
 	// have a working graphics subsystems
@@ -788,7 +828,7 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	}
 
 	// main game loop
-	while( 1 ) {
+	while ( 1 ) {
 		// set low precision every frame, because some system calls
 		// reset it arbitrarily
 		// _controlfp( _PC_24, _MCW_PC );
