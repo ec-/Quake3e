@@ -796,4 +796,5 @@ void SV_SendClientMessages( void )
 		c->lastSnapshotTime = svs.time;
 		c->rateDelayed = qfalse;
 	}
+	Record_ProcessSnapshot();
 }
