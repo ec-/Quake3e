@@ -1011,8 +1011,21 @@ Cmd_CompleteCfgName
 ==================
 */
 static void Cmd_CompleteCfgName( const char *args, int argNum ) {
-	if( argNum == 2 ) {
-		Field_CompleteFilename( "", "cfg", qfalse, FS_MATCH_ANY | FS_MATCH_STICK );
+	if (argNum == 2) {
+		char path[MAX_OSPATH] = "";
+		const char *arg = Cmd_Argv(1);
+
+		// Look for the last forward slash to determine the
+		// directory portion of the path for file completion.
+		char *lastSlash = strrchr(arg, '/');
+
+		if (lastSlash) {
+			int newLength = lastSlash - arg + 1;
+			strncpy(path, arg, newLength);
+			path[newLength] = '\0';
+		}
+
+		Field_CompleteFilename(path, "cfg", qfalse, FS_MATCH_ANY | FS_MATCH_STICK);
 	}
 }
 
