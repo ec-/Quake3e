@@ -3889,9 +3889,9 @@ static int FS_PathCmp( const char *s1, const char *s2 ) {
 FS_SortFileList
 ================
 */
-static void FS_SortFileList( const char **list, int n ) {
+static void FS_SortFileList( char **list, int n ) {
 	const char *m;
-	const char *temp;
+	char *temp;
 	int i, j;
 	i = 0;
 	j = n;
