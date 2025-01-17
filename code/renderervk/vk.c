@@ -1675,14 +1675,14 @@ static qboolean vk_create_device( VkPhysicalDevice physical_device, int device_i
 		device_desc.pEnabledFeatures = &features;
 
 #ifdef _DEBUG
-		pNextPtr = &device_desc.pNext;
+		pNextPtr = (const void **)&device_desc.pNext;
 
 		if ( timelineSemaphore ) {
 			*pNextPtr = &timeline_semaphore;
 			timeline_semaphore.pNext = NULL;
 			timeline_semaphore.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
 			timeline_semaphore.timelineSemaphore = VK_TRUE;
-			pNextPtr = &timeline_semaphore.pNext;
+			pNextPtr = (const void **)&timeline_semaphore.pNext;
 		}
 
 		if ( memoryModel ) {
@@ -1692,7 +1692,7 @@ static qboolean vk_create_device( VkPhysicalDevice physical_device, int device_i
 			memory_model.vulkanMemoryModel = VK_TRUE;
 			memory_model.vulkanMemoryModelAvailabilityVisibilityChains = VK_FALSE;
 			memory_model.vulkanMemoryModelDeviceScope = VK_TRUE;
-			pNextPtr = &memory_model.pNext;
+			pNextPtr = (const void **)&memory_model.pNext;
 		}
 
 		if ( devAddrFeat ) {
