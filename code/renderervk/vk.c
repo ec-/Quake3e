@@ -1540,7 +1540,7 @@ static qboolean vk_create_device( VkPhysicalDevice physical_device, int device_i
 		qboolean timelineSemaphore = qfalse;
 		qboolean memoryModel = qfalse;
 		qboolean devAddrFeat = qfalse;
-		void** pNextPtr;
+		const void** pNextPtr;
 #endif
 		uint32_t i, len, count = 0;
 
@@ -4455,7 +4455,7 @@ void vk_release_resources( void ) {
 	Com_Memset( &vk.stats, 0, sizeof( vk.stats ) );
 }
 
-
+#if 0
 static void record_buffer_memory_barrier(VkCommandBuffer cb, VkBuffer buffer, VkDeviceSize size,
 		VkPipelineStageFlags src_stages, VkPipelineStageFlags dst_stages,
 		VkAccessFlags src_access, VkAccessFlags dst_access) {
@@ -4473,7 +4473,7 @@ static void record_buffer_memory_barrier(VkCommandBuffer cb, VkBuffer buffer, Vk
 
 	qvkCmdPipelineBarrier( cb, src_stages, dst_stages, 0, 0, NULL, 1, &barrier, 0, NULL );
 }
-
+#endif
 
 void vk_create_image( image_t *image, int width, int height, int mip_levels ) {
 
