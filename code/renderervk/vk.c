@@ -7214,10 +7214,6 @@ void vk_end_frame( void )
 	VK_CHECK( qvkQueueSubmit( vk.queue, 1, &submit_info, vk.cmd->rendering_finished_fence ) );
 	vk.cmd->waitForFence = qtrue;
 
-	// pickup next command buffer for rendering
-	vk.cmd_index++;
-	vk.cmd_index %= NUM_COMMAND_BUFFERS;
-
 	// presentation may take undefined time to complete, we can't measure it in a reliable way
 	backEnd.pc.msec = ri.Milliseconds() - backEnd.pc.msec;
 
@@ -7228,6 +7224,10 @@ void vk_present_frame( void )
 {
 	VkPresentInfoKHR present_info;
 	VkResult res;
+
+	// pickup next command buffer for rendering
+	vk.cmd_index++;
+	vk.cmd_index %= NUM_COMMAND_BUFFERS;
 
 	if ( ri.CL_IsMinimized() )
 		return;
