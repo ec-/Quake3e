@@ -23,7 +23,9 @@
 
 #define VK_NUM_BLOOM_PASSES 4
 
+#ifndef _DEBUG
 #define USE_DEDICATED_ALLOCATION
+#endif
 //#define MIN_IMAGE_ALIGN (128*1024)
 #define MAX_ATTACHMENTS_IN_POOL (8+VK_NUM_BLOOM_PASSES*2) // depth + msaa + msaa-resolve + depth-resolve + screenmap.msaa + screenmap.resolve + screenmap.depth + bloom_extract + blur pairs
 
@@ -617,6 +619,7 @@ typedef struct {
 	VkBuffer staging_buffer;
 	VkDeviceMemory staging_buffer_memory;
 	VkDeviceSize staging_buffer_size;
+	VkDeviceSize staging_buffer_offset;
 	byte *staging_buffer_ptr; // pointer to mapped staging buffer
 
 	//

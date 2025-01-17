@@ -1041,15 +1041,37 @@ static void allocate_and_bind_image_memory(VkImage image) {
 	VK_CHECK(qvkBindImageMemory(vk.device, image, chunk->memory, chunk->used - memory_requirements.size));
 }
 
+static VkCommandBuffer staging_command_buffer = VK_NULL_HANDLE;
 
-static void ensure_staging_buffer_allocation(VkDeviceSize size) {
+void flush_staging_command_buffer( void )
+{
+	if ( staging_command_buffer != VK_NULL_HANDLE )
+	{
+		end_command_buffer( staging_command_buffer );
+		staging_command_buffer = VK_NULL_HANDLE;
+	}
+	//if ( vk_world.staging_buffer_offset != 0 ) // TODO: use it instead of command buffer check?
+	// {
+		//
+	// }
+	vk_world.staging_buffer_offset = 0;
+}
+
+
+static void ensure_staging_buffer_allocation( VkDeviceSize size )
+{
 	VkBufferCreateInfo buffer_desc;
 	VkMemoryRequirements memory_requirements;
 	VkMemoryAllocateInfo alloc_info;
 	uint32_t memory_type;
 	void *data;
 
-	if (vk_world.staging_buffer_size >= size)
+	if ( vk_world.staging_buffer_size - vk_world.staging_buffer_offset >= size )
+		return;
+
+	flush_staging_command_buffer();
+
+	if ( vk_world.staging_buffer_size - vk_world.staging_buffer_offset >= size )
 		return;
 
 	if (vk_world.staging_buffer != VK_NULL_HANDLE)
@@ -1070,7 +1092,7 @@ static void ensure_staging_buffer_allocation(VkDeviceSize size) {
 	buffer_desc.pQueueFamilyIndices = NULL;
 	VK_CHECK(qvkCreateBuffer(vk.device, &buffer_desc, NULL, &vk_world.staging_buffer));
 
-	qvkGetBufferMemoryRequirements(vk.device, vk_world.staging_buffer, &memory_requirements);
+	qvkGetBufferMemoryRequirements( vk.device, vk_world.staging_buffer, &memory_requirements );
 
 	memory_type = find_memory_type( memory_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT );
 
@@ -1084,6 +1106,7 @@ static void ensure_staging_buffer_allocation(VkDeviceSize size) {
 
 	VK_CHECK(qvkMapMemory(vk.device, vk_world.staging_buffer_memory, 0, VK_WHOLE_SIZE, 0, &data));
 	vk_world.staging_buffer_ptr = (byte*)data;
+	vk_world.staging_buffer_offset = 0;
 
 	SET_OBJECT_NAME( vk_world.staging_buffer, "staging buffer", VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT );
 	SET_OBJECT_NAME( vk_world.staging_buffer_memory, "staging buffer memory", VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_MEMORY_EXT );
@@ -1192,7 +1215,11 @@ static void create_instance( void )
 	appInfo.applicationVersion = 0x0;
 	appInfo.pEngineName = NULL;
 	appInfo.engineVersion = 0x0;
+#ifdef _DEBUG
+	appInfo.apiVersion = VK_API_VERSION_1_1;
+#else
 	appInfo.apiVersion = VK_API_VERSION_1_0;
+#endif
 
 	// create instance
 	desc.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -1446,6 +1473,12 @@ static const char *renderer_name( const VkPhysicalDeviceProperties *props ) {
 
 static qboolean vk_create_device( VkPhysicalDevice physical_device, int device_index ) {
 
+#ifdef _DEBUG
+	VkPhysicalDeviceTimelineSemaphoreFeatures timeline_semaphore;
+	VkPhysicalDeviceVulkanMemoryModelFeatures memory_model;
+	VkPhysicalDeviceBufferDeviceAddressFeatures devaddr_features;
+#endif
+
 	ri.Printf( PRINT_ALL, "...selected physical device: %i\n", device_index );
 
 	// select surface format
@@ -1488,7 +1521,7 @@ static qboolean vk_create_device( VkPhysicalDevice physical_device, int device_i
 
 	// create VkDevice
 	{
-		const char *device_extension_list[4];
+		const char *device_extension_list[7];
 		uint32_t device_extension_count;
 		const char *ext, *end;
 		char *str;
@@ -1503,6 +1536,12 @@ static qboolean vk_create_device( VkPhysicalDevice physical_device, int device_i
 		qboolean dedicatedAllocation = qfalse;
 		qboolean memoryRequirements2 = qfalse;
 		qboolean debugMarker = qfalse;
+#ifdef _DEBUG
+		qboolean timelineSemaphore = qfalse;
+		qboolean memoryModel = qfalse;
+		qboolean devAddrFeat = qfalse;
+		void** pNextPtr;
+#endif
 		uint32_t i, len, count = 0;
 
 		VK_CHECK( qvkEnumerateDeviceExtensionProperties( physical_device, NULL, &count, NULL ) );
@@ -1523,6 +1562,14 @@ static qboolean vk_create_device( VkPhysicalDevice physical_device, int device_i
 				memoryRequirements2 = qtrue;
 			} else if ( strcmp( ext, VK_EXT_DEBUG_MARKER_EXTENSION_NAME ) == 0 ) {
 				debugMarker = qtrue;
+#ifdef _DEBUG
+			} else if ( strcmp( ext, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME ) == 0 ) {
+				timelineSemaphore = qtrue;
+			} else if ( strcmp( ext, VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME ) == 0 ) {
+				memoryModel = qtrue;
+			} else if ( strcmp( ext, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME ) == 0 ) {
+				devAddrFeat = qtrue;
+#endif
 			}
 			// add this device extension to glConfig
 			if ( i != 0 ) {
@@ -1565,7 +1612,19 @@ static qboolean vk_create_device( VkPhysicalDevice physical_device, int device_i
 			device_extension_list[ device_extension_count++ ] = VK_EXT_DEBUG_MARKER_EXTENSION_NAME;
 			vk.debugMarkers = qtrue;
 		}
+#ifdef _DEBUG
+		if ( timelineSemaphore ) {
+			device_extension_list[ device_extension_count++ ] = VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME;
+		}
 
+		if ( memoryModel ) {
+			device_extension_list[ device_extension_count++ ] = VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME;
+		}
+
+		if ( devAddrFeat ) {
+			device_extension_list[ device_extension_count++ ] = VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME;
+		}
+#endif // _DEBUG
 		qvkGetPhysicalDeviceFeatures( physical_device, &device_features );
 
 		if ( device_features.fillModeNonSolid == VK_FALSE ) {
@@ -1583,6 +1642,11 @@ static qboolean vk_create_device( VkPhysicalDevice physical_device, int device_i
 		Com_Memset( &features, 0, sizeof( features ) );
 		features.fillModeNonSolid = VK_TRUE;
 
+#ifdef _DEBUG
+		if ( device_features.shaderInt64 ) {
+			features.shaderInt64 = VK_TRUE;
+		}
+#endif
 		if ( device_features.wideLines ) { // needed for RB_SurfaceAxis
 			features.wideLines = VK_TRUE;
 			vk.wideLines = qtrue;
@@ -1610,6 +1674,37 @@ static qboolean vk_create_device( VkPhysicalDevice physical_device, int device_i
 		device_desc.ppEnabledExtensionNames = device_extension_list;
 		device_desc.pEnabledFeatures = &features;
 
+#ifdef _DEBUG
+		pNextPtr = &device_desc.pNext;
+
+		if ( timelineSemaphore ) {
+			*pNextPtr = &timeline_semaphore;
+			timeline_semaphore.pNext = NULL;
+			timeline_semaphore.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
+			timeline_semaphore.timelineSemaphore = VK_TRUE;
+			pNextPtr = &timeline_semaphore.pNext;
+		}
+
+		if ( memoryModel ) {
+			*pNextPtr = &memory_model;
+			memory_model.pNext = NULL;
+			memory_model.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES;
+			memory_model.vulkanMemoryModel = VK_TRUE;
+			memory_model.vulkanMemoryModelAvailabilityVisibilityChains = VK_FALSE;
+			memory_model.vulkanMemoryModelDeviceScope = VK_TRUE;
+			pNextPtr = &memory_model.pNext;
+		}
+
+		if ( devAddrFeat ) {
+			*pNextPtr = &devaddr_features;
+			devaddr_features.pNext = NULL;
+			devaddr_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
+			devaddr_features.bufferDeviceAddress = VK_TRUE;
+			devaddr_features.bufferDeviceAddressCaptureReplay = VK_FALSE;
+			devaddr_features.bufferDeviceAddressMultiDevice = VK_FALSE;
+			//pNextPtr = &devaddr_features.pNext;
+		}
+#endif
 		res = qvkCreateDevice( physical_device, &device_desc, NULL, &vk.device );
 		if ( res < 0 ) {
 			ri.Printf( PRINT_ERROR, "vkCreateDevice returned %s\n", vk_result_string( res ) );
@@ -3490,12 +3585,14 @@ static void vk_create_sync_primitives( void ) {
 
 		fence_desc.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		fence_desc.pNext = NULL;
-		fence_desc.flags = VK_FENCE_CREATE_SIGNALED_BIT; // so it can be used to start rendering
+		//fence_desc.flags = VK_FENCE_CREATE_SIGNALED_BIT; // so it can be used to start rendering
+		fence_desc.flags = 0; // so it can be used to start rendering
 
 		VK_CHECK( qvkCreateFence( vk.device, &fence_desc, NULL, &vk.tess[i].rendering_finished_fence ) );
-		vk.tess[i].waitForFence = qtrue;
+		//vk.tess[i].waitForFence = qtrue;
+		vk.tess[i].waitForFence = qfalse;
 
-		SET_OBJECT_NAME( vk.tess[i].image_acquired, va( "image_acquired semaphore %i", i ), VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT);
+		SET_OBJECT_NAME( vk.tess[i].image_acquired, va( "image_acquired semaphore %i", i ), VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT );
 		SET_OBJECT_NAME( vk.tess[i].rendering_finished, va( "rendering_finished semaphore %i", i ), VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT );
 		SET_OBJECT_NAME( vk.tess[i].rendering_finished_fence, va( "rendering_finished fence %i", i ), VK_DEBUG_REPORT_OBJECT_TYPE_FENCE_EXT );
 	}
@@ -4532,11 +4629,11 @@ static byte *resample_image_data( const int target_format, byte *data, const int
 
 void vk_upload_image_data( image_t *image, int x, int y, int width, int height, int mipmaps, byte *pixels, int size, qboolean update ) {
 
-	VkCommandBuffer command_buffer;
+	//VkCommandBuffer command_buffer;
 	VkBufferImageCopy regions[16];
 	VkBufferImageCopy region;
 	byte *buf;
-	int bpp;
+	int bpp, i;
 
 	int num_regions = 0;
 	int buffer_size = 0;
@@ -4577,22 +4674,33 @@ void vk_upload_image_data( image_t *image, int x, int y, int width, int height, 
 		if (height < 1) height = 1;
 	}
 
-	ensure_staging_buffer_allocation(buffer_size);
-	Com_Memcpy( vk_world.staging_buffer_ptr, buf, buffer_size );
+	ensure_staging_buffer_allocation( buffer_size );
 
-	command_buffer = begin_command_buffer();
-
-	record_buffer_memory_barrier( command_buffer, vk_world.staging_buffer, VK_WHOLE_SIZE, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT );
-	
-	if ( update ) {
-		record_image_layout_transition( command_buffer, image->handle, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL );
-	} else {
-		record_image_layout_transition( command_buffer, image->handle, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL );
+	if ( staging_command_buffer == VK_NULL_HANDLE )	{
+		staging_command_buffer = begin_command_buffer();
 	}
-	qvkCmdCopyBufferToImage( command_buffer, vk_world.staging_buffer, image->handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, num_regions, regions );
-	record_image_layout_transition( command_buffer, image->handle, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL );
 
-	end_command_buffer( command_buffer );
+	for ( i = 0; i < num_regions; i++ ) {
+		regions[i].bufferOffset += vk_world.staging_buffer_offset;
+	}
+
+	Com_Memcpy( vk_world.staging_buffer_ptr + vk_world.staging_buffer_offset, buf, buffer_size );
+	vk_world.staging_buffer_offset += buffer_size;
+
+	//staging_command_buffer = begin_command_buffer();
+	//record_buffer_memory_barrier( staging_command_buffer, vk_world.staging_buffer, VK_WHOLE_SIZE, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT );
+
+	if ( update ) {
+		record_image_layout_transition( staging_command_buffer, image->handle, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL );
+	} else {
+		record_image_layout_transition( staging_command_buffer, image->handle, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL );
+	}
+
+	qvkCmdCopyBufferToImage( staging_command_buffer, vk_world.staging_buffer, image->handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, num_regions, regions );
+
+	record_image_layout_transition( staging_command_buffer, image->handle, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL );
+
+	// flush_staging_command_buffer(); // uncomment for old single-image sync behavior
 
 	if ( buf != pixels ) {
 		ri.Hunk_FreeTempMemory( buf );
@@ -6899,49 +7007,44 @@ void vk_begin_frame( void )
 	//VkFramebuffer frameBuffer;
 	VkResult res;
 
+	flush_staging_command_buffer(); // finish any pending texture uploads
+
 	if ( vk.frame_count++ ) // might happen during stereo rendering
 		return;
 
+	vk.cmd = &vk.tess[ vk.cmd_index ];
+
 	if ( vk.cmd->waitForFence ) {
-
-		vk.cmd = &vk.tess[ vk.cmd_index++ ];
-		vk.cmd_index %= NUM_COMMAND_BUFFERS;
-
 		vk.cmd->waitForFence = qfalse;
-		res = qvkWaitForFences(vk.device, 1, &vk.cmd->rendering_finished_fence, VK_FALSE, 1e10);
-		if (res != VK_SUCCESS) {
-			if (res == VK_ERROR_DEVICE_LOST) {
+		res = qvkWaitForFences( vk.device, 1, &vk.cmd->rendering_finished_fence, VK_FALSE, 1e10 );
+		if ( res != VK_SUCCESS ) {
+			if ( res == VK_ERROR_DEVICE_LOST ) {
 				// silently discard previous command buffer
-				ri.Printf(PRINT_WARNING, "Vulkan: %s returned %s", "vkWaitForfences", vk_result_string(res));
+				ri.Printf( PRINT_WARNING, "Vulkan: %s returned %s", "vkWaitForFences", vk_result_string( res ) );
 			}
 			else {
-				ri.Error(ERR_FATAL, "Vulkan: %s returned %s", "vkWaitForfences", vk_result_string(res));
+				ri.Error( ERR_FATAL, "Vulkan: %s returned %s", "vkWaitForFences", vk_result_string( res ) );
 			}
 		}
-
-		if ( !ri.CL_IsMinimized() ) {
-			res = qvkAcquireNextImageKHR( vk.device, vk.swapchain, 5 * 1000000000ULL, vk.cmd->image_acquired, VK_NULL_HANDLE, &vk.swapchain_image_index );
-			// when running via RDP: "Application has already acquired the maximum number of images (0x2)"
-			// probably caused by "device lost" errors
-			if ( res < 0 ) {
-				if ( res == VK_ERROR_OUT_OF_DATE_KHR ) {
-					// swapchain re-creation needed
-					vk_restart_swapchain( __func__ );
-				} else {
-					ri.Error( ERR_FATAL, "vkAcquireNextImageKHR returned %s", vk_result_string( res ) );
-				}
-			}
-		} else {
-			vk.swapchain_image_index++;
-			vk.swapchain_image_index %= vk.swapchain_image_count;
-		}
-
-	} else {
-		// current command buffer has been reset due to geometry buffer overflow/update
-		// so we will reuse it with current swapchain image as well
+		VK_CHECK( qvkResetFences( vk.device, 1, &vk.cmd->rendering_finished_fence ) );
 	}
 
-	VK_CHECK( qvkResetFences( vk.device, 1, &vk.cmd->rendering_finished_fence ) );
+	if ( !ri.CL_IsMinimized() ) {
+		res = qvkAcquireNextImageKHR( vk.device, vk.swapchain, 1 * 1000000000ULL, vk.cmd->image_acquired, VK_NULL_HANDLE, &vk.swapchain_image_index );
+		// when running via RDP: "Application has already acquired the maximum number of images (0x2)"
+		// probably caused by "device lost" errors
+		if ( res < 0 ) {
+			if ( res == VK_ERROR_OUT_OF_DATE_KHR ) {
+				// swapchain re-creation needed
+				vk_restart_swapchain( __func__ );
+			} else {
+				ri.Error( ERR_FATAL, "vkAcquireNextImageKHR returned %s", vk_result_string( res ) );
+			}
+		}
+	} else {
+		vk.swapchain_image_index++;
+		vk.swapchain_image_index %= vk.swapchain_image_count;
+	}
 
 	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	begin_info.pNext = NULL;
@@ -6956,16 +7059,9 @@ void vk_begin_frame( void )
 #if 0
 	// add explicit layout transition dependency
 	if ( vk.fboActive ) {
-		record_image_layout_transition( vk.cmd->command_buffer,
-			vk.color_image, VK_IMAGE_ASPECT_COLOR_BIT,
-			VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL );
-
+		record_image_layout_transition( vk.cmd->command_buffer, vk.color_image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL );
 	} else {
-		record_image_layout_transition( vk.cmd->command_buffer,
-			vk.swapchain_images[ vk.swapchain_image_index ], VK_IMAGE_ASPECT_COLOR_BIT,
-			VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_ACCESS_MEMORY_READ_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR );
+		record_image_layout_transition( vk.cmd->command_buffer, vk.swapchain_images[ vk.swapchain_image_index ], VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR );
 	}
 #endif
 
@@ -7049,6 +7145,8 @@ void vk_end_frame( void )
 	if ( vk.geometry_buffer_size_new )
 	{
 		vk_resize_geometry_buffer();
+		// issue: one frame may be lost during video recording
+		// solution: re-record all commands again? (might be complicated though)
 		return;
 	}
 
@@ -7115,6 +7213,10 @@ void vk_end_frame( void )
 
 	VK_CHECK( qvkQueueSubmit( vk.queue, 1, &submit_info, vk.cmd->rendering_finished_fence ) );
 	vk.cmd->waitForFence = qtrue;
+
+	// pickup next command buffer for rendering
+	vk.cmd_index++;
+	vk.cmd_index %= NUM_COMMAND_BUFFERS;
 
 	// presentation may take undefined time to complete, we can't measure it in a reliable way
 	backEnd.pc.msec = ri.Milliseconds() - backEnd.pc.msec;

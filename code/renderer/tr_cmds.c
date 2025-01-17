@@ -429,9 +429,9 @@ void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 	}
 	cmd->commandId = RC_SWAP_BUFFERS;
 
-	R_PerformanceCounters();
-
 	R_IssueRenderCommands();
+
+	R_PerformanceCounters();
 
 	R_InitNextFrame();
 
