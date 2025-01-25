@@ -1712,7 +1712,7 @@ static qboolean vk_create_device( VkPhysicalDevice physical_device, int device_i
 			devaddr_features.bufferDeviceAddress = VK_TRUE;
 			devaddr_features.bufferDeviceAddressCaptureReplay = VK_FALSE;
 			devaddr_features.bufferDeviceAddressMultiDevice = VK_FALSE;
-			pNextPtr = &devaddr_features.pNext;
+			pNextPtr = (const void **)&devaddr_features.pNext;
 		}
 
 		if ( storage8bit ) {
@@ -1722,7 +1722,7 @@ static qboolean vk_create_device( VkPhysicalDevice physical_device, int device_i
 			storage_8bit_features.storageBuffer8BitAccess = VK_TRUE;
 			storage_8bit_features.storagePushConstant8 = VK_FALSE;
 			storage_8bit_features.uniformAndStorageBuffer8BitAccess = VK_TRUE;
-			pNextPtr = &storage_8bit_features.pNext;
+			pNextPtr = (const void **)&storage_8bit_features.pNext;
 		}
 #endif
 		res = qvkCreateDevice( physical_device, &device_desc, NULL, &vk.device );
