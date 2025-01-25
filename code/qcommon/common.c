@@ -30,6 +30,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <sys/time.h>
 #else
 #include <winsock.h>
+#if defined(_DEBUG)
+#include "../win32/win_local.h"
+#endif
 #endif
 
 #include "../client/keys.h"
@@ -290,6 +293,7 @@ void NORETURN FORMAT_PRINTF(2, 3) QDECL Com_Error( errorParm_t code, const char 
 #if defined(_WIN32) && defined(_DEBUG)
 	if ( code != ERR_DISCONNECT && code != ERR_NEED_CD ) {
 		if ( !com_noErrorInterrupt->integer ) {
+			ShowWindow( g_wv.hWnd, SW_MINIMIZE );
 			DebugBreak();
 		}
 	}
