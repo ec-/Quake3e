@@ -129,12 +129,17 @@ static void SV_WriteSnapshotToClient( const client_t *client, msg_t *msg ) {
 	frame = &client->frames[ client->netchan.outgoingSequence & PACKET_MASK ];
 
 	// try to use a previous frame as the source for delta compressing the snapshot
-	if ( !client->deltaActive || client->state != CS_ACTIVE ) {
+	if ( /* client->deltaMessage <= 0 || */ client->state != CS_ACTIVE ) {
+		// client is asking for a retransmit
 		oldframe = NULL;
 		lastframe = 0;
 	} else if ( client->netchan.outgoingSequence - client->deltaMessage >= (PACKET_BACKUP - 3) ) {
 		// client hasn't gotten a good message through in a long time
-		Com_DPrintf( "%s: Delta request from out of date packet.\n", client->name );
+		if ( com_developer->integer ) {
+			if ( client->deltaMessage != client->netchan.outgoingSequence - ( PACKET_BACKUP + 1 ) ) {
+				Com_Printf( "%s: Delta request from out of date packet.\n", client->name );
+			}
+		}
 		oldframe = NULL;
 		lastframe = 0;
 	} else {
