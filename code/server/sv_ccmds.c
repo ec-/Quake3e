@@ -326,6 +326,9 @@ static void SV_MapRestart_f( void ) {
 	for ( i = 0; i < sv.maxclients; i++ ) {
 		client = &svs.clients[i];
 
+		// don't delta from pre-restart messages
+		client->deltaStart = client->netchan.outgoingSequence;
+
 		// send the new gamestate to all connected clients
 		if ( client->state < CS_CONNECTED ) {
 			continue;

@@ -129,7 +129,7 @@ static void SV_WriteSnapshotToClient( const client_t *client, msg_t *msg ) {
 	frame = &client->frames[ client->netchan.outgoingSequence & PACKET_MASK ];
 
 	// try to use a previous frame as the source for delta compressing the snapshot
-	if ( !client->deltaActive || client->state != CS_ACTIVE ) {
+	if ( !client->deltaActive || client->deltaMessage < client->deltaStart || client->state != CS_ACTIVE ) {
 		oldframe = NULL;
 		lastframe = 0;
 	} else if ( client->netchan.outgoingSequence - client->deltaMessage >= (PACKET_BACKUP - 3) ) {
