@@ -145,6 +145,7 @@ void SV_SetConfigstring (int index, const char *val) {
 			SV_SendConfigstring(client, index);
 		}
 	}
+	Record_ProcessConfigstring( index, val );
 }
 
 
@@ -679,6 +680,8 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 
 	Hunk_SetMark();
 
+	Record_ProcessMapLoaded();
+
 	Com_Printf ("-----------------------------------\n");
 
 	Sys_SetStatus( "Running map %s", mapname );
@@ -825,6 +828,7 @@ void SV_Init( void )
 	SV_TrackCvarChanges();
 
 	SV_InitChallenger();
+	Record_Initialize();
 }
 
 
