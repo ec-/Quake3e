@@ -295,7 +295,11 @@ static void RB_Hyperspace( void ) {
 		// do initialization shit
 	}
 
-	c = ( backEnd.refdef.time & 255 ) / 255.0f;
+	if ( r_teleporterFlash->integer == 0 ) {
+		c = 0.0; // fade to black
+	} else {
+		c = ( backEnd.refdef.time & 255 ) / 255.0f; // fade to white
+	}
 	qglClearColor( c, c, c, 1 );
 	qglClear( GL_COLOR_BUFFER_BIT );
 	qglClearColor(0.0f, 0.0f, 0.0f, 1.0f);

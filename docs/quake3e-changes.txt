@@ -1,3 +1,40 @@
+14-Oct-2024:
+* Common: improved 'wait' command handling, now it will wait exact amount of client/server frames
+* Common: allow src and dest buffers to be overlapped in Q_strncpy() for QVM compatibility reasons
+* Common: Use nanosleep(2) instead of usleep(3) - usleep(3) was declared obsolete in POSIX.1-2001 and removed in POSIX.1-2008 and nanosleep(2) was recommended to be used instead.
+* Server: cache sv_maxclients value to avoid potential crashes caused by VMs changing it at runtime
+* Server: save latched sv_pure state to dedicated variable
+* Server: suppress false hitch warning during map load
+* Server: reworked/optimized gamestate retransmission/acknowledgment
+* Server: don't change serverid during map restart
+* Server: don't spawn loading clients during map restart
+* Server: fix server resource leaks during client reconnect
+* Client: rewrote CL_WritePacket() to allow proper packet duplication - which was intended by multiple function calls before
+* Client: Strip cl_aviPipeFormat
+* Win32: report actual color bits and correct PFD count
+* X11: request alpha bits for >=24 bit color profiles
+* Docs: Create quake3e.md, update quake3e.htm
+* Vulkan: increase MAX_IMAGE_CHUNKS from 48 to 56
+* Vulkan: added missing texture mode setup in GL_SetDefaultState()
+* Vulkan: disabled r_ext_alpha_to_coverage for now due to rendering artifacts on beyond4-wfa map
+* Vulkan: do not set transient flag for depth/stencil attachment when bloom (and thus - post-bloom pass) is enabled
+* Vulkan: fix screenmap image layout transitions
+* Vulkan: re-create swapchain on VK_SUBOPTIMAL_KHR as well
+* Vulkan: improve flare visibility test code
+* Vulkan: fixed various image layout transition synchronization issues
+* Vulkan: applied fixes to some "Best Practices" validation layer errors
+* Vulkan: add \r_bloom_threshold_mode and \r_bloom_modulate cvars, similar to OpenGL renderer
+* OpenGL: allow all static tcGens/tcMods for VBO/environment mapping (assuming that we have all tcMod corrections applied before)
+* Renderers: use glConfig.stencilBits instead of dereferencing \r_stencilbits cvar
+* Renderers: apply lightmap texcoord correction only if lightmap is actually set
+* Renderers: apply additional lightmap texcoord corrections when needed
+* Renderers: do not merge single lightmap
+* Filesystem: allow multiple basegames in fs_basegame cvar separated by '/'
+* Filesystem: reset fs_basegame cvar to last separated item
+* Makefile: fix grep warnings in macOS builds
+* macOS: app will search for pk3 inside and next to the app bundle
+* Use SDL_WINDOW_FULLSCREEN_DESKTOP on macOS
+
 14-Oct-2023:
 * Added many CVAR descriptions
 * Added "\vid_restart fast" - to perform fast \vid_restart in current gfx context

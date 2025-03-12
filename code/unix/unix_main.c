@@ -637,7 +637,10 @@ void Sys_Sleep( int msec ) {
 		return;
 	}
 #if 1
-	usleep( msec * 1000 );
+	struct timespec req;
+	req.tv_sec = msec / 1000;
+	req.tv_nsec = ( msec % 1000 ) * 1000000;
+	nanosleep( &req, NULL );
 #else
 	if ( com_dedicated->integer && stdin_active ) {
 		FD_ZERO( &fdset );
@@ -1020,13 +1023,7 @@ int main( int argc, const char* argv[] )
 //	memset( &eventQue[0], 0, sizeof( eventQue ) );
 //	memset( &sys_packetReceived[0], 0, sizeof( sys_packetReceived ) );
 
-	// get the initial time base
-	Sys_Milliseconds();
-
 	Com_Init( cmdline );
-	NET_Init();
-
-	Com_Printf( "Working directory: %s\n", Sys_Pwd() );
 
 	// Sys_ConsoleInputInit() might be called in signal handler
 	// so modify/init any cvars here

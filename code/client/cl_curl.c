@@ -380,9 +380,7 @@ void CL_cURL_BeginDownload( const char *localName, const char *remoteURL )
 		!clc.cURLDisconnected) {
 
 		CL_AddReliableCommand("disconnect", qtrue);
-		CL_WritePacket();
-		CL_WritePacket();
-		CL_WritePacket();
+		CL_WritePacket( 2 );
 		clc.cURLDisconnected = qtrue;
 	}
 }
@@ -750,8 +748,8 @@ static int Com_DL_CallbackProgress( void *data, double dltotal, double dlnow, do
 			Com_Printf( "%s: aborted\n", dl->Name );
 			return -1;
 		}
-		Cvar_Set( "cl_downloadSize", va( "%i", dl->Size ) );
-		Cvar_Set( "cl_downloadCount", va( "%i", dl->Count ) );
+		Cvar_SetIntegerValue( "cl_downloadSize", dl->Size );
+		Cvar_SetIntegerValue( "cl_downloadCount", dl->Count );
 	}
 
 	if ( dl->Size ) {
@@ -1045,7 +1043,7 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 		Cvar_Set( "cl_downloadName", dl->Name );
 		Cvar_Set( "cl_downloadSize", "0" );
 		Cvar_Set( "cl_downloadCount", "0" );
-		Cvar_Set( "cl_downloadTime", va( "%i", cls.realtime ) );
+		Cvar_SetIntegerValue( "cl_downloadTime", cls.realtime );
 	}
 
 	return qtrue;

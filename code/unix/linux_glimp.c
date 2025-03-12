@@ -1296,21 +1296,23 @@ static rserr_t GLW_StartDriverAndSetMode( int mode, const char *modeFS, qboolean
 static XVisualInfo *GL_SelectVisual( int colorbits, int depthbits, int stencilbits, glconfig_t *config )
 {
 	// these match in the array
-	#define ATTR_RED_IDX 2
-	#define ATTR_GREEN_IDX 4
-	#define ATTR_BLUE_IDX 6
-	#define ATTR_DEPTH_IDX 9
-	#define ATTR_STENCIL_IDX 11
+	#define ATTR_RED_IDX     3
+	#define ATTR_GREEN_IDX   5
+	#define ATTR_BLUE_IDX    7
+	#define ATTR_ALPHA_IDX   9
+	#define ATTR_DEPTH_IDX   11
+	#define ATTR_STENCIL_IDX 13
 
 	static int attrib[] =
 	{
-		GLX_RGBA,         // 0
-		GLX_RED_SIZE, 4,      // 1, 2
-		GLX_GREEN_SIZE, 4,      // 3, 4
-		GLX_BLUE_SIZE, 4,     // 5, 6
-		GLX_DOUBLEBUFFER,     // 7
-		GLX_DEPTH_SIZE, 1,      // 8, 9
-		GLX_STENCIL_SIZE, 1,    // 10, 11
+		GLX_RGBA,             // 0
+		GLX_DOUBLEBUFFER,     // 1
+		GLX_RED_SIZE,     8,  // 2, 3
+		GLX_GREEN_SIZE,   8,  // 4, 5
+		GLX_BLUE_SIZE,    8,  // 6, 7
+		GLX_ALPHA_SIZE,   8,  // 8, 9
+		GLX_DEPTH_SIZE,   24, // 10, 11
+		GLX_STENCIL_SIZE, 8,  // 12, 13
 		None
 	};
 
@@ -1335,13 +1337,9 @@ static XVisualInfo *GL_SelectVisual( int colorbits, int depthbits, int stencilbi
 			case 1 :
 				if ( depthbits == 24 )
 					depthbits = 16;
-				else if ( depthbits == 16 )
-					depthbits = 8;
 			case 3 :
-				if ( stencilbits == 24 )
-					stencilbits = 16;
-				else if ( stencilbits == 16 )
-					stencilbits = 8;
+				if ( stencilbits == 8 )
+					stencilbits = 0;
 			}
 		}
 
@@ -1359,17 +1357,11 @@ static XVisualInfo *GL_SelectVisual( int colorbits, int depthbits, int stencilbi
 		{ // reduce depthbits
 			if ( tdepthbits == 24 )
 				tdepthbits = 16;
-			else if ( tdepthbits == 16 )
-				tdepthbits = 8;
 		}
 
 		if ((i % 4) == 1)
 		{ // reduce stencilbits
-			if ( tstencilbits == 24 )
-				tstencilbits = 16;
-			else if ( tstencilbits == 16 )
-				tstencilbits = 8;
-			else
+			if ( tstencilbits == 8 )
 				tstencilbits = 0;
 		}
 
@@ -1378,6 +1370,7 @@ static XVisualInfo *GL_SelectVisual( int colorbits, int depthbits, int stencilbi
 			attrib[ATTR_RED_IDX] = 8;
 			attrib[ATTR_GREEN_IDX] = 8;
 			attrib[ATTR_BLUE_IDX] = 8;
+			attrib[ATTR_ALPHA_IDX] = 8;
 		}
 		else
 		{
@@ -1385,6 +1378,7 @@ static XVisualInfo *GL_SelectVisual( int colorbits, int depthbits, int stencilbi
 			attrib[ATTR_RED_IDX] = 4;
 			attrib[ATTR_GREEN_IDX] = 4;
 			attrib[ATTR_BLUE_IDX] = 4;
+			attrib[ATTR_ALPHA_IDX] = 0; // prefer smallest available alpha
 		}
 
 		attrib[ATTR_DEPTH_IDX] = tdepthbits; // default to 24 depth

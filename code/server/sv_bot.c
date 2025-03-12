@@ -49,13 +49,13 @@ int SV_BotAllocateClient( void ) {
 	client_t	*cl;
 
 	// find a client slot
-	for ( i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++ ) {
+	for ( i = 0, cl = svs.clients; i < sv.maxclients; i++, cl++ ) {
 		if ( cl->state == CS_FREE ) {
 			break;
 		}
 	}
 
-	if ( i == sv_maxclients->integer ) {
+	if ( i == sv.maxclients ) {
 		return -1;
 	}
 
@@ -82,7 +82,7 @@ SV_BotFreeClient
 void SV_BotFreeClient( int clientNum ) {
 	client_t	*cl;
 
-	if ( (unsigned) clientNum >= sv_maxclients->integer ) {
+	if ( (unsigned) clientNum >= sv.maxclients ) {
 		Com_Error( ERR_DROP, "SV_BotFreeClient: bad clientNum: %i", clientNum );
 	}
 
@@ -440,7 +440,7 @@ SV_BotClientCommand
 ==================
 */
 static void BotClientCommand( int client, const char *command ) {
-	if ( (unsigned) client < sv_maxclients->integer ) {
+	if ( (unsigned) client < sv.maxclients ) {
 		SV_ExecuteClientCommand( &svs.clients[client], command );
 	}
 }
@@ -592,7 +592,7 @@ SV_BotGetConsoleMessage
 */
 int SV_BotGetConsoleMessage( int client, char *buf, int size )
 {
-	if ( (unsigned) client < sv_maxclients->integer ) {
+	if ( (unsigned) client < sv.maxclients ) {
 		client_t* cl;
 		int index;
 
@@ -647,7 +647,7 @@ SV_BotGetSnapshotEntity
 ==================
 */
 int SV_BotGetSnapshotEntity( int client, int sequence ) {
-	if ( (unsigned) client < sv_maxclients->integer ) {
+	if ( (unsigned) client < sv.maxclients ) {
 		const client_t* cl = &svs.clients[client];
 		const clientSnapshot_t* frame = &cl->frames[cl->netchan.outgoingSequence & PACKET_MASK];
 		if ( (unsigned) sequence >= frame->num_entities ) {

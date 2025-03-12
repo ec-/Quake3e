@@ -277,8 +277,12 @@ ifeq ($(USE_SYSTEM_VORBIS),1)
 endif
 
 # extract version info
+ifneq ($(COMPILE_PLATFORM),darwin)
 VERSION=$(shell grep ".\+define[ \t]\+Q3_VERSION[ \t]\+\+" $(CMDIR)/q_shared.h | \
   sed -e 's/.*".* \([^ ]*\)"/\1/')
+else
+VERSION=1.32e
+endif
 
 # common qvm definition
 ifeq ($(ARCH),x86_64)
@@ -536,6 +540,7 @@ ifeq ($(COMPILE_PLATFORM),darwin)
   endif
 
   ifeq ($(USE_PCRE2),1)
+    BASE_CFLAGS += $(shell pcre2-config --cflags)
     CLIENT_LDFLAGS += -lpcre2-8
   endif
 
