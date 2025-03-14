@@ -69,6 +69,8 @@ static void CL_DeltaEntity( msg_t *msg, clSnapshot_t *frame, int newnum, const e
 	state = &cl.parseEntities[cl.parseEntitiesNum & (MAX_PARSE_ENTITIES-1)];
 
 	if ( unchanged ) {
+		if(!old)
+			return;
 		*state = *old;
 	} else {
 		MSG_ReadDeltaEntity( msg, old, state, newnum );
