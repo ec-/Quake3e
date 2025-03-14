@@ -1797,9 +1797,7 @@ void RB_ExecuteRenderCommands( const void *data ) {
 		default:
 			// stop rendering
 #ifdef USE_VULKAN
-			if ( vk.frame_count ) {
-				vk_end_frame();
-			}
+			vk_end_frame();
 //			if (com_errorEntered && (begin_frame_called && !end_frame_called)) {
 //				vk_end_frame();
 //			}

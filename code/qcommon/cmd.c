@@ -1011,8 +1011,8 @@ Cmd_CompleteCfgName
 ==================
 */
 static void Cmd_CompleteCfgName( const char *args, int argNum ) {
-	if( argNum == 2 ) {
-		Field_CompleteFilename( "", "cfg", qfalse, FS_MATCH_ANY | FS_MATCH_STICK );
+	if ( argNum == 2 ) {
+		Field_CompleteFilename( "", "cfg", qfalse, FS_MATCH_ANY | FS_MATCH_STICK | FS_MATCH_SUBDIRS );
 	}
 }
 

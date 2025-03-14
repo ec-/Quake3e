@@ -10,7 +10,7 @@
 #define MIN_SWAPCHAIN_IMAGES_MAILBOX 3
 
 #define MAX_VK_SAMPLERS 32
-#define MAX_VK_PIPELINES (1024 + 128)
+#define MAX_VK_PIPELINES ((1024 + 128)*2)
 
 #define VERTEX_BUFFER_SIZE (4 * 1024 * 1024)
 #define IMAGE_CHUNK_SIZE (32 * 1024 * 1024)
@@ -23,7 +23,9 @@
 
 #define VK_NUM_BLOOM_PASSES 4
 
+#ifndef _DEBUG
 #define USE_DEDICATED_ALLOCATION
+#endif
 //#define MIN_IMAGE_ALIGN (128*1024)
 #define MAX_ATTACHMENTS_IN_POOL (8+VK_NUM_BLOOM_PASSES*2) // depth + msaa + msaa-resolve + depth-resolve + screenmap.msaa + screenmap.resolve + screenmap.depth + bloom_extract + blur pairs
 
@@ -157,8 +159,8 @@ typedef struct {
 } Vk_Sampler_Def;
 
 typedef enum {
-	RENDER_PASS_SCREENMAP = 0,
-	RENDER_PASS_MAIN,
+	RENDER_PASS_MAIN = 0,
+	RENDER_PASS_SCREENMAP,
 	RENDER_PASS_POST_BLOOM,
 	RENDER_PASS_COUNT
 } renderPass_t;
@@ -589,6 +591,8 @@ typedef struct {
 	uint32_t image_chunk_size;
 
 	uint32_t maxBoundDescriptorSets;
+
+	VkFence aux_fence;
 
 } Vk_Instance;
 

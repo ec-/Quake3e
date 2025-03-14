@@ -678,12 +678,15 @@ typedef enum {
 	H_Q3UI
 } handleOwner_t;
 
-#define FS_MATCH_EXTERN (1<<0)
-#define FS_MATCH_PURE   (1<<1)
-#define FS_MATCH_UNPURE (1<<2)
-#define FS_MATCH_STICK  (1<<3)
-#define FS_MATCH_PK3s   (FS_MATCH_PURE | FS_MATCH_UNPURE)
-#define FS_MATCH_ANY    (FS_MATCH_EXTERN | FS_MATCH_PURE | FS_MATCH_UNPURE)
+#define FS_MATCH_EXTERN    (1<<0)
+#define FS_MATCH_PURE      (1<<1)
+#define FS_MATCH_UNPURE    (1<<2)
+#define FS_MATCH_STICK     (1<<3)
+#define FS_MATCH_SUBDIRS   (1<<4)
+#define FS_MATCH_PK3s      (FS_MATCH_PURE | FS_MATCH_UNPURE)
+#define FS_MATCH_ANY       (FS_MATCH_EXTERN | FS_MATCH_PURE | FS_MATCH_UNPURE)
+
+#define FS_MAX_SUBDIRS		8 /* should be enough for practical use with FS_MATCH_SUBDIRS */
 
 #define	MAX_FILE_HANDLES	64
 #define	FS_INVALID_HANDLE	0
@@ -848,8 +851,7 @@ void FS_Rename( const char *from, const char *to );
 void FS_Remove( const char *osPath );
 void FS_HomeRemove( const char *homePath );
 
-void	FS_FilenameCompletion( const char *dir, const char *ext,
-		qboolean stripExt, void(*callback)(const char *s), int flags );
+void	FS_FilenameCompletion( const char *dir, const char *ext, qboolean stripExt, void(*callback)(const char *s), int flags );
 
 int FS_VM_OpenFile( const char *qpath, fileHandle_t *f, fsMode_t mode, handleOwner_t owner );
 int FS_VM_ReadFile( void *buffer, int len, fileHandle_t f, handleOwner_t owner );
@@ -1318,7 +1320,7 @@ const char *Sys_SteamPath( void );
 char    *Sys_DefaultAppPath( void );
 #endif
 
-char **Sys_ListFiles( const char *directory, const char *extension, const char *filter, int *numfiles, qboolean wantsubs );
+char **Sys_ListFiles( const char *directory, const char *extension, const char *filter, int *numfiles, int subdirs );
 void Sys_FreeFileList( char **list );
 
 qboolean Sys_GetFileStats( const char *filename, fileOffset_t *size, fileTime_t *mtime, fileTime_t *ctime );

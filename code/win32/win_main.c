@@ -142,6 +142,33 @@ void Sys_Print( const char *msg )
 
 
 /*
+=============
+Sys_Sleep
+=============
+*/
+void Sys_Sleep( int msec ) {
+
+	if ( msec < 0 ) {
+		// special case: wait for event or network packet
+		DWORD dwResult;
+		msec = 300;
+		do {
+			dwResult = MsgWaitForMultipleObjects( 0, NULL, FALSE, msec, QS_ALLEVENTS );
+		}
+		while ( dwResult == WAIT_TIMEOUT && NET_Sleep( 10 * 1000 ) );
+		//WaitMessage();
+		return;
+	}
+
+	// busy wait there because Sleep(0) will relinquish CPU - which is not what we want
+	//if ( msec == 0 )
+	//	return;
+
+	Sleep( msec );
+}
+
+
+/*
 ==============
 Sys_Mkdir
 ==============
@@ -252,190 +279,136 @@ DIRECTORY SCANNING
 ==============================================================
 */
 
-void Sys_ListFilteredFiles( const char *basedir, const char *subdirs, const char *filter, char **list, int *numfiles ) {
-	char		search[MAX_OSPATH*2+1];
-	char		newsubdirs[MAX_OSPATH*2];
-	char		filename[MAX_OSPATH*2];
-	intptr_t	findhandle;
-	struct _finddata_t findinfo;
-
-	if ( *numfiles >= MAX_FOUND_FILES - 1 ) {
-		return;
-	}
-
-	if ( *subdirs ) {
-		Com_sprintf( search, sizeof(search), "%s\\%s\\*", basedir, subdirs );
-	}
-	else {
-		Com_sprintf( search, sizeof(search), "%s\\*", basedir );
-	}
-
-	findhandle = _findfirst (search, &findinfo);
-	if (findhandle == -1) {
-		return;
-	}
-
-	do {
-		if (findinfo.attrib & _A_SUBDIR) {
-			if ( !Q_streq( findinfo.name, "." ) && !Q_streq( findinfo.name, ".." ) ) {
-				if ( *subdirs ) {
-					Com_sprintf( newsubdirs, sizeof(newsubdirs), "%s\\%s", subdirs, findinfo.name );
-				} else {
-					Com_sprintf( newsubdirs, sizeof(newsubdirs), "%s", findinfo.name );
-				}
-				Sys_ListFilteredFiles( basedir, newsubdirs, filter, list, numfiles );
-			}
-		}
-		if ( *numfiles >= MAX_FOUND_FILES - 1 ) {
-			break;
-		}
-		Com_sprintf( filename, sizeof(filename), "%s\\%s", subdirs, findinfo.name );
-		if ( !Com_FilterPath( filter, filename ) )
-			continue;
-		list[ *numfiles ] = FS_CopyString( filename );
-		(*numfiles)++;
-	} while ( _findnext (findhandle, &findinfo) != -1 );
-
-	_findclose (findhandle);
-}
-
 
 /*
 =============
-Sys_Sleep
+Sys_ListExtFiles
 =============
 */
-void Sys_Sleep( int msec ) {
-	
-	if ( msec < 0 ) {
-		// special case: wait for event or network packet
-		DWORD dwResult;
-		msec = 300;
-		do {
-			dwResult = MsgWaitForMultipleObjects( 0, NULL, FALSE, msec, QS_ALLEVENTS );
-		} while ( dwResult == WAIT_TIMEOUT && NET_Sleep( 10 * 1000 ) );
-		//WaitMessage();
-		return;
-	}
-
-	// busy wait there because Sleep(0) will relinquish CPU - which is not what we want
-	//if ( msec == 0 )
-	//	return;
-
-	Sleep ( msec );
-}
-
-
-/*
-=============
-Sys_ListFiles
-=============
-*/
-char **Sys_ListFiles( const char *directory, const char *extension, const char *filter, int *numfiles, qboolean wantsubs ) {
+static int Sys_ListExtFiles( const char *directory, const char *subdir, const char *extension, const char *filter, char **list, int maxfiles, int subdirs ) {
 	char		search[MAX_OSPATH*2+MAX_QPATH+1];
+	char		filename[MAX_OSPATH * 2];
 	int			nfiles;
-	char		**listCopy;
-	char		*list[MAX_FOUND_FILES];
 	struct _finddata_t findinfo;
 	intptr_t	findhandle;
 	int			flag;
 	int			extLen;
-	int			length;
-	int			i;
 	const char	*x;
 	qboolean	hasPatterns;
 
-	if ( filter ) {
-
-		nfiles = 0;
-		Sys_ListFilteredFiles( directory, "", filter, list, &nfiles );
-
-		list[ nfiles ] = NULL;
-		*numfiles = nfiles;
-
-		if (!nfiles)
-			return NULL;
-
-		listCopy = Z_Malloc( ( nfiles + 1 ) * sizeof( listCopy[0] ) );
-		for ( i = 0 ; i < nfiles ; i++ ) {
-			listCopy[i] = list[i];
-		}
-		listCopy[i] = NULL;
-
-		return listCopy;
-	}
-
-	if ( !extension ) {
-		extension = "";
-	}
-
 	// passing a slash as extension will find directories
-	if ( extension[0] == '/' && extension[1] == 0 ) {
+	if ( extension[0] == '/' && extension[1] == '\0' ) {
 		extension = "";
 		flag = 0;
 	} else {
 		flag = _A_SUBDIR;
 	}
 
-	Com_sprintf( search, sizeof(search), "%s\\*%s", directory, extension );
-
-	findhandle = _findfirst( search, &findinfo );
-	if ( findhandle == -1 ) {
-		*numfiles = 0;
-		return NULL;
-	}
-
 	extLen = (int)strlen( extension );
-	hasPatterns = Com_HasPatterns( extension );
+	hasPatterns = Com_HasPatterns( extension ); // contains either '?' or '*'
 	if ( hasPatterns && extension[0] == '.' && extension[1] != '\0' ) {
 		extension++;
 	}
 
-	// search
 	nfiles = 0;
 
+	if ( *subdir != '\0' ) {
+		Com_sprintf( search, sizeof( search ), "%s\\%s\\*", directory, subdir );
+	} else {
+		Com_sprintf( search, sizeof( search ), "%s\\*", directory );
+	}
+
+	if ( subdirs > 0 ) {
+		// handle recursion
+		findhandle = _findfirst( search, &findinfo );
+		if ( findhandle != -1 ) {
+			do {
+				if ( findinfo.attrib & _A_SUBDIR ) {
+					if ( !Q_streq( findinfo.name, "." ) && !Q_streq( findinfo.name, ".." ) ) {
+						char subdir2[MAX_OSPATH * 2 + MAX_QPATH + 1];
+						if ( *subdir != '\0' ) {
+							Com_sprintf( subdir2, sizeof( subdir2 ), "%s\\%s", subdir, findinfo.name );
+						} else {
+							Q_strncpyz( subdir2, findinfo.name, sizeof( subdir2 ) );
+						}
+						if ( nfiles >= maxfiles ) {
+							break;
+						}
+						nfiles += Sys_ListExtFiles( directory, subdir2, extension, filter, list + nfiles, maxfiles - nfiles, subdirs - 1);
+					}
+				}
+			} while ( _findnext( findhandle, &findinfo ) == 0 );
+		}
+		_findclose( findhandle );
+	}
+
+	Q_strcat( search, sizeof( search ), extension );
+
+	findhandle = _findfirst( search, &findinfo );
+	if ( findhandle == -1 ) {
+		return nfiles;
+	}
+
 	do {
-		if ( (!wantsubs && flag ^ ( findinfo.attrib & _A_SUBDIR )) || (wantsubs && findinfo.attrib & _A_SUBDIR) ) {
-			if ( nfiles == MAX_FOUND_FILES - 1 ) {
-				break;
+		if ( flag ^ ( findinfo.attrib & _A_SUBDIR ) ) {
+			if ( *subdir != '\0' ) {
+				Com_sprintf( filename, sizeof( filename ), "%s\\%s", subdir, findinfo.name );
+			} else {
+				Q_strncpyz( filename, findinfo.name, sizeof( filename ) );
 			}
-			if ( *extension ) {
+			if ( filter != NULL && *filter != '\0' ) {
+				if ( !Com_FilterPath( filter, filename ) ) {
+					continue;
+				}
+			} else if ( *extension != '\0' ) {
 				if ( hasPatterns ) {
 					x = strrchr( findinfo.name, '.' );
-					if ( !x || !Com_FilterExt( extension, x+1 ) ) {
+					if ( x == NULL || !Com_FilterExt( extension, x + 1 ) ) {
 						continue;
 					}
 				} else {
-					length = strlen( findinfo.name );
+					// check for exact extension
+					const int length = strlen( findinfo.name );
 					if ( length < extLen || Q_stricmp( findinfo.name + length - extLen, extension ) ) {
 						continue;
 					}
 				}
 			}
-			list[ nfiles ] = FS_CopyString( findinfo.name );
-			nfiles++;
+			if ( nfiles >= maxfiles ) {
+				break;
+			}
+			list[ nfiles++ ] = FS_CopyString( filename );
 		}
-	} while ( _findnext (findhandle, &findinfo) != -1 );
+	} while ( _findnext( findhandle, &findinfo ) == 0 );
 
-	list[ nfiles ] = NULL;
+	_findclose( findhandle );
 
-	_findclose (findhandle);
+	return nfiles;
 
-	// return a copy of the list
-	*numfiles = nfiles;
+}
 
-	if ( !nfiles ) {
-		return NULL;
+char** Sys_ListFiles( const char *directory, const char *extension, const char *filter, int *numfiles, int subdirs )
+{
+	char** listCopy;
+	char* list[MAX_FOUND_FILES];
+	int		i, nfiles;
+
+	if ( extension == NULL ) {
+		extension = "";
 	}
 
-	listCopy = Z_Malloc( ( nfiles + 1 ) * sizeof( listCopy[0] ) );
-	for ( i = 0 ; i < nfiles ; i++ ) {
+	nfiles = Sys_ListExtFiles( directory, "", extension, filter, list, ARRAY_LEN( list ), subdirs );
+
+	// copy list from stack
+	listCopy = Z_Malloc( (nfiles + 1) * sizeof( listCopy[0] ) );
+	for ( i = 0; i < nfiles; i++ ) {
 		listCopy[i] = list[i];
 	}
 	listCopy[i] = NULL;
 
-	Com_SortFileList( listCopy, nfiles, extension[0] != '\0' );
+	Com_SortFileList( listCopy, nfiles, *extension != '\0' );
 
+	*numfiles = nfiles;
 	return listCopy;
 }
 

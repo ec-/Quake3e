@@ -240,29 +240,26 @@ const char *BuildFP( int multitexture, int alphatest, int fogMode )
 		return buf;
 	}
 
+	if ( alphatest || multitexture == GL_ADD  || multitexture == GL_MODULATE ) {
+		strcat( buf, "TEMP t; \n" );
+	}
+
 	switch ( multitexture ) {
 		case 0:
-			strcat( buf, "TEMP t; \n" );
 			strcat( buf, "TEX base, fragment.texcoord[0], texture[0], 2D; \n" );
-			strcat( buf, genATestFP( alphatest ) );
 			break;
 		case GL_ADD:
-			strcat( buf, "TEMP t; \n" );
 			strcat( buf, "TEX base, fragment.texcoord[0], texture[0], 2D; \n" );
-			strcat( buf, genATestFP( alphatest ) );
 			strcat( buf, "TEX t,    fragment.texcoord[1], texture[1], 2D; \n"
 			"ADD base, base, t; \n" );
 			break;
 		case GL_MODULATE:
-			strcat( buf, "TEMP t; \n" );
 			strcat( buf, "TEX base, fragment.texcoord[0], texture[0], 2D; \n" );
-			strcat( buf, genATestFP( alphatest ) );
 			strcat( buf, "TEX t,    fragment.texcoord[1], texture[1], 2D; \n" );
 			strcat( buf, "MUL base, base, t; \n" );
 			break;
 		case GL_REPLACE:
 			strcat( buf, "TEX base, fragment.texcoord[1], texture[1], 2D; \n" );
-			//strcat( buf, genATestFP( alphatest ) );
 			break;
 		default:
 			ri.Error( ERR_DROP, "Invalid multitexture mode %04x", multitexture );
@@ -271,15 +268,24 @@ const char *BuildFP( int multitexture, int alphatest, int fogMode )
 
 	if ( fogMode == FP_FOG_BLEND ) {
 		strcat( buf, "MUL base, base, fragment.color; \n" );
+		strcat( buf, genATestFP( alphatest ) );
 		strcat( buf, "TEMP fog; \n"
 		"TEX fog, fragment.texcoord[4], texture[2], 2D; \n"
 		"MUL fog, fog, program.local[0]; \n"
 		"LRP_SAT result.color, fog.a, fog, base; \n"
 		"END \n" );
 	} else {
-		strcat( buf,
-		"MUL result.color, base, fragment.color; \n"
-		"END \n" );
+		if ( alphatest ) {
+			strcat( buf, "MUL base, base, fragment.color; \n" );
+			strcat( buf, genATestFP( alphatest ) );
+			strcat( buf,
+			"MOV result.color, base; \n"
+			"END \n" );
+		} else {
+			strcat( buf,
+			"MUL result.color, base, fragment.color; \n"
+			"END \n" );
+		}
 	}
 
 	return buf;
@@ -333,7 +339,7 @@ static int getFPindex( int multitexture, int atest, int fogmode )
 	index <<= 2; // reserve bits for atest
 	switch ( atest )
 	{
-		case GLS_ATEST_GT_0: index |= 1; break;
+		case GLS_ATEST_GT_0:  index |= 1; break;
 		case GLS_ATEST_LT_80: index |= 2; break;
 		case GLS_ATEST_GE_80: index |= 3; break;
 		default: break;
