@@ -361,6 +361,7 @@ The module is making a system call
 static intptr_t SV_GameSystemCalls( intptr_t *args ) {
 	switch( args[0] ) {
 	case G_PRINT:
+		Com_Printf("Hello world");
 		Com_Printf( "%s", (const char*)VMA(1) );
 		return 0;
 	case G_ERROR:
