@@ -30,12 +30,12 @@
 #define MAX_ATTACHMENTS_IN_POOL (8+VK_NUM_BLOOM_PASSES*2) // depth + msaa + msaa-resolve + depth-resolve + screenmap.msaa + screenmap.resolve + screenmap.depth + bloom_extract + blur pairs
 
 #define VK_DESC_STORAGE      0
-#define VK_DESC_UNIFORM      1
-#define VK_DESC_TEXTURE0     2
-#define VK_DESC_TEXTURE1     3
-#define VK_DESC_TEXTURE2     4
-#define VK_DESC_FOG_COLLAPSE 5
-#define VK_DESC_COUNT        6
+#define VK_DESC_UNIFORM      0
+#define VK_DESC_TEXTURE0     1
+#define VK_DESC_TEXTURE1     2
+#define VK_DESC_TEXTURE2     3
+#define VK_DESC_FOG_COLLAPSE 4
+#define VK_DESC_COUNT        5
 
 #define VK_DESC_TEXTURE_BASE VK_DESC_TEXTURE0
 #define VK_DESC_FOG_ONLY     VK_DESC_TEXTURE1
@@ -276,6 +276,7 @@ void vk_bind_index_ext( const int numIndexes, const uint32_t*indexes );
 void vk_bind_geometry( uint32_t flags );
 void vk_bind_lighting( int stage, int bundle );
 void vk_draw_geometry( Vk_Depth_Range depth_range, qboolean indexed );
+void vk_draw_dot( uint32_t storage_offset );
 
 void vk_read_pixels( byte* buffer, uint32_t width, uint32_t height ); // screenshots
 qboolean vk_bloom( void );
@@ -285,8 +286,9 @@ void vk_update_mvp( const float *m );
 
 uint32_t vk_tess_index( uint32_t numIndexes, const void *src );
 void vk_bind_index_buffer( VkBuffer buffer, uint32_t offset );
+#ifdef USE_VBO
 void vk_draw_indexed( uint32_t indexCount, uint32_t firstIndex );
-
+#endif
 void vk_reset_descriptor( int index );
 void vk_update_descriptor( int index, VkDescriptorSet descriptor );
 void vk_update_descriptor_offset( int index, uint32_t offset );
@@ -372,7 +374,7 @@ typedef struct {
 	VkDescriptorSetLayout set_layout_storage;	// feedback buffer
 
 	VkPipelineLayout pipeline_layout;			// default shaders
-	//VkPipelineLayout pipeline_layout_storage;	// flare test shader layout
+	VkPipelineLayout pipeline_layout_storage;	// flare test shader layout
 	VkPipelineLayout pipeline_layout_post_process;	// post-processing
 	VkPipelineLayout pipeline_layout_blend;		// post-processing
 

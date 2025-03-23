@@ -2206,6 +2206,11 @@ static int CollapseMultitexture( unsigned int st0bits, shaderStage_t *st0, shade
 
 	mtEnv = collapse[i].multitextureEnv;
 
+	// GL_ADD is a separate extension
+	if ( mtEnv == GL_ADD && !glConfig.textureEnvAddAvailable ) {
+		return 0;
+	}
+
 #ifdef USE_VULKAN
 	if ( mtEnv == GL_ADD && st0->bundle[0].rgbGen != CGEN_IDENTITY ) {
 		mtEnv = GL_ADD_NONIDENTITY;
@@ -2216,11 +2221,6 @@ static int CollapseMultitexture( unsigned int st0bits, shaderStage_t *st0, shade
 		return 0;
 	}
 #else
-	// GL_ADD is a separate extension
-	if ( mtEnv == GL_ADD && !glConfig.textureEnvAddAvailable ) {
-		return 0;
-	}
-
 	// an add collapse can only have identity colors
 	if ( mtEnv == GL_ADD && st0->rgbGen != CGEN_IDENTITY ) {
 		return 0;

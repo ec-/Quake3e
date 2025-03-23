@@ -2895,7 +2895,10 @@ static void vk_alloc_persistent_pipelines( void )
 			GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL			// additive
 		};
 		qboolean polygon_offset[2] = { qfalse, qtrue };
-		int i, j, k, l;
+		int i, j, k;
+#ifdef USE_PMLIGHT
+		int l;
+#endif
 
 		Com_Memset(&def, 0, sizeof(def));
 		def.shader_type = TYPE_SIGNLE_TEXTURE;
@@ -3605,12 +3608,10 @@ static void vk_create_sync_primitives( void ) {
 
 		fence_desc.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		fence_desc.pNext = NULL;
-		//fence_desc.flags = VK_FENCE_CREATE_SIGNALED_BIT; // so it can be used to start rendering
-		fence_desc.flags = 0; // so it can be used to start rendering
+		fence_desc.flags = VK_FENCE_CREATE_SIGNALED_BIT; // so it can be used to start rendering
 
 		VK_CHECK( qvkCreateFence( vk.device, &fence_desc, NULL, &vk.tess[i].rendering_finished_fence ) );
-		//vk.tess[i].waitForFence = qtrue;
-		vk.tess[i].waitForFence = qfalse;
+		vk.tess[i].waitForFence = qtrue;
 
 		SET_OBJECT_NAME( vk.tess[i].image_acquired, va( "image_acquired semaphore %i", i ), VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT );
 		SET_OBJECT_NAME( vk.tess[i].rendering_finished, va( "rendering_finished semaphore %i", i ), VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT );
@@ -3861,7 +3862,11 @@ void vk_initialize( void )
 
 	vk.maxBoundDescriptorSets = props.limits.maxBoundDescriptorSets;
 
-	glConfig.textureEnvAddAvailable = qtrue;
+	if ( r_ext_texture_env_add->integer != 0 )
+		glConfig.textureEnvAddAvailable = qtrue;
+	else
+		glConfig.textureEnvAddAvailable = qfalse;
+
 	glConfig.textureCompression = TC_NONE;
 
 	major = VK_VERSION_MAJOR(props.apiVersion);
@@ -3939,7 +3944,7 @@ void vk_initialize( void )
 		desc.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 		desc.queueFamilyIndex = vk.queue_family_index;
 
-		VK_CHECK(qvkCreateCommandPool(vk.device, &desc, NULL, &vk.command_pool));
+		VK_CHECK( qvkCreateCommandPool( vk.device, &desc, NULL, &vk.command_pool ) );
 
 		SET_OBJECT_NAME( vk.command_pool, "command pool", VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_POOL_EXT );
 	}
@@ -4017,14 +4022,11 @@ void vk_initialize( void )
 		push_range.size = 64; // 16 floats
 
 		// standard pipelines
-
-		set_layouts[0] = vk.set_layout_storage; // storage for testing flare visibility
-		set_layouts[1] = vk.set_layout_uniform; // fog/dlight parameters
-		set_layouts[2] = vk.set_layout_sampler; // diffuse
-		set_layouts[3] = vk.set_layout_sampler; // lightmap / fog-only
-		set_layouts[4] = vk.set_layout_sampler; // blend
-		set_layouts[5] = vk.set_layout_sampler; // collapsed fog texture
-
+		set_layouts[0] = vk.set_layout_uniform; // fog/dlight parameters
+		set_layouts[1] = vk.set_layout_sampler; // diffuse
+		set_layouts[2] = vk.set_layout_sampler; // lightmap / fog-only
+		set_layouts[3] = vk.set_layout_sampler; // blend
+		set_layouts[4] = vk.set_layout_sampler; // collapsed fog texture
 		desc.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		desc.pNext = NULL;
 		desc.flags = 0;
@@ -4036,7 +4038,6 @@ void vk_initialize( void )
 		VK_CHECK(qvkCreatePipelineLayout(vk.device, &desc, NULL, &vk.pipeline_layout));
 
 		// flare test pipeline
-#if 0
 		set_layouts[0] = vk.set_layout_storage; // dynamic storage buffer
 
 		desc.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -4048,7 +4049,6 @@ void vk_initialize( void )
 		desc.pPushConstantRanges = &push_range;
 
 		VK_CHECK( qvkCreatePipelineLayout( vk.device, &desc, NULL, &vk.pipeline_layout_storage ) );
-#endif
 
 		// post-processing pipeline
 		set_layouts[0] = vk.set_layout_sampler; // sampler
@@ -4309,7 +4309,7 @@ void vk_shutdown( refShutdownCode_t code )
 	qvkDestroyDescriptorSetLayout(vk.device, vk.set_layout_storage, NULL);
 
 	qvkDestroyPipelineLayout(vk.device, vk.pipeline_layout, NULL);
-	//qvkDestroyPipelineLayout(vk.device, vk.pipeline_layout_storage, NULL);
+	qvkDestroyPipelineLayout(vk.device, vk.pipeline_layout_storage, NULL);
 	qvkDestroyPipelineLayout(vk.device, vk.pipeline_layout_post_process, NULL);
 	qvkDestroyPipelineLayout(vk.device, vk.pipeline_layout_blend, NULL);
 
@@ -6245,9 +6245,9 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, renderPass_t renderPassI
 	create_info.pColorBlendState = &blend_state;
 	create_info.pDynamicState = &dynamic_state;
 
-	//if ( def->shader_type == TYPE_DOT )
-	//	create_info.layout = vk.pipeline_layout_storage;
-	//else
+	if ( def->shader_type == TYPE_DOT )
+		create_info.layout = vk.pipeline_layout_storage;
+	else
 		create_info.layout = vk.pipeline_layout;
 
 	if ( renderPassIndex == RENDER_PASS_SCREENMAP )
@@ -6269,7 +6269,7 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, renderPass_t renderPassI
 }
 
 
-uint32_t vk_alloc_pipeline( const Vk_Pipeline_Def *def ) {
+static uint32_t vk_alloc_pipeline( const Vk_Pipeline_Def *def ) {
 	VK_Pipeline_t *pipeline;
 	if ( vk.pipelines_count >= MAX_VK_PIPELINES ) {
 		ri.Error( ERR_DROP, "alloc_pipeline: MAX_VK_PIPELINES reached" );
@@ -6295,6 +6295,7 @@ VkPipeline vk_gen_pipeline( uint32_t index ) {
 		}
 		return pipeline->handle[ pass ];
 	} else {
+		ri.Error( ERR_FATAL, "%s(%i): NULL pipeline", __func__, index );
 		return VK_NULL_HANDLE;
 	}
 }
@@ -6586,10 +6587,12 @@ void vk_bind_index_buffer( VkBuffer buffer, uint32_t offset )
 }
 
 
+#ifdef USE_VBO
 void vk_draw_indexed( uint32_t indexCount, uint32_t firstIndex )
 {
 	qvkCmdDrawIndexed( vk.cmd->command_buffer, indexCount, 1, firstIndex, 0, 0 );
 }
+#endif
 
 
 void vk_bind_index( void )
@@ -6773,7 +6776,7 @@ void vk_update_descriptor_offset( int index, uint32_t offset )
 void vk_bind_descriptor_sets( void )
 {
 	uint32_t offsets[2], offset_count;
-	uint32_t start, end, count;
+	uint32_t start, end, count, i;
 
 	start = vk.cmd->descriptor_set.start;
 	if ( start == ~0U )
@@ -6782,11 +6785,18 @@ void vk_bind_descriptor_sets( void )
 	end = vk.cmd->descriptor_set.end;
 
 	offset_count = 0;
-	if ( start == VK_DESC_STORAGE || start == VK_DESC_UNIFORM ) { // uniform offset or storage offset
+	if ( /*start == VK_DESC_STORAGE || */ start == VK_DESC_UNIFORM ) { // uniform offset or storage offset
 		offsets[ offset_count++ ] = vk.cmd->descriptor_set.offset[ start ];
 	}
 
 	count = end - start + 1;
+
+	// fill NULL descriptor gaps
+	for ( i = start + 1; i < end; i++ ) {
+		if ( vk.cmd->descriptor_set.current[i] == VK_NULL_HANDLE ) {
+			vk.cmd->descriptor_set.current[i] = tr.whiteImage->descriptor;
+		}
+	}
 
 	qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout, start, count, vk.cmd->descriptor_set.current + start, offset_count, offsets );
 
@@ -6808,20 +6818,12 @@ void vk_bind_pipeline( uint32_t pipeline ) {
 	vk_world.dirty_depth_attachment |= ( vk.pipelines[ pipeline ].def.state_bits & GLS_DEPTHMASK_TRUE );
 }
 
-
-void vk_draw_geometry( Vk_Depth_Range depth_range, qboolean indexed ) {
-	VkRect2D scissor_rect;
-	VkViewport viewport;
-
-	if ( vk.geometry_buffer_size_new ) {
-		// geometry buffer overflow happened this frame
-		return;
-	}
-
-	vk_bind_descriptor_sets();
-
-	// configure pipeline's dynamic state
+static void vk_update_depth_range( Vk_Depth_Range depth_range )
+{
 	if ( vk.cmd->depth_range != depth_range ) {
+		VkRect2D scissor_rect;
+		VkViewport viewport;
+
 		vk.cmd->depth_range = depth_range;
 
 		get_scissor_rect( &scissor_rect );
@@ -6834,6 +6836,20 @@ void vk_draw_geometry( Vk_Depth_Range depth_range, qboolean indexed ) {
 		get_viewport( &viewport, depth_range );
 		qvkCmdSetViewport( vk.cmd->command_buffer, 0, 1, &viewport );
 	}
+}
+
+
+void vk_draw_geometry( Vk_Depth_Range depth_range, qboolean indexed ) {
+
+	if ( vk.geometry_buffer_size_new ) {
+		// geometry buffer overflow happened this frame
+		return;
+	}
+
+	vk_bind_descriptor_sets();
+
+	// configure pipeline's dynamic state
+	vk_update_depth_range( depth_range );
 
 	// issue draw call(s)
 #ifdef USE_VBO
@@ -6846,6 +6862,22 @@ void vk_draw_geometry( Vk_Depth_Range depth_range, qboolean indexed ) {
 	} else {
 		qvkCmdDraw( vk.cmd->command_buffer, tess.numVertexes, 1, 0, 0 );
 	}
+}
+
+
+void vk_draw_dot( uint32_t storage_offset )
+{
+	if ( vk.geometry_buffer_size_new ) {
+		// geometry buffer overflow happened this frame
+		return;
+	}
+
+	qvkCmdBindDescriptorSets( vk.cmd->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline_layout_storage, VK_DESC_STORAGE, 1, &vk.storage.descriptor, 1, &storage_offset );
+
+	// configure pipeline's dynamic state
+	vk_update_depth_range( DEPTH_RANGE_NORMAL );
+
+	qvkCmdDraw( vk.cmd->command_buffer, tess.numVertexes, 1, 0, 0 );
 }
 
 
@@ -6884,6 +6916,9 @@ static void vk_begin_render_pass( VkRenderPass renderPass, VkFramebuffer frameBu
 	}
 
 	qvkCmdBeginRenderPass( vk.cmd->command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE );
+
+	vk.cmd->last_pipeline = VK_NULL_HANDLE;
+	vk.cmd->depth_range = DEPTH_RANGE_COUNT;
 }
 
 
@@ -7030,23 +7065,24 @@ void vk_begin_frame( void )
 			}
 		}
 		VK_CHECK( qvkResetFences( vk.device, 1, &vk.cmd->rendering_finished_fence ) );
-	}
 
-	if ( !ri.CL_IsMinimized() ) {
-		res = qvkAcquireNextImageKHR( vk.device, vk.swapchain, 1 * 1000000000ULL, vk.cmd->image_acquired, VK_NULL_HANDLE, &vk.swapchain_image_index );
-		// when running via RDP: "Application has already acquired the maximum number of images (0x2)"
-		// probably caused by "device lost" errors
-		if ( res < 0 ) {
-			if ( res == VK_ERROR_OUT_OF_DATE_KHR ) {
-				// swapchain re-creation needed
-				vk_restart_swapchain( __func__ );
-			} else {
-				ri.Error( ERR_FATAL, "vkAcquireNextImageKHR returned %s", vk_result_string( res ) );
+		if ( !ri.CL_IsMinimized() ) {
+			res = qvkAcquireNextImageKHR( vk.device, vk.swapchain, 1 * 1000000000ULL, vk.cmd->image_acquired, VK_NULL_HANDLE, &vk.swapchain_image_index );
+			// when running via RDP: "Application has already acquired the maximum number of images (0x2)"
+			// probably caused by "device lost" errors
+			if ( res < 0 ) {
+				if ( res == VK_ERROR_OUT_OF_DATE_KHR ) {
+					// swapchain re-creation needed
+					vk_restart_swapchain( __func__ );
+				}
+				else {
+					ri.Error( ERR_FATAL, "vkAcquireNextImageKHR returned %s", vk_result_string( res ) );
+				}
 			}
+		} else {
+			vk.swapchain_image_index++;
+			vk.swapchain_image_index %= vk.swapchain_image_count;
 		}
-	} else {
-		vk.swapchain_image_index++;
-		vk.swapchain_image_index %= vk.swapchain_image_count;
 	}
 
 	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -7101,12 +7137,6 @@ void vk_begin_frame( void )
 	//vk.cmd->descriptor_set.end = 0;
 
 	Com_Memset( &vk.cmd->scissor_rect, 0, sizeof( vk.cmd->scissor_rect ) );
-
-	vk_update_descriptor( VK_DESC_TEXTURE0, tr.whiteImage->descriptor );
-	vk_update_descriptor( VK_DESC_TEXTURE1, tr.whiteImage->descriptor );
-	if ( vk.maxBoundDescriptorSets >= VK_DESC_COUNT ) {
-		vk_update_descriptor( VK_DESC_TEXTURE2, tr.whiteImage->descriptor );
-	}
 
 	// other stats
 	vk.stats.push_size = 0;
@@ -7234,8 +7264,10 @@ void vk_present_frame( void )
 	if ( ri.CL_IsMinimized() )
 		return;
 
-	if ( !vk.cmd->waitForFence )
+	if ( !vk.cmd->waitForFence ) {
+		// nothing has been submitted this frame due to geometry buffer overflow?
 		return;
+	}
 
 	present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	present_info.pNext = NULL;

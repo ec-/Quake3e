@@ -14,7 +14,7 @@ layout(push_constant) uniform Transform {
 };
 
 #if defined(USE_FOG) || defined(USE_ENV)
-layout(set = 1, binding = 0) uniform UBO {
+layout(set = 0, binding = 0) uniform UBO {
 	// light/env parameters:
 	vec4 eyePos;				// vertex
 #ifdef USE_ENT_COLOR

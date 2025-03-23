@@ -23,9 +23,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "client.h"
 
-static const char *svc_strings[256] = {
+static const char *svc_strings[] = {
 	"svc_bad",
-
 	"svc_nop",
 	"svc_gamestate",
 	"svc_configstring",
@@ -864,19 +863,19 @@ void CL_ParseServerMessage( msg_t *msg ) {
 	// parse the message
 	while ( 1 ) {
 		if ( msg->readcount > msg->cursize ) {
-			Com_Error( ERR_DROP,"CL_ParseServerMessage: read past end of server message" );
+			Com_Error( ERR_DROP,"%s: read past end of server message", __func__ );
 			break;
 		}
 
 		cmd = MSG_ReadByte( msg );
 
-		if ( cmd == svc_EOF) {
+		if ( cmd == svc_EOF ) {
 			SHOWNET( msg, "END OF MESSAGE" );
 			break;
 		}
 
 		if ( cl_shownet->integer >= 2 ) {
-			if ( (cmd < 0) || (!svc_strings[cmd]) ) {
+			if ( (unsigned) cmd >= ARRAY_LEN( svc_strings ) ) {
 				Com_Printf( "%3i:BAD CMD %i\n", msg->readcount-1, cmd );
 			} else {
 				SHOWNET( msg, svc_strings[cmd] );
@@ -886,7 +885,7 @@ void CL_ParseServerMessage( msg_t *msg ) {
 		// other commands
 		switch ( cmd ) {
 		default:
-			Com_Error( ERR_DROP,"CL_ParseServerMessage: Illegible server message" );
+			Com_Error( ERR_DROP,"%s: Illegible server message", __func__ );
 			break;
 		case svc_nop:
 			break;
