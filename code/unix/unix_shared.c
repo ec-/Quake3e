@@ -153,9 +153,6 @@ static int Sys_ListExtFiles( const char *directory, const char *subdir, const ch
 
 	// search
 	while ((d = readdir(fdir)) != NULL) {
-		if ( Q_streq( d->d_name, "." ) || Q_streq( d->d_name, ".." ) ) {
-			continue;
-		}
 		if ( search[0] != '\0' ) {
 			Com_sprintf( filename, sizeof( filename ), "%s/%s", search, d->d_name );
 		} else {
@@ -235,22 +232,27 @@ char** Sys_ListFiles( const char *directory, const char *extension, const char *
 
 	nfiles = Sys_ListExtFiles( directory, "", extension, filter, list, ARRAY_LEN( list ), subdirs );
 
-	// copy list from stack, reserve extra space for NULL and "." ".."
+	// copy list from stack, reserve extra space for NULL
 	listCopy = Z_Malloc( (nfiles + 1) * sizeof( listCopy[0] ) );
 	for ( i = 0; i < nfiles; i++ ) {
 		listCopy[i] = list[i];
 	}
 	listCopy[i] = NULL;
 
-	if ( nfiles != 0 ) {
-		if ( nfiles > 1 ) {
-			Com_SortList( list, nfiles - 1 );
-		}
-		// emulate old strgtr() function sort behavior
-		if ( Q_streq( extension, "/" ) && nfiles != 0 ) {
-			listCopy[nfiles++] = FS_CopyString( "." );
-			listCopy[nfiles++] = FS_CopyString( ".." );
-			listCopy[nfiles] = NULL;
+
+	if ( nfiles > 1 ) {
+		Com_SortList( listCopy, nfiles - 1 );
+		if ( nfiles > 2 ) {
+			if ( Q_streq( listCopy[0], "." ) && Q_streq( listCopy[1], ".." ) ) {
+				// emulate old strgtr() function sort behavior for special entries
+				char* dot1 = listCopy[0];
+				char* dot2 = listCopy[1];
+				for ( i = 0; i < nfiles - 2; i++ ) {
+					listCopy[i] = listCopy[i + 2];
+				}
+				listCopy[nfiles - 2] = dot1;
+				listCopy[nfiles - 1] = dot2;
+			}
 		}
 	}
 
