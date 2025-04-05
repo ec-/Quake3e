@@ -300,6 +300,8 @@ static void SV_Startup( void ) {
 
 	SV_AllocClients( sv_maxclients->integer );
 
+	sv_maxclients->modified = qfalse;
+
 	svs.initialized = qtrue;
 
 	// Don't respect sv_killserver unless a server is actually running
@@ -721,7 +723,7 @@ void SV_Init( void )
 	Cvar_SetDescription( sv_hostname, "Sets the name of the server." );
 	sv_maxclients = Cvar_Get ("sv_maxclients", "8", CVAR_SERVERINFO | CVAR_LATCH);
 	Cvar_CheckRange( sv_maxclients, "1", XSTRING(MAX_CLIENTS), CV_INTEGER );
-	Cvar_SetDescription( sv_maxclients, "Maximum number of people allowed to join the server dedicated server memory optimizations." );
+	Cvar_SetDescription( sv_maxclients, "Maximum number of people allowed to join the server." );
 
 	sv_maxclientsPerIP = Cvar_Get( "sv_maxclientsPerIP", "3", CVAR_ARCHIVE );
 	Cvar_CheckRange( sv_maxclientsPerIP, "1", NULL, CV_INTEGER );

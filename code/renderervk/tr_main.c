@@ -1190,8 +1190,8 @@ static qboolean R_MirrorViewBySurface( const drawSurf_t *drawSurf, int entityNum
 	}
 #endif
 
-#ifdef USE_VULKAN
-	if ( tess.numVertexes > 2 && r_fastsky->integer && vk.fastSky ) {
+#if defined (USE_VULKAN) && !defined (USE_BUFFER_CLEAR)
+	if ( tess.numVertexes > 2 && r_fastsky->integer && vk.clearAttachment ) {
 #else
 	if ( tess.numVertexes > 2 && r_fastsky->integer ) {
 #endif
@@ -1545,8 +1545,8 @@ static void R_SortDrawSurfs( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 			if ( r_portalOnly->integer ) {
 				return;
 			}
-#ifdef USE_VULKAN
-			if ( r_fastsky->integer == 0 || !vk.fastSky ) {
+#if defined (USE_VULKAN) && !defined (USE_BUFFER_CLEAR)
+			if ( r_fastsky->integer == 0 || !vk.clearAttachment ) {
 #else
 			if ( r_fastsky->integer == 0 ) {
 #endif

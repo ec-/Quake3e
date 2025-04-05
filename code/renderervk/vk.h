@@ -19,7 +19,6 @@
 #define NUM_COMMAND_BUFFERS 2	// number of command buffers / render semaphores / framebuffer sets
 
 #define USE_REVERSED_DEPTH
-//#define USE_BUFFER_CLEAR
 
 #define VK_NUM_BLOOM_PASSES 4
 
@@ -242,6 +241,7 @@ void vk_shutdown( refShutdownCode_t code );
 void vk_release_resources( void );
 
 void vk_wait_idle( void );
+void vk_queue_wait_idle( void );
 
 //
 // Resources allocation.
@@ -323,8 +323,8 @@ typedef struct vk_tess_s {
 
 	struct {
 		uint32_t		start, end;
-		VkDescriptorSet	current[6]; // 0:storage, 1:uniform, 2:color0, 3:color1, 4:color2, 5:fog
-		uint32_t		offset[2]; // 0 (uniform) and 5 (storage)
+		VkDescriptorSet	current[5]; // 0:uniform, 1:color0, 2:color1, 3:color2, 4:fog
+		uint32_t		offset[1]; // 0 (uniform)
 	} descriptor_set;
 
 	Vk_Depth_Range		depth_range;
@@ -538,6 +538,7 @@ typedef struct {
 	uint32_t surface_debug_pipeline_solid;
 	uint32_t surface_debug_pipeline_outline;
 	uint32_t images_debug_pipeline;
+	uint32_t images_debug_pipeline2;
 	uint32_t surface_beam_pipeline;
 	uint32_t surface_axis_pipeline;
 	uint32_t dot_pipeline;
@@ -566,7 +567,7 @@ typedef struct {
 
 	VkImageLayout initSwapchainLayout;
 
-	qboolean fastSky;		// requires VK_IMAGE_USAGE_TRANSFER_DST_BIT
+	qboolean clearAttachment;		// requires VK_IMAGE_USAGE_TRANSFER_DST_BIT for swapchains
 	qboolean fboActive;
 	qboolean blitEnabled;
 	qboolean msaaActive;

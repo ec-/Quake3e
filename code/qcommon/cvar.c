@@ -602,7 +602,11 @@ static void Cvar_Print( const cvar_t *v ) {
 		Com_Printf (" default:\"%s" S_COLOR_WHITE "\"",
 			v->resetString );
 	}
-
+#ifdef _DEBUG
+	if ( v->modified ) {
+		Com_Printf( " (modified)" );
+	}
+#endif
 	Com_Printf ("\n");
 
 	if ( v->latchedString ) {

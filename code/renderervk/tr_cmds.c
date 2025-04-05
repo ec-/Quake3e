@@ -296,9 +296,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 		return;
 	}
 
-#ifndef USE_VULKAN
 	glState.finishCalled = qfalse;
-#endif
 
 #ifdef USE_VULKAN
 	backEnd.doneBloom = qfalse;
@@ -341,8 +339,9 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 #endif
 	}
 
+#ifndef USE_BUFFER_CLEAR
 #ifdef USE_VULKAN
-	if ( r_fastsky->integer && vk.fastSky ) {
+	if ( r_fastsky->integer && vk.clearAttachment ) {
 #else
 	if ( r_fastsky->integer ) {
 #endif
@@ -353,6 +352,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 			clrcmd->commandId = RC_CLEARCOLOR;
 		}
 	}
+#endif // USE_BUFFER_CLEAR
 
 	tr.refdef.stereoFrame = stereoFrame;
 }

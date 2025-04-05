@@ -348,8 +348,8 @@ static void end_command_buffer( VkCommandBuffer command_buffer, const char *loca
 
 	VK_CHECK( qvkQueueSubmit( vk.queue, 1, &submit_info, vk.aux_fence ) );
 
-	// 2 seconds should be more than enough to finish the job in normal conditions:
-	res = qvkWaitForFences( vk.device, 1, &vk.aux_fence, VK_TRUE, 2 * 1000000000ULL );
+	// 5 seconds should be more than enough to finish the job in normal conditions:
+	res = qvkWaitForFences( vk.device, 1, &vk.aux_fence, VK_TRUE, 5 * 1000000000ULL );
 	if ( res != VK_SUCCESS ) {
 		ri.Error( ERR_FATAL, "vkWaitForFences() failed with %s at %s", vk_result_string( res ), location );
 	}
@@ -488,15 +488,14 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 		image_extent.height = MIN( surface_caps.maxImageExtent.height, MAX( surface_caps.minImageExtent.height, (uint32_t) glConfig.vidHeight ) );
 	}
 
-	vk.fastSky = qtrue;
+	vk.clearAttachment = qtrue;
 
 	if ( !vk.fboActive ) {
 		// VK_IMAGE_USAGE_TRANSFER_DST_BIT is required by image clear operations.
 		if ( ( surface_caps.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT ) == 0 ) {
-			vk.fastSky = qfalse;
-			ri.Printf( PRINT_WARNING, "VK_IMAGE_USAGE_TRANSFER_DST_BIT is not supported by the swapchain\n" );
+			vk.clearAttachment = qfalse;
+			ri.Printf( PRINT_WARNING, "VK_IMAGE_USAGE_TRANSFER_DST_BIT is not supported by the swapchain, \\r_clear might not work\n" );
 		}
-
 		// VK_IMAGE_USAGE_TRANSFER_SRC_BIT is required in order to take screenshots.
 		if ((surface_caps.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT) == 0) {
 			ri.Error(ERR_FATAL, "create_swapchain: VK_IMAGE_USAGE_TRANSFER_SRC_BIT is not supported by the swapchain");
@@ -3064,6 +3063,11 @@ static void vk_alloc_persistent_pipelines( void )
 		def.shader_type = TYPE_SIGNLE_TEXTURE;
 		def.primitives = TRIANGLE_STRIP;
 		vk.images_debug_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
+
+		def.state_bits = GLS_DEPTHTEST_DISABLE;
+		def.shader_type = TYPE_COLOR_BLACK;
+		def.primitives = TRIANGLE_STRIP;
+		vk.images_debug_pipeline2 = vk_find_pipeline_ext( 0, &def, qfalse );
 	}
 }
 
@@ -3602,7 +3606,7 @@ static void vk_create_sync_primitives( void ) {
 		desc.flags = 0;
 
 		// swapchain image acquired
-		VK_CHECK( qvkCreateSemaphore( vk.device, &desc, NULL, &vk.tess[ i ].image_acquired ) );
+		VK_CHECK( qvkCreateSemaphore( vk.device, &desc, NULL, &vk.tess[i].image_acquired ) );
 
 		VK_CHECK( qvkCreateSemaphore( vk.device, &desc, NULL, &vk.tess[i].rendering_finished ) );
 
@@ -4426,6 +4430,12 @@ __cleanup:
 void vk_wait_idle( void )
 {
 	VK_CHECK( qvkDeviceWaitIdle( vk.device ) );
+}
+
+
+void vk_queue_wait_idle( void )
+{
+	VK_CHECK( qvkQueueWaitIdle( vk.queue ) );
 }
 
 
@@ -7044,7 +7054,6 @@ static qboolean vk_find_screenmap_drawsurfs( void )
 void vk_begin_frame( void )
 {
 	VkCommandBufferBeginInfo begin_info;
-	//VkFramebuffer frameBuffer;
 	VkResult res;
 
 	if ( vk.frame_count++ ) // might happen during stereo rendering
@@ -7253,8 +7262,8 @@ void vk_end_frame( void )
 	backEnd.pc.msec = ri.Milliseconds() - backEnd.pc.msec;
 
 	vk.renderPassIndex = RENDER_PASS_MAIN;
-	// vk_present_frame();
 }
+
 
 void vk_present_frame( void )
 {
