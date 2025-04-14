@@ -12,7 +12,9 @@
 #define MAX_VK_SAMPLERS 32
 #define MAX_VK_PIPELINES ((1024 + 128)*2)
 
-#define VERTEX_BUFFER_SIZE (4 * 1024 * 1024)
+#define VERTEX_BUFFER_SIZE (4 * 1024 * 1024)	/* by default */
+#define STAGING_BUFFER_SIZE (2 * 1024 * 1024)	/* by default */
+
 #define IMAGE_CHUNK_SIZE (32 * 1024 * 1024)
 #define MAX_IMAGE_CHUNKS 56
 
@@ -305,6 +307,8 @@ typedef struct vk_tess_s {
 	VkCommandBuffer command_buffer;
 
 	VkSemaphore image_acquired;
+	uint32_t	swapchain_image_index;
+	qboolean	swapchain_image_acquired;
 	VkSemaphore rendering_finished;
 	VkFence rendering_finished_fence;
 	qboolean waitForFence;
@@ -351,7 +355,7 @@ typedef struct {
 	uint32_t swapchain_image_count;
 	VkImage swapchain_images[MAX_SWAPCHAIN_IMAGES];
 	VkImageView swapchain_image_views[MAX_SWAPCHAIN_IMAGES];
-	uint32_t swapchain_image_index;
+	//uint32_t swapchain_image_index;
 
 	VkCommandPool command_pool;
 

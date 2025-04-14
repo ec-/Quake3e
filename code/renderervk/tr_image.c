@@ -713,7 +713,7 @@ static void generate_image_upload_data( image_t *image, byte *data, Image_Upload
 	upload_data->buffer_size = mip_level_size;
 	
 	if ( mipmap ) {
-		while (scaled_width > 1 || scaled_height > 1) {
+		while (scaled_width > 1 && scaled_height > 1) {
 			R_MipMap((byte *)scaled_buffer, (byte *)scaled_buffer, scaled_width, scaled_height);
 
 			scaled_width >>= 1;

@@ -639,9 +639,9 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 		// a "entityMergable" shader is a shader that can have surfaces from separate
 		// entities merged into a single batch, like smoke and blood puff sprites
 		if ( ( (oldSort ^ drawSurfs->sort ) & ~QSORT_REFENTITYNUM_MASK ) || !shader->entityMergable ) {
-			if ( oldShader != NULL ) {
+			//if ( oldShader != NULL ) {
 				RB_EndSurface();
-			}
+			//}
 #ifdef USE_PMLIGHT
 			#define INSERT_POINT SS_FOG
 			if ( backEnd.refdef.numLitSurfs && oldShaderSort < INSERT_POINT && shader->sort >= INSERT_POINT ) {
@@ -1113,6 +1113,7 @@ void RE_UploadCinematic( int w, int h, int cols, int rows, byte *data, int clien
 
 	if ( !tr.scratchImage[ client ] ) {
 		tr.scratchImage[ client ] = R_CreateImage( va( "*scratch%i", client ), NULL, data, cols, rows, IMGFLAG_CLAMPTOEDGE | IMGFLAG_RGB | IMGFLAG_NOSCALE );
+		return;
 	}
 
 	image = tr.scratchImage[ client ];

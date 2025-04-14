@@ -634,6 +634,7 @@ const char *Cvar_InfoString_Big( int bit, qboolean *truncated );
 void	Cvar_InfoStringBuffer( int bit, char *buff, int buffsize );
 void	Cvar_CheckRange( cvar_t *cv, const char *minVal, const char *maxVal, cvarValidator_t type );
 void	Cvar_SetDescription( cvar_t *var, const char *var_description );
+void	Cvar_SetDescription2( const char *var_name, const char *var_description );
 
 void	Cvar_SetGroup( cvar_t *var, cvarGroup_t group );
 int		Cvar_CheckGroup( cvarGroup_t group );
