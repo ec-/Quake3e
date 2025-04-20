@@ -1539,6 +1539,8 @@ int R_ComputeLOD( trRefEntity_t *ent );
 
 const void *RB_TakeVideoFrameCmd( const void *data );
 
+float R_ClampDenorm( float v );
+
 //
 // tr_shader.c
 //
