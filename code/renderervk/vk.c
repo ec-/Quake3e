@@ -171,6 +171,10 @@ static uint32_t find_memory_type2( uint32_t memory_type_bits, VkMemoryPropertyFl
 }
 
 
+#ifndef VK_PRESENT_MODE_FIFO_LATEST_READY_EXT
+#define VK_PRESENT_MODE_FIFO_LATEST_READY_EXT 1000361000
+#endif
+
 static const char *pmode_to_str( VkPresentModeKHR mode )
 {
 	static char buf[32];
@@ -180,6 +184,7 @@ static const char *pmode_to_str( VkPresentModeKHR mode )
 		case VK_PRESENT_MODE_MAILBOX_KHR: return "MAILBOX";
 		case VK_PRESENT_MODE_FIFO_KHR: return "FIFO";
 		case VK_PRESENT_MODE_FIFO_RELAXED_KHR: return "FIFO_RELAXED";
+		case VK_PRESENT_MODE_FIFO_LATEST_READY_EXT: return "FIFO_LATEST_READY";
 		default: sprintf( buf, "mode#%x", mode ); return buf;
 	};
 }
@@ -7267,15 +7272,18 @@ void vk_begin_frame( void )
 	}
 
 	if ( !ri.CL_IsMinimized() && !vk.cmd->swapchain_image_acquired ) {
+		qboolean retry = qfalse;
+_retry:
 		res = qvkAcquireNextImageKHR( vk.device, vk.swapchain, 1 * 1000000000ULL, vk.cmd->image_acquired, VK_NULL_HANDLE, &vk.cmd->swapchain_image_index );
 		// when running via RDP: "Application has already acquired the maximum number of images (0x2)"
 		// probably caused by "device lost" errors
 		if ( res < 0 ) {
-			if ( res == VK_ERROR_OUT_OF_DATE_KHR ) {
+			if ( res == VK_ERROR_OUT_OF_DATE_KHR && retry == qfalse ) {
 				// swapchain re-creation needed
+				retry = qtrue;
 				vk_restart_swapchain( __func__ );
-			}
-			else {
+				goto _retry;
+			} else {
 				ri.Error( ERR_FATAL, "vkAcquireNextImageKHR returned %s", vk_result_string( res ) );
 			}
 		}
