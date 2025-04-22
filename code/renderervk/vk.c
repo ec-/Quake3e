@@ -171,10 +171,6 @@ static uint32_t find_memory_type2( uint32_t memory_type_bits, VkMemoryPropertyFl
 }
 
 
-#ifndef VK_PRESENT_MODE_FIFO_LATEST_READY_EXT
-#define VK_PRESENT_MODE_FIFO_LATEST_READY_EXT 1000361000
-#endif
-
 static const char *pmode_to_str( VkPresentModeKHR mode )
 {
 	static char buf[32];
@@ -3775,6 +3771,7 @@ static void vk_destroy_sync_primitives( void  ) {
 #endif
 		qvkDestroyFence( vk.device, vk.tess[i].rendering_finished_fence, NULL );
 		vk.tess[i].waitForFence = qfalse;
+		vk.tess[i].swapchain_image_acquired = qfalse;
 	}
 
 #ifdef USE_UPLOAD_QUEUE
@@ -3855,9 +3852,7 @@ static void vk_restart_swapchain( const char *funcname )
 	}
 
 #ifdef USE_UPLOAD_QUEUE
-	if ( vk.staging_command_buffer != VK_NULL_HANDLE ) {
-		qvkResetCommandBuffer( vk.staging_command_buffer, 0 );
-	}
+	qvkResetCommandBuffer( vk.staging_command_buffer, 0 );
 #endif
 
 	vk_destroy_pipelines( qfalse );
