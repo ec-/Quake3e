@@ -476,7 +476,7 @@ static void vk_set_object_name( uint64_t obj, const char *objName, VkDebugReport
 }
 
 
-static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice device, VkSurfaceKHR surface, VkSurfaceFormatKHR surface_format, VkSwapchainKHR *swapchain ) {
+static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice device, VkSurfaceKHR surface, VkSurfaceFormatKHR surface_format, VkSwapchainKHR *swapchain, qboolean verbose ) {
 	VkImageViewCreateInfo view;
 	VkSurfaceCapabilitiesKHR surface_caps;
 	VkExtent2D image_extent;
@@ -518,18 +518,20 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 	present_modes = (VkPresentModeKHR *) ri.Malloc( present_mode_count * sizeof( VkPresentModeKHR ) );
 	VK_CHECK(qvkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &present_mode_count, present_modes));
 
-	ri.Printf( PRINT_ALL, "...presentation modes:" );
-	for ( i = 0; i < present_mode_count; i++ ) {
-		ri.Printf( PRINT_ALL, " %s", pmode_to_str( present_modes[i] ) );
-		if ( present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR )
-			mailbox_supported = qtrue;
-		else if ( present_modes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR )
-			immediate_supported = qtrue;
-		else if ( present_modes[i] ==  VK_PRESENT_MODE_FIFO_RELAXED_KHR )
-			fifo_relaxed_supported = qtrue;
+	if ( verbose ) {
+		ri.Printf( PRINT_ALL, "...presentation modes:" );
+		for ( i = 0; i < present_mode_count; i++ ) {
+			ri.Printf( PRINT_ALL, " %s", pmode_to_str( present_modes[i] ) );
+			if ( present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR )
+				mailbox_supported = qtrue;
+			else if ( present_modes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR )
+				immediate_supported = qtrue;
+			else if ( present_modes[i] == VK_PRESENT_MODE_FIFO_RELAXED_KHR )
+				fifo_relaxed_supported = qtrue;
 
+		}
+		ri.Printf( PRINT_ALL, "\n" );
 	}
-	ri.Printf( PRINT_ALL, "\n" );
 
 	ri.Free( present_modes );
 
@@ -567,7 +569,9 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 		image_count = MIN( MIN( image_count, surface_caps.maxImageCount ), MAX_SWAPCHAIN_IMAGES );
 	}
 
-	ri.Printf( PRINT_ALL, "...selected presentation mode: %s, image count: %i\n", pmode_to_str( present_mode ), image_count );
+	if ( verbose ) {
+		ri.Printf( PRINT_ALL, "...selected presentation mode: %s, image count: %i\n", pmode_to_str( present_mode ), image_count );
+	}
 
 	// create swap chain
 	desc.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -3866,7 +3870,7 @@ static void vk_restart_swapchain( const char *funcname )
 	setup_surface_formats( vk.physical_device );
 
 	vk_create_sync_primitives();
-	vk_create_swapchain( vk.physical_device, vk.device, vk_surface, vk.present_format, &vk.swapchain );
+	vk_create_swapchain( vk.physical_device, vk.device, vk_surface, vk.present_format, &vk.swapchain, qfalse );
 	vk_create_attachments();
 	vk_create_render_passes();
 	vk_create_framebuffers();
@@ -4255,7 +4259,7 @@ void vk_initialize( void )
 	// swapchain
 	vk.initSwapchainLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 	//vk.initSwapchainLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	vk_create_swapchain( vk.physical_device, vk.device, vk_surface, vk.present_format, &vk.swapchain );
+	vk_create_swapchain( vk.physical_device, vk.device, vk_surface, vk.present_format, &vk.swapchain, qtrue );
 
 	// color/depth attachments
 	vk_create_attachments();
