@@ -1003,6 +1003,7 @@ Called every time a map changes
 ===============
 */
 void SV_ShutdownGameProgs( void ) {
+	Record_ProcessGameShutdown();
 	if ( !gvm ) {
 		return;
 	}
