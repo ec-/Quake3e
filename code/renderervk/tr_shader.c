@@ -1707,6 +1707,14 @@ static void FinishStage( shaderStage_t *stage )
 				texModInfo_t *tmi = &bundle->texMods[bundle->numTexMods];
 				float x, y;
 				const int lightmapIndex = R_GetLightmapCoords( bundle->lightmap - LIGHTMAP_INDEX_OFFSET, &x, &y );
+				// rescale tcMod transform
+				for ( n = 0; n < bundle->numTexMods; n++ ) {
+					tmi = &bundle->texMods[n];
+					if ( tmi->type == TMOD_TRANSFORM ) {
+						tmi->translate[0] *= tr.lightmapScale[0];
+						tmi->translate[1] *= tr.lightmapScale[1];
+					}
+				}
 				bundle->image[0] = tr.lightmaps[lightmapIndex];
 				tmi->type = TMOD_OFFSET;
 				tmi->offset[0] = x - tr.lightmapOffset[0];
