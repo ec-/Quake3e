@@ -520,16 +520,19 @@ static void vk_create_swapchain( VkPhysicalDevice physical_device, VkDevice devi
 
 	if ( verbose ) {
 		ri.Printf( PRINT_ALL, "...presentation modes:" );
-		for ( i = 0; i < present_mode_count; i++ ) {
+	}
+	for ( i = 0; i < present_mode_count; i++ ) {
+		if ( verbose ) {
 			ri.Printf( PRINT_ALL, " %s", pmode_to_str( present_modes[i] ) );
-			if ( present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR )
-				mailbox_supported = qtrue;
-			else if ( present_modes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR )
-				immediate_supported = qtrue;
-			else if ( present_modes[i] == VK_PRESENT_MODE_FIFO_RELAXED_KHR )
-				fifo_relaxed_supported = qtrue;
-
 		}
+		if ( present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR )
+			mailbox_supported = qtrue;
+		else if ( present_modes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR )
+			immediate_supported = qtrue;
+		else if ( present_modes[i] == VK_PRESENT_MODE_FIFO_RELAXED_KHR )
+			fifo_relaxed_supported = qtrue;
+	}
+	if ( verbose ) {
 		ri.Printf( PRINT_ALL, "\n" );
 	}
 
@@ -3853,10 +3856,15 @@ static void vk_destroy_attachments( void );
 static void vk_destroy_render_passes( void );
 static void vk_destroy_pipelines( qboolean resetCount );
 
-static void vk_restart_swapchain( const char *funcname )
+static void vk_restart_swapchain( const char *funcname, VkResult res )
 {
 	uint32_t i;
-	ri.Printf( PRINT_WARNING, "%s(): restarting swapchain...\n", funcname );
+
+#ifdef _DEBUG
+	ri.Printf( PRINT_WARNING, "%s(%s): restarting swapchain...\n", funcname, vk_result_string( res ) );
+#else
+	ri.Printf(PRINT_WARNING, "%s(): restarting swapchain...\n", funcname );
+#endif
 
 	vk_wait_idle();
 
@@ -7289,7 +7297,7 @@ _retry:
 			if ( res == VK_ERROR_OUT_OF_DATE_KHR && retry == qfalse ) {
 				// swapchain re-creation needed
 				retry = qtrue;
-				vk_restart_swapchain( __func__ );
+				vk_restart_swapchain( __func__, res );
 				goto _retry;
 			} else {
 				ri.Error( ERR_FATAL, "vkAcquireNextImageKHR returned %s", vk_result_string( res ) );
@@ -7541,8 +7549,8 @@ void vk_present_frame( void )
 		case VK_SUBOPTIMAL_KHR:
 		case VK_ERROR_OUT_OF_DATE_KHR:
 			// swapchain re-creation needed
-			vk_restart_swapchain( __func__ );
-			break;
+			vk_restart_swapchain( __func__, res );
+			return;
 		case VK_ERROR_DEVICE_LOST:
 			// we can ignore that
 			ri.Printf( PRINT_DEVELOPER, "vkQueuePresentKHR: device lost\n" );
