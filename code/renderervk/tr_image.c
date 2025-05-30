@@ -578,8 +578,8 @@ typedef struct {
 
 static void generate_image_upload_data( image_t *image, byte *data, Image_Upload_Data *upload_data ) {
 	
-	qboolean mipmap = image->flags & IMGFLAG_MIPMAP;
-	qboolean picmip = image->flags & IMGFLAG_PICMIP;
+	qboolean mipmap = (image->flags & IMGFLAG_MIPMAP) ? qtrue : qfalse;
+	qboolean picmip = (image->flags & IMGFLAG_PICMIP) ? qtrue : qfalse;
 	byte* resampled_buffer = NULL;
 	int scaled_width, scaled_height;
 	int width = image->width;
