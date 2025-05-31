@@ -667,7 +667,7 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 				flags = IMGFLAG_NONE;
 #ifdef USE_FBO
 				if ( fboEnabled ) {
-					stage->bundle[0].isScreenMap = qtrue;
+					stage->bundle[0].isScreenMap = 1;
 					shader.hasScreenMap = qtrue;
 					tr.needScreenMap = qtrue;
 				}
@@ -1710,7 +1710,7 @@ static void FinishStage( shaderStage_t *stage )
 		// offset lightmap coordinates
 		if ( bundle->lightmap >= LIGHTMAP_INDEX_OFFSET ) {
 			if ( bundle->tcGen == TCGEN_LIGHTMAP ) {
-				texModInfo_t * tmi = &bundle->texMods[bundle->numTexMods];
+				texModInfo_t *tmi = &bundle->texMods[bundle->numTexMods];
 				float x, y;
 				const int lightmapIndex = R_GetLightmapCoords( bundle->lightmap - LIGHTMAP_INDEX_OFFSET, &x, &y );
 				// rescale tcMod transform
@@ -1729,7 +1729,6 @@ static void FinishStage( shaderStage_t *stage )
 			}
 			continue;
 		}
-
 		// adjust texture coordinates to map on proper lightmap
 		if ( bundle->lightmap == LIGHTMAP_INDEX_SHADER ) {
 			if ( bundle->tcGen != TCGEN_LIGHTMAP ) {
@@ -2261,95 +2260,146 @@ static qboolean CollapseMultitexture( shaderStage_t *st0, shaderStage_t *st1, in
 
 #ifdef USE_PMLIGHT
 
-static int tcmodWeight( const textureBundle_t *bundle )
+static int tcmodWeight2( const shaderStage_t* st )
 {
-	if ( bundle->numTexMods == 0 )
-		return 1;
+	int i;
 
-	return 0;
-}
-
-
-static const textureBundle_t *lightingBundle( int stageIndex, const textureBundle_t *selected ) {
-	const shaderStage_t *stage = &stages[ stageIndex ];
-	int i, numTexBundles;
-
-	if ( stage->mtEnv )
-		numTexBundles = 2;
-	else
-		numTexBundles = 1;
-
-	for ( i = 0; i < numTexBundles; i++ ) {
-		const textureBundle_t *bundle = &stage->bundle[ i ];
-		if ( bundle->lightmap != LIGHTMAP_INDEX_NONE ) {
-			continue;
+	for ( i = 0; i < st->bundle[0].numTexMods; i++ ) {
+		switch ( st->bundle[0].texMods[i].type ) {
+		case TMOD_NONE:
+		case TMOD_SCALE:
+		case TMOD_TRANSFORM:
+		case TMOD_OFFSET:
+		case TMOD_SCALE_OFFSET:
+		case TMOD_OFFSET_SCALE:
+			break;
+		default:
+			return 0;
 		}
-		if ( bundle->image[0] == tr.whiteImage ) {
-			continue;
-		}
-		if ( bundle->tcGen != TCGEN_TEXTURE ) {
-			continue;
-		}
-		if ( selected ) {
-			if ( stage->rgbGen == CGEN_IDENTITY && ( stage->stateBits & GLS_BLEND_BITS ) == ( GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO ) ) {
-				// fix for q3wcp17' textures/scanctf2/bounce_white and others
-				continue;
-			}
-			if ( tcmodWeight( selected ) > tcmodWeight( bundle ) ) {
-				continue;
-			}
-		}
-		shader.lightingStage = stageIndex;
-		shader.lightingBundle = i;
-		selected = bundle;
 	}
-
-	return selected;
+	return 1;
 }
 
 
 /*
 ====================
-FindLightingStages
+FindLightingStage
 
-Find proper stage for dlight pass
+Find proper stage for dlight pass.
+Peforfm it before multitexture collapse for simplification and to preserve all info (e.g. isDetail)
+
+Key complex shaders to validate/check:
+[q3dm17]
+* textures/sfx/diamond2cjumppad -> stage #0
+* textures/sfx/launchpad_diamond -> stage #1
+* textures/base_floor/diamond2c_ow -> stage #1
+[q3wcp17]
+* textures/scanctf2/bounce_white -> stage #0
+[lun3dm5]
+* textures/lun3dm5/c_crete6gs -> stage #1
+* textures/lun3dm5/c_crete6j -> stage #4
+[pom]
+* textures/sockter/ter_mossgravel -> stage #1
 ====================
 */
-static void FindLightingStages( void )
-{
-	const shaderStage_t *st;
-	const textureBundle_t *bundle;
-	int i;
+static void FindLightingStage( const int stage ) {
+	int i, selected, lightmap;
 
-	shader.lightingStage = -1;
 	shader.lightingBundle = 0;
+	shader.lightingStage = -1;
 
-	if ( !qglGenProgramsARB )
+	if ( shader.isSky || (shader.surfaceFlags & (SURF_NODLIGHT | SURF_SKY)) /* || shader.sort == SS_ENVIRONMENT || shader.sort >= SS_FOG */ ) {
 		return;
+	}
 
-	if ( shader.isSky || ( shader.surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) || shader.sort == SS_ENVIRONMENT || shader.sort >= SS_FOG )
-		return;
-
-	bundle = NULL;
-	for ( i = 0; i < shader.numUnfoggedPasses; i++ ) {
-		st = &stages[ i ];
-		if ( !st->active )
+	selected = -1;
+	lightmap = -2;
+	for ( i = 0; i < stage; i++ ) {
+		const shaderStage_t *st = &stages[i];
+		const textureBundle_t *b = &st->bundle[0];
+		if ( !st->active ) {
 			break;
-		if ( st->isDetail && shader.lightingStage >= 0 )
+		}
+		if ( b->lightmap != LIGHTMAP_INDEX_NONE ) {
+			// 1. prefer stages near lightmap
+			if ( selected >= 0 ) {
+				break;
+			}
+			lightmap = i;
 			continue;
-		if ( ( st->stateBits & GLS_BLEND_BITS ) == ( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE ) ) {
-			if ( bundle && bundle->numTexMods ) {
-				// already selected bundle has somewhat non-static tcgen
-				// so we may accept this stage
-				// this fixes jumppads on lun3dm5
-			} else {
+		}
+		if ( b->image[0] == tr.whiteImage || b->tcGen != TCGEN_TEXTURE ) {
+			continue;
+		}
+		if ( selected >= 0 ) {
+			// 2. skip detail textures
+			if ( st->isDetail ) {
 				continue;
 			}
+			// 3. prefer non-animated stages
+			if ( stages[selected].bundle[0].numImageAnimations < b->numImageAnimations ) {
+				continue;
+			}
+			// 4. prefer static tcgens
+			if ( tcmodWeight2( &stages[selected] ) > tcmodWeight2( st ) ) {
+				continue;
+			}
+			// 5. special case for lun3dm5 crete6gs stage #2
+			if ( ( st->stateBits & GLS_BLEND_BITS ) == ( GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_SRC_COLOR ) ) {
+				if ( ( stages[selected].stateBits & GLS_BLEND_BITS ) == ( GLS_SRCBLEND_ONE | GLS_DSTBLEND_SRC_ALPHA ) ) {
+					continue;
+				}
+			}
 		}
-		bundle = lightingBundle( i, bundle );
+		selected = i;
+		// 1. prefer stages near lightmap
+		if ( i == lightmap + 1 ) {
+			break;
+		}
+	}
+
+	if ( selected >= 0 ) {
+		shader.lightingStage = selected;
+		stages[selected].bundle[0].dlight = 1;
 	}
 }
-#endif
+
+
+/*
+====================
+FindLightingStage
+
+Set shader.lightingStage and shader.lightingBundle depending from marked .dlight field
+====================
+*/
+static void FindLightingBundle( void )
+{
+	int i, n;
+
+	if ( shader.lightingStage < 0 ) {
+		return;
+	}
+
+	shader.lightingStage = -1;
+
+	if ( /*shader.isSky || (shader.surfaceFlags & (SURF_SKY)) || */ shader.sort == SS_ENVIRONMENT || shader.sort >= SS_FOG ) {
+		return;
+	}
+
+	for ( i = 0; i < shader.numUnfoggedPasses; i++ ) {
+		const shaderStage_t* st = &stages[i];
+		if ( !st->active ) {
+			break;
+		}
+		for ( n = 0; n < 2; n++ ) {
+			if ( st->bundle[n].dlight ) {
+				shader.lightingStage = i;
+				shader.lightingBundle = n;
+			}
+		}
+	}
+}
+#endif // USE_PMLIGHT
 
 
 /*
@@ -2907,6 +2957,10 @@ static shader_t *FinishShader( void ) {
 		stages[i].tessFlags = TESS_ST0;
 	}
 
+#ifdef USE_PMLIGHT
+	FindLightingStage( stage );
+#endif
+
 	//
 	// look for multitexture potential
 	//
@@ -2919,7 +2973,7 @@ static shader_t *FinishShader( void ) {
 	}
 
 	if ( shader.lightmapIndex >= 0 && !hasLightmapStage ) {
-		if (vertexLightmap) {
+		if ( vertexLightmap ) {
 			ri.Printf( PRINT_DEVELOPER, "WARNING: shader '%s' has VERTEX forced lightmap!\n", shader.name );
 		} else {
 			ri.Printf( PRINT_DEVELOPER, "WARNING: shader '%s' has lightmap but no lightmap stage!\n", shader.name );
@@ -2943,7 +2997,7 @@ static shader_t *FinishShader( void ) {
 	}
 
 #ifdef USE_PMLIGHT
-	FindLightingStages();
+	FindLightingBundle();
 #endif
 
 	// make sure that amplitude for TMOD_STRETCH is not zero

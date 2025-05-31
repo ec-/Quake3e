@@ -311,7 +311,8 @@ typedef struct {
 	int				videoMapHandle;
 	int				lightmap;				// LIGHTMAP_INDEX_NONE, LIGHTMAP_INDEX_SHADER, LIGHTMAP_INDEX_OFFSET
 	qboolean		isVideoMap;
-	qboolean		isScreenMap;
+	unsigned int 	isScreenMap : 1;
+	unsigned int 	dlight : 1;
 } textureBundle_t;
 
 #define NUM_TEXTURE_BUNDLES 2
