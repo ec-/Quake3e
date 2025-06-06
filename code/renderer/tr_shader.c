@@ -2286,15 +2286,21 @@ static int tcmodWeight2( const shaderStage_t* st )
 FindLightingStage
 
 Find proper stage for dlight pass.
-Peforfm it before multitexture collapse for simplification and to preserve all info (e.g. isDetail)
+Perform it before multitexture collapse for simplification and to preserve all info (e.g. isDetail)
 
 Key complex shaders to validate/check:
+[q3dm0]
+* textures/base_wall/comp3 -> stage #3
 [q3dm17]
 * textures/sfx/diamond2cjumppad -> stage #0
 * textures/sfx/launchpad_diamond -> stage #1
 * textures/base_floor/diamond2c_ow -> stage #1
 [q3wcp17]
 * textures/scanctf2/bounce_white -> stage #0
+[q3wcp18]
+* textures/ctf_unified/weapfloor_* -> stage #1
+[q3w8]
+* textures/ctf_cas_v/bounce_red_v -> stage #0
 [lun3dm5]
 * textures/lun3dm5/c_crete6gs -> stage #1
 * textures/lun3dm5/c_crete6j -> stage #4
@@ -2312,7 +2318,7 @@ static void FindLightingStage( const int stage ) {
 		return;
 	}
 
-	selected = -1;
+	selected = -2;
 	lightmap = -2;
 	for ( i = 0; i < stage; i++ ) {
 		const shaderStage_t *st = &stages[i];
@@ -2322,7 +2328,7 @@ static void FindLightingStage( const int stage ) {
 		}
 		if ( b->lightmap != LIGHTMAP_INDEX_NONE ) {
 			// 1. prefer stages near lightmap
-			if ( selected >= 0 ) {
+			if ( selected == i - 1 ) {
 				break;
 			}
 			lightmap = i;
@@ -2348,6 +2354,12 @@ static void FindLightingStage( const int stage ) {
 			if ( ( st->stateBits & GLS_BLEND_BITS ) == ( GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_SRC_COLOR ) ) {
 				if ( ( stages[selected].stateBits & GLS_BLEND_BITS ) == ( GLS_SRCBLEND_ONE | GLS_DSTBLEND_SRC_ALPHA ) ) {
 					continue;
+				}
+			}
+			// 6. special case for q3w8 bounce_red_v/bounce_blue_v
+			if ( ( st->stateBits == ( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE ) ) ) {
+				if ( stages[selected].stateBits == ( GLS_DEPTHMASK_TRUE | GLS_ATEST_GE_80 ) ) {
+					break;
 				}
 			}
 		}

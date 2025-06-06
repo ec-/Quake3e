@@ -1909,10 +1909,10 @@ static void RE_Shutdown( refShutdownCode_t code ) {
 	ri.Cmd_RemoveCommand( "gfxinfo" );
 	ri.Cmd_RemoveCommand( "shaderstate" );
 
-	if ( tr.registered ) {
+	//if ( tr.registered ) {
 		//R_IssuePendingRenderCommands();
 		R_DeleteTextures();
-	}
+	//}
 
 	R_DoneFreeType();
 

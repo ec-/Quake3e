@@ -1949,10 +1949,10 @@ static void RE_Shutdown( refShutdownCode_t code ) {
 	ri.Cmd_RemoveCommand( "vkinfo" );
 #endif
 
-	if ( tr.registered ) {
+	//if ( tr.registered ) {
 		//R_IssuePendingRenderCommands();
 		R_DeleteTextures();
-	}
+	//}
 
 #ifdef USE_VULKAN
 	vk_release_resources();

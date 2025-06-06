@@ -100,8 +100,16 @@ void GL_TextureMode( const char *string ) {
 	gl_filter_max = mode->maximize;
 
 #ifdef USE_VULKAN
+	if ( gl_filter_min == vk.samplers.filter_min && gl_filter_max == vk.samplers.filter_max ) {
+		return;
+	}
 	vk_wait_idle();
-	for ( i = 0 ; i < tr.numImages ; i++ ) {
+	vk_destroy_samplers();
+
+	vk.samplers.filter_min = gl_filter_min;
+	vk.samplers.filter_max = gl_filter_max;
+	vk_update_attachment_descriptors();
+	for ( i = 0; i < tr.numImages; i++ ) {
 		img = tr.images[i];
 		if ( img->flags & IMGFLAG_MIPMAP ) {
 			vk_update_descriptor_set( img, qtrue );
@@ -1755,22 +1763,24 @@ R_DeleteTextures
 ===============
 */
 void R_DeleteTextures( void ) {
-
-	image_t *img;
 	int i;
+
+	if ( tr.numImages == 0 ) {
+		return;
+	}
 
 #ifdef USE_VULKAN
 	vk_wait_idle();
 
 	for ( i = 0; i < tr.numImages; i++ ) {
-		img = tr.images[ i ];
+		image_t *img = tr.images[ i ];
 		vk_destroy_image_resources( &img->handle, &img->view );
 
 		// img->descriptor will be released with pool reset
 	}
 #else
 	for ( i = 0; i < tr.numImages; i++ ) {
-		img = tr.images[ i ];
+		image_t *img = tr.images[ i ];
 		qglDeleteTextures( 1, &img->texnum );
 	}
 

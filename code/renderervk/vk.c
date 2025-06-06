@@ -1080,20 +1080,25 @@ static void allocate_and_bind_image_memory(VkImage image) {
 
 static void vk_clean_staging_buffer( void )
 {
-	if ( vk_world.staging_buffer != VK_NULL_HANDLE ) {
-		qvkDestroyBuffer( vk.device, vk_world.staging_buffer, NULL );
-		vk_world.staging_buffer = VK_NULL_HANDLE;
+	if ( vk.staging_buffer.handle != VK_NULL_HANDLE ) {
+		qvkDestroyBuffer( vk.device, vk.staging_buffer.handle, NULL );
+		vk.staging_buffer.handle = VK_NULL_HANDLE;
 	}
 
-	if ( vk_world.staging_buffer_memory != VK_NULL_HANDLE ) {
-		qvkFreeMemory( vk.device, vk_world.staging_buffer_memory, NULL );
-		vk_world.staging_buffer_memory = VK_NULL_HANDLE;
+	//if ( vk.staging_buffer.ptr != NULL ) 
+	//	qvkUnmapMemory( vk.device, vk.staging_buffer.memory ) {
+	//	vk.staging_buffer.ptr = NULL;
+	//}
+
+	if ( vk.staging_buffer.memory != VK_NULL_HANDLE ) {
+		qvkFreeMemory( vk.device, vk.staging_buffer.memory, NULL );
+		vk.staging_buffer.memory = VK_NULL_HANDLE;
 	}
 
-	vk_world.staging_buffer_ptr = NULL;
-	vk_world.staging_buffer_size = 0;
+	vk.staging_buffer.ptr = NULL;
+	vk.staging_buffer.size = 0;
 #ifdef USE_UPLOAD_QUEUE
-	vk_world.staging_buffer_offset = 0;
+	vk.staging_buffer.offset = 0;
 #endif
 }
 
@@ -1122,13 +1127,13 @@ static void vk_submit_staging_buffer( qboolean final )
 	VkSubmitInfo submit_info;
 	VkResult res;
 
-	if ( vk_world.staging_buffer_offset == 0 ) {
+	if ( vk.staging_buffer.offset == 0 ) {
 		return;
 	}
 
 	//ri.Printf( PRINT_WARNING, S_COLOR_CYAN ">>> flush %i bytes (final=%i)<<<\n", (int)vk_world.staging_buffer_offset, final );
 
-	vk_world.staging_buffer_offset = 0;
+	vk.staging_buffer.offset = 0;
 
 	VK_CHECK( qvkEndCommandBuffer( vk.staging_command_buffer ) );
 
@@ -1186,13 +1191,13 @@ static void ensure_staging_buffer_allocation( VkDeviceSize size )
 	void *data;
 
 #ifdef USE_UPLOAD_QUEUE
-	if ( vk_world.staging_buffer_size - vk_world.staging_buffer_offset >= size ) {
+	if ( vk.staging_buffer.size - vk.staging_buffer.offset >= size ) {
 		return;
 	}
 
 	vk_submit_staging_buffer( qfalse );
 
-	if ( vk_world.staging_buffer_size /* - vk_world.staging_buffer_offset */ >= size ) {
+	if ( vk.staging_buffer.size /* - vk_world.staging_buffer_offset */ >= size ) {
 		return;
 	}
 #else
@@ -1202,20 +1207,20 @@ static void ensure_staging_buffer_allocation( VkDeviceSize size )
 #endif
 	vk_clean_staging_buffer();
 
-	vk_world.staging_buffer_size = MAX( size, STAGING_BUFFER_SIZE );
-	vk_world.staging_buffer_size = PAD( vk_world.staging_buffer_size, 1024 * 1024 );
+	vk.staging_buffer.size = MAX( size, STAGING_BUFFER_SIZE );
+	vk.staging_buffer.size = PAD( vk.staging_buffer.size, 1024 * 1024 );
 
 	buffer_desc.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 	buffer_desc.pNext = NULL;
 	buffer_desc.flags = 0;
-	buffer_desc.size = vk_world.staging_buffer_size;
+	buffer_desc.size = vk.staging_buffer.size;
 	buffer_desc.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	buffer_desc.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	buffer_desc.queueFamilyIndexCount = 0;
 	buffer_desc.pQueueFamilyIndices = NULL;
-	VK_CHECK(qvkCreateBuffer(vk.device, &buffer_desc, NULL, &vk_world.staging_buffer));
+	VK_CHECK(qvkCreateBuffer(vk.device, &buffer_desc, NULL, &vk.staging_buffer.handle));
 
-	qvkGetBufferMemoryRequirements( vk.device, vk_world.staging_buffer, &memory_requirements );
+	qvkGetBufferMemoryRequirements( vk.device, vk.staging_buffer.handle, &memory_requirements );
 
 	memory_type = find_memory_type( memory_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT );
 
@@ -1224,16 +1229,16 @@ static void ensure_staging_buffer_allocation( VkDeviceSize size )
 	alloc_info.allocationSize = memory_requirements.size;
 	alloc_info.memoryTypeIndex = memory_type;
 
-	VK_CHECK(qvkAllocateMemory(vk.device, &alloc_info, NULL, &vk_world.staging_buffer_memory));
-	VK_CHECK(qvkBindBufferMemory(vk.device, vk_world.staging_buffer, vk_world.staging_buffer_memory, 0));
+	VK_CHECK(qvkAllocateMemory(vk.device, &alloc_info, NULL, &vk.staging_buffer.memory));
+	VK_CHECK(qvkBindBufferMemory(vk.device, vk.staging_buffer.handle, vk.staging_buffer.memory, 0));
 
-	VK_CHECK(qvkMapMemory(vk.device, vk_world.staging_buffer_memory, 0, VK_WHOLE_SIZE, 0, &data));
-	vk_world.staging_buffer_ptr = (byte*)data;
+	VK_CHECK(qvkMapMemory(vk.device, vk.staging_buffer.memory, 0, VK_WHOLE_SIZE, 0, &data));
+	vk.staging_buffer.ptr = (byte*)data;
 #ifdef USE_UPLOAD_QUEUE
-	vk_world.staging_buffer_offset = 0;
+	vk.staging_buffer.offset = 0;
 #endif
-	SET_OBJECT_NAME( vk_world.staging_buffer, "staging buffer", VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT );
-	SET_OBJECT_NAME( vk_world.staging_buffer_memory, "staging buffer memory", VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_MEMORY_EXT );
+	SET_OBJECT_NAME( vk.staging_buffer.handle, "staging buffer", VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT );
+	SET_OBJECT_NAME( vk.staging_buffer.memory, "staging buffer memory", VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_MEMORY_EXT );
 }
 
 
@@ -2312,16 +2317,17 @@ static VkSampler vk_find_sampler( const Vk_Sampler_Def *def ) {
 	int i;
 
 	// Look for sampler among existing samplers.
-	for ( i = 0; i < vk_world.num_samplers; i++ ) {
-		const Vk_Sampler_Def *cur_def = &vk_world.sampler_defs[i];
+	for ( i = 0; i < vk.samplers.count; i++ ) {
+		const Vk_Sampler_Def *cur_def = &vk.samplers.def[i];
 		if ( memcmp( cur_def, def, sizeof( *def ) ) == 0 ) {
-			return vk_world.samplers[i];
+			return vk.samplers.handle[i];
 		}
 	}
 
 	// Create new sampler.
-	if ( vk_world.num_samplers >= MAX_VK_SAMPLERS ) {
+	if ( vk.samplers.count >= MAX_VK_SAMPLERS ) {
 		ri.Error( ERR_DROP, "vk_find_sampler: MAX_VK_SAMPLERS hit\n" );
+		// return VK_NULL_HANDLE;
 	}
 
 	address_mode = def->address_mode;
@@ -2396,17 +2402,31 @@ static VkSampler vk_find_sampler( const Vk_Sampler_Def *def ) {
 
 	VK_CHECK( qvkCreateSampler( vk.device, &desc, NULL, &sampler ) );
 
-	SET_OBJECT_NAME( sampler, va( "image sampler %i", vk_world.num_samplers ), VK_DEBUG_REPORT_OBJECT_TYPE_SAMPLER_EXT );
+	SET_OBJECT_NAME( sampler, va( "image sampler %i", vk.samplers.count ), VK_DEBUG_REPORT_OBJECT_TYPE_SAMPLER_EXT );
 
-	vk_world.sampler_defs[ vk_world.num_samplers ] = *def;
-	vk_world.samplers[ vk_world.num_samplers ] = sampler;
-	vk_world.num_samplers++;
+	vk.samplers.def[ vk.samplers.count ] = *def;
+	vk.samplers.handle[ vk.samplers.count ] = sampler;
+	vk.samplers.count++;
 
 	return sampler;
 }
 
 
-static void vk_update_attachment_descriptors( void ) {
+void vk_destroy_samplers( void )
+{
+	int i;
+
+	for ( i = 0; i < vk.samplers.count; i++ ) {
+		qvkDestroySampler( vk.device, vk.samplers.handle[i], NULL );
+		memset( &vk.samplers.def[i], 0x0, sizeof( vk.samplers.def[i] ) );
+		vk.samplers.handle[i] = VK_NULL_HANDLE;
+	}
+
+	vk.samplers.count = 0;
+}
+
+
+void vk_update_attachment_descriptors( void ) {
 
 	if ( vk.color_image_view )
 	{
@@ -2675,11 +2695,9 @@ qboolean vk_alloc_vbo( const byte *vbo_data, int vbo_size )
 	VkDeviceSize vertex_buffer_offset;
 	VkDeviceSize allocationSize;
 	uint32_t memory_type_bits;
-	VkBuffer staging_vertex_buffer;
-	VkDeviceMemory staging_buffer_memory;
 	VkCommandBuffer command_buffer;
 	VkBufferCopy copyRegion[1];
-	void *data;
+	VkDeviceSize uploadDone;
 
 	vk_release_vbo();
 
@@ -2694,11 +2712,6 @@ qboolean vk_alloc_vbo( const byte *vbo_data, int vbo_size )
 	desc.size = vbo_size;
 	desc.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 	VK_CHECK( qvkCreateBuffer( vk.device, &desc, NULL, &vk.vbo.vertex_buffer ) );
-
-	// staging buffer
-	desc.size = vbo_size;
-	desc.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-	VK_CHECK( qvkCreateBuffer( vk.device, &desc, NULL, &staging_vertex_buffer ) );
 
 	// memory requirements
 	qvkGetBufferMemoryRequirements( vk.device, vk.vbo.vertex_buffer, &vb_mem_reqs );
@@ -2715,33 +2728,23 @@ qboolean vk_alloc_vbo( const byte *vbo_data, int vbo_size )
 
 	// staging buffers
 
-	// memory requirements
-	qvkGetBufferMemoryRequirements( vk.device, staging_vertex_buffer, &vb_mem_reqs );
-	vertex_buffer_offset = 0;
-	allocationSize = vertex_buffer_offset + vb_mem_reqs.size;
-	memory_type_bits = vb_mem_reqs.memoryTypeBits;
-
-	alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	alloc_info.pNext = NULL;
-	alloc_info.allocationSize = allocationSize;
-	alloc_info.memoryTypeIndex = find_memory_type( memory_type_bits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT );
-	VK_CHECK( qvkAllocateMemory( vk.device, &alloc_info, NULL, &staging_buffer_memory ) );
-	qvkBindBufferMemory( vk.device, staging_vertex_buffer, staging_buffer_memory, vertex_buffer_offset );
-
-	VK_CHECK( qvkMapMemory( vk.device, staging_buffer_memory, 0, VK_WHOLE_SIZE, 0, &data ) );
-	memcpy( (byte*)data + vertex_buffer_offset, vbo_data, vbo_size );
-	qvkUnmapMemory( vk.device, staging_buffer_memory );
-
-	command_buffer = begin_command_buffer();
-	copyRegion[0].srcOffset = 0;
-	copyRegion[0].dstOffset = 0;
-	copyRegion[0].size = vbo_size;
-	qvkCmdCopyBuffer( command_buffer, staging_vertex_buffer, vk.vbo.vertex_buffer, 1, &copyRegion[0] );
-
-	end_command_buffer( command_buffer, __func__ );
-
-	qvkDestroyBuffer( vk.device, staging_vertex_buffer, NULL );
-	qvkFreeMemory( vk.device, staging_buffer_memory, NULL );
+	// utilize existing staging buffer
+	vk_submit_staging_buffer( qfalse );
+	uploadDone = 0;
+	while ( uploadDone < vbo_size ) {
+		VkDeviceSize uploadSize = vk.staging_buffer.size;
+		if ( uploadDone + uploadSize > vbo_size ) {
+			uploadSize = vbo_size - uploadDone;
+		}
+		memcpy(vk.staging_buffer.ptr + 0, vbo_data + uploadDone, uploadSize);
+		command_buffer = begin_command_buffer();
+		copyRegion[0].srcOffset = 0;
+		copyRegion[0].dstOffset = uploadDone;
+		copyRegion[0].size = uploadSize;
+		qvkCmdCopyBuffer( command_buffer, vk.staging_buffer.handle, vk.vbo.vertex_buffer, 1, &copyRegion[0] );
+		end_command_buffer( command_buffer, __func__ );
+		uploadDone += uploadSize;
+	}
 
 	SET_OBJECT_NAME( vk.vbo.vertex_buffer, "static VBO", VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT );
 	SET_OBJECT_NAME( vk.vbo.buffer_memory, "static VBO memory", VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_MEMORY_EXT );
@@ -4005,6 +4008,27 @@ void vk_initialize( void )
 	if ( vk.screenMapHeight < 4 )
 		vk.screenMapHeight = 4;
 
+	// get memory size
+	{
+		VkPhysicalDeviceMemoryProperties props;
+		VkDeviceSize maxSize = 0;
+		qvkGetPhysicalDeviceMemoryProperties(vk.physical_device, &props);
+		for (i = 0; i < props.memoryTypeCount; i++) {
+			if (props.memoryTypes[i].propertyFlags == VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) {
+				maxSize = props.memoryHeaps[props.memoryTypes[i].heapIndex].size;
+			}
+			else if ( props.memoryTypes[i].propertyFlags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT ) {
+				if ( maxSize == 0 || props.memoryHeaps[props.memoryTypes[i].heapIndex].size > maxSize ) {
+					maxSize = props.memoryHeaps[props.memoryTypes[i].heapIndex].size;
+				}
+			}
+		}
+
+		if ( maxSize != 0 ) {
+			ri.Printf( PRINT_ALL, "...device memory size: %iMB\n", (maxSize + (1024 * 1024) - 1) / (1024 * 1024) );
+		}
+	}
+
 	// fill glConfig information
 
 	// maxTextureSize must not exceed IMAGE_CHUNK_SIZE
@@ -4094,6 +4118,12 @@ void vk_initialize( void )
 	Q_strncpyz( glConfig.renderer_string, renderer_name( &props ), sizeof( glConfig.renderer_string ) );
 
 	SET_OBJECT_NAME( (intptr_t)vk.device, glConfig.renderer_string, VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_EXT );
+
+	// do early texture mode setup to avoid redundant descriptor updates in GL_SetDefaultState()
+	vk.samplers.filter_min = -1;
+	vk.samplers.filter_max = -1;
+	GL_TextureMode( r_textureMode->string );
+	r_textureMode->modified = qfalse;
 
 	//
 	// Sync primitives.
@@ -4286,6 +4316,9 @@ void vk_initialize( void )
 
 	// framebuffers for each swapchain image
 	vk_create_framebuffers();
+
+	// preallocate staging buffer?
+	//ensure_staging_buffer_allocation( vk.defaults.staging_buffer_size );
 
 	vk.active = qtrue;
 }
@@ -4498,7 +4531,11 @@ void vk_shutdown( refShutdownCode_t code )
 	vk_release_vbo();
 #endif
 
+	vk_clean_staging_buffer();
+
 	vk_release_geometry_buffers();
+
+	vk_destroy_samplers();
 
 	vk_destroy_sync_primitives();
 
@@ -4626,8 +4663,7 @@ void vk_release_resources( void ) {
 
 	vk_clean_staging_buffer();
 
-	for (i = 0; i < vk_world.num_samplers; i++)
-		qvkDestroySampler(vk.device, vk_world.samplers[i], NULL);
+	// vk_destroy_samplers();
 
 	for ( i = vk.pipelines_world_base; i < vk.pipelines_count; i++ ) {
 		for ( j = 0; j < RENDER_PASS_COUNT; j++ ) {
@@ -4646,12 +4682,15 @@ void vk_release_resources( void ) {
 	if ( vk_world.num_image_chunks > 1 ) {
 		// if we allocated more than 2 image chunks - use doubled default size
 		vk.image_chunk_size = (IMAGE_CHUNK_SIZE * 2);
-	} else if ( vk_world.num_image_chunks == 1 ) {
+	}
+#if 0 // do not reduce chunk size
+	else if ( vk_world.num_image_chunks == 1 ) {
 		// otherwise set to default if used less than a half
 		if ( vk_world.image_chunks[0].used < ( IMAGE_CHUNK_SIZE - (IMAGE_CHUNK_SIZE / 10) ) ) {
 			vk.image_chunk_size = IMAGE_CHUNK_SIZE;
 		}
 	}
+#endif
 
 	Com_Memset( &vk_world, 0, sizeof( vk_world ) );
 
@@ -4896,12 +4935,12 @@ void vk_upload_image_data( image_t *image, int x, int y, int width, int height, 
 	ensure_staging_buffer_allocation( buffer_size );
 
 	for ( i = 0; i < num_regions; i++ ) {
-		regions[i].bufferOffset += vk_world.staging_buffer_offset;
+		regions[i].bufferOffset += vk.staging_buffer.offset;
 	}
 
-	Com_Memcpy( vk_world.staging_buffer_ptr + vk_world.staging_buffer_offset, buf, buffer_size );
+	Com_Memcpy( vk.staging_buffer.ptr + vk.staging_buffer.offset, buf, buffer_size );
 
-	if ( vk_world.staging_buffer_offset == 0 ) {
+	if ( vk.staging_buffer.offset == 0 ) {
 		VkCommandBufferBeginInfo begin_info;
 		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		begin_info.pNext = NULL;
@@ -4910,7 +4949,7 @@ void vk_upload_image_data( image_t *image, int x, int y, int width, int height, 
 		VK_CHECK( qvkBeginCommandBuffer( vk.staging_command_buffer, &begin_info ) );
 	}
 	//ri.Printf( PRINT_WARNING, "batch @%6i + %i %s \n", (int)vk_world.staging_buffer_offset, (int)buffer_size, image->imgName );
-	vk_world.staging_buffer_offset += buffer_size;
+	vk.staging_buffer.offset += buffer_size;
 
 	command_buffer = vk.staging_command_buffer;
 #else
@@ -4931,7 +4970,7 @@ void vk_upload_image_data( image_t *image, int x, int y, int width, int height, 
 			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_HOST_BIT, 0 );
 	}
 
-	qvkCmdCopyBufferToImage( command_buffer, vk_world.staging_buffer, image->handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, num_regions, regions );
+	qvkCmdCopyBufferToImage( command_buffer, vk.staging_buffer.handle, image->handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, num_regions, regions );
 
 	record_image_layout_transition( command_buffer, image->handle, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 0, 0 );
 
@@ -7352,6 +7391,7 @@ _retry:
 	Com_Memset( vk.cmd->vbo_offset, 0, sizeof( vk.cmd->vbo_offset ) );
 	vk.cmd->curr_index_buffer = VK_NULL_HANDLE;
 	vk.cmd->curr_index_offset = 0;
+	vk.cmd->num_indexes = 0;
 
 	Com_Memset( &vk.cmd->descriptor_set, 0, sizeof( vk.cmd->descriptor_set ) );
 	vk.cmd->descriptor_set.start = ~0U;

@@ -1485,11 +1485,14 @@ R_DeleteTextures
 ===============
 */
 void R_DeleteTextures( void ) {
-	image_t *img;
 	int i;
 
+	if ( tr.numImages == 0 ) {
+		return;
+	}
+
 	for ( i = 0; i < tr.numImages; i++ ) {
-		img = tr.images[ i ];
+		image_t *img = tr.images[ i ];
 		qglDeleteTextures( 1, &img->texnum );
 	}
 
