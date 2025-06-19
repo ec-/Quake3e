@@ -12,8 +12,11 @@
 #define MAX_VK_SAMPLERS 32
 #define MAX_VK_PIPELINES ((1024 + 128)*2)
 
-#define VERTEX_BUFFER_SIZE (4 * 1024 * 1024)	/* by default */
-#define STAGING_BUFFER_SIZE (2 * 1024 * 1024)	/* by default */
+#define VERTEX_BUFFER_SIZE     (4 * 1024 * 1024)  /* by default */
+#define VERTEX_BUFFER_SIZE_HI  (8 * 1024 * 1024)
+
+#define STAGING_BUFFER_SIZE    (2 * 1024 * 1024)  /* by default */
+#define STAGING_BUFFER_SIZE_HI (24 * 1024 * 1024) /* enough for max.texture size upload with all mip levels at once */
 
 #define IMAGE_CHUNK_SIZE (32 * 1024 * 1024)
 #define MAX_IMAGE_CHUNKS 56
@@ -637,6 +640,11 @@ typedef struct {
 		int filter_min;
 		int filter_max;
 	} samplers;
+
+	struct defaults_t {
+		VkDeviceSize staging_size;
+		VkDeviceSize geometry_size;
+	} defaults;
 
 } Vk_Instance;
 
