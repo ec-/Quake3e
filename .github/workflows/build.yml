@@ -81,7 +81,7 @@ jobs:
 
   windows-msvc:
     name: ${{ matrix.btype }} Windows-MSVC ${{ matrix.arch }}
-    runs-on: windows-2019
+    runs-on: windows-2022
     strategy:
       fail-fast: false
       matrix:
@@ -115,18 +115,18 @@ jobs:
       run: |
         mkdir bin
 
-        msbuild code\win32\msvc2017\quake3e-ded.vcxproj -p:TargetName=quake3e.ded,Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }}
+        msbuild code\win32\msvc2017\quake3e-ded.vcxproj -p:TargetName=quake3e.ded,Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }} /p:PlatformToolset=v143
         copy code\win32\msvc2017\output\quake3e.ded.exe bin\quake3e.ded${{ matrix.suffix }}.exe
         msbuild code\win32\msvc2017\quake3e-ded.vcxproj -p:TargetName=quake3e.ded,Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }} -t:Clean
 
-        msbuild code\win32\msvc2017\renderer.vcxproj -p:Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }}
-        msbuild code\win32\msvc2017\quake3e.vcxproj -p:TargetName=quake3e,Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }},UseWasapi=USE_WASAPI=0
+        msbuild code\win32\msvc2017\renderer.vcxproj -p:Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }} /p:PlatformToolset=v143
+        msbuild code\win32\msvc2017\quake3e.vcxproj -p:TargetName=quake3e,Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }},UseWasapi=USE_WASAPI=0 /p:PlatformToolset=v143
         copy code\win32\msvc2017\output\quake3e.exe bin\quake3e${{ matrix.suffix }}.exe
         msbuild code\win32\msvc2017\renderer.vcxproj -p:Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }} -t:Clean
         msbuild code\win32\msvc2017\quake3e.vcxproj -p:TargetName=quake3e,Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }},UseWasapi=USE_WASAPI=0 -t:Clean
 
-        msbuild code\win32\msvc2017\renderervk.vcxproj -p:Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }}
-        msbuild code\win32\msvc2017\quake3e.vcxproj -p:TargetName=quake3e,Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }},UseWasapi=USE_WASAPI=0
+        msbuild code\win32\msvc2017\renderervk.vcxproj -p:Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }} /p:PlatformToolset=v143
+        msbuild code\win32\msvc2017\quake3e.vcxproj -p:TargetName=quake3e,Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }},UseWasapi=USE_WASAPI=0 /p:PlatformToolset=v143
         copy code\win32\msvc2017\output\quake3e.exe bin\quake3e-vulkan${{ matrix.suffix }}.exe
         msbuild code\win32\msvc2017\renderervk.vcxproj -p:Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }} -t:Clean
         msbuild code\win32\msvc2017\quake3e.vcxproj -p:TargetName=quake3e,Configuration=${{ matrix.btype }},Platform=${{ matrix.platform }},UseWasapi=USE_WASAPI=0 -t:Clean
