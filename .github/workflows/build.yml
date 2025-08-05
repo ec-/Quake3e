@@ -53,9 +53,9 @@ jobs:
 
     - uses: msys2/setup-msys2@v2
       with:
-        install: ${{ matrix.prefix }}-binutils ${{ matrix.prefix }}-make ${{ matrix.prefix }}-${{ matrix.cc }}
+        install: base-devel ${{ matrix.prefix }}-binutils ${{ matrix.prefix }}-make ${{ matrix.prefix }}-${{ matrix.cc }}
         msystem: ${{ matrix.msystem }}
-        path-type: inherit
+        path-type: minimal
         release: false
         update: false
         cache: false
@@ -245,7 +245,7 @@ jobs:
 
   macos-x86:
     name: ${{ matrix.btype }} macOS ${{ matrix.arch }}
-    runs-on: macos-latest
+    runs-on: macos-14
     strategy:
       fail-fast: false
       matrix:
@@ -373,3 +373,4 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
           file: ${{ matrix.artifact_name }}
+
