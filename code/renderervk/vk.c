@@ -2715,8 +2715,10 @@ qboolean vk_alloc_vbo( const byte *vbo_data, int vbo_size )
 
 	// staging buffers
 
-	// utilize existing staging buffer
+#ifdef USE_UPLOAD_QUEUE
 	vk_flush_staging_buffer( qfalse );
+#endif
+	// utilize existing staging buffer
 	uploadDone = 0;
 	while ( uploadDone < vbo_size ) {
 		VkDeviceSize uploadSize = vk.staging_buffer.size;
@@ -4982,11 +4984,11 @@ void vk_upload_image_data( image_t *image, int x, int y, int width, int height, 
 	// final transition after upload comleted
 	record_image_layout_transition( command_buffer, image->handle, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 0, 0 );
 #else
-	if ( vk_world.staging_buffer_size < buffer_size ) {
+	if ( vk.staging_buffer.size < buffer_size ) {
 		vk_alloc_staging_buffer( buffer_size );
 	}
 
-	Com_Memcpy( vk_world.staging_buffer_ptr, buf, buffer_size );
+	Com_Memcpy( vk.staging_buffer.ptr, buf, buffer_size );
 
 	command_buffer = begin_command_buffer();
 	// record_buffer_memory_barrier( command_buffer, vk_world.staging_buffer, VK_WHOLE_SIZE, 0, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT );

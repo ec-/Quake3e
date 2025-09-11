@@ -25,7 +25,7 @@
 
 #define USE_REVERSED_DEPTH
 
-#define USE_UPLOAD_QUEUE
+//#define USE_UPLOAD_QUEUE
 
 #define VK_NUM_BLOOM_PASSES 4
 
