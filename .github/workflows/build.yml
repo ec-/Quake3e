@@ -355,13 +355,13 @@ jobs:
           7z a -r quake3e-linux-x86_64.zip         ./linux-x86_64/*
           7z a -r quake3e-windows-mingw-x86.zip    ./windows-mingw-x86/*
           7z a -r quake3e-windows-mingw-x86_64.zip ./windows-mingw-x86_64/*
-#         7z a -r quake3e-windows-msvc-x86.zip     ./windows-msvc-x86/*
-#         7z a -r quake3e-windows-msvc-x86_64.zip  ./windows-msvc-x86_64/*
           7z a -r quake3e-windows-msvc-arm64.zip   ./windows-msvc-arm64/*
           7z a -r quake3e-macos-x86_64.zip         ./macos-x86_64/*
           7z a -r quake3e-macos-aarch64.zip        ./macos-aarch64/*
 #         7z a -r quake3e-linux-aarch64.zip        ./linux-aarch64/*
 #         7z a -r quake3e-linux-armv7.zip          ./linux-armv7/*
+#         7z a -r quake3e-windows-msvc-x86.zip     ./windows-msvc-x86/*
+#         7z a -r quake3e-windows-msvc-x86_64.zip  ./windows-msvc-x86_64/*
 
       - name: Create latest build
         uses: czietz/action-automatic-releases@latest
