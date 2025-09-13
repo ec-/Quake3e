@@ -360,24 +360,30 @@ ifdef MINGW
     # If CC is already set to something generic, we probably want to use
     # something more specific
     ifneq ($(findstring $(strip $(CC)),cc gcc),)
-      CC=
+      override CC=
+    endif
+
+    ifneq ($(findstring $(strip $(STRIP)),strip),)
+      override STRIP=
     endif
 
     # We need to figure out the correct gcc and windres
     ifeq ($(ARCH),x86_64)
       MINGW_PREFIXES=x86_64-w64-mingw32 amd64-mingw32msvc
-      STRIP=x86_64-w64-mingw32-strip
     endif
     ifeq ($(ARCH),x86)
       MINGW_PREFIXES=i686-w64-mingw32 i586-mingw32msvc i686-pc-mingw32
     endif
 
     ifndef CC
-      CC=$(firstword $(strip $(foreach MINGW_PREFIX, $(MINGW_PREFIXES), \
+      override CC=$(firstword $(strip $(foreach MINGW_PREFIX, $(MINGW_PREFIXES), \
          $(call bin_path, $(MINGW_PREFIX)-gcc))))
     endif
 
-#   STRIP=$(MINGW_PREFIX)-strip -g
+    ifndef STRIP
+      override STRIP=$(firstword $(strip $(foreach MINGW_PREFIX, $(MINGW_PREFIXES), \
+         $(call bin_path, $(MINGW_PREFIX)-strip))))
+    endif
 
     ifndef WINDRES
       WINDRES=$(firstword $(strip $(foreach MINGW_PREFIX, $(MINGW_PREFIXES), \
@@ -387,7 +393,7 @@ ifdef MINGW
     # Some MinGW installations define CC to cc, but don't actually provide cc,
     # so check that CC points to a real binary and use gcc if it doesn't
     ifeq ($(call bin_path, $(CC)),)
-      CC=gcc
+      override CC=gcc
     endif
 
   endif
@@ -741,6 +747,7 @@ targets: makedirs tools
 	@echo "  COMPILE_ARCH: $(COMPILE_ARCH)"
 ifdef MINGW
 	@echo "  WINDRES: $(WINDRES)"
+	@echo "  STRIP: $(STRIP)"
 endif
 	@echo "  CC: $(CC)"
 	@echo ""
