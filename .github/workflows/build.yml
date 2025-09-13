@@ -79,6 +79,64 @@ jobs:
         if-no-files-found: error
         retention-days: 5
 
+  windows-msys32:
+    name: ${{ matrix.btype }} Windows-GCC ${{ matrix.arch }}
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86, x86_64]
+        cc: [gcc]
+        btype: [Release, Debug]
+        include:
+          - arch: x86
+            prefix: mingw-w64-i686
+
+          - arch: x86_64
+            prefix: mingw-w64-x86_64
+
+          - btype: Release
+            rule: install
+
+          - btype: Debug
+            rule: debug
+
+    steps:
+    - name: Checkout current repo
+      uses: actions/checkout@v4
+
+    - name: Checkout msys32 tools from sibling repo
+      uses: actions/checkout@v4
+      with:
+        repository: ec-/msys32
+        path: msys
+
+    - name: Extract msys32.7z
+      run: |
+        7z x %GITHUB_WORKSPACE%/msys/msys32.7z -o%GITHUB_WORKSPACE%/msys
+      shell: cmd
+
+    - name: Prepend msys/bin to PATH
+      run: |
+           echo "PATH=$GITHUB_WORKSPACE/msys/mingw/bin;$GITHUB_WORKSPACE/msys/bin;$GITHUB_WORKSPACE/msys" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Build
+      if: ${{ github.event_name != 'release' || matrix.btype != 'Debug' }} # skip Debug configuration in Release build
+      shell: cmd
+      run: |
+        make ${{ matrix.rule }} ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_SDL=0 USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=vulkan CNAME=quake3e-vulkan BUILD_SERVER=0
+        make clean ARCH=${{ matrix.arch }}
+        make ${{ matrix.rule }} ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_SDL=0 USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=opengl
+
+    - uses: actions/upload-artifact@v4
+      if: matrix.cc == 'gcc' && matrix.btype == 'Release'
+      with:
+        name: windows-mingw-${{ matrix.arch }}
+        path: bin
+        if-no-files-found: error
+        retention-days: 5
+
   windows-msvc:
     name: ${{ matrix.btype }} Windows-MSVC ${{ matrix.arch }}
     runs-on: windows-2022
@@ -285,7 +343,7 @@ jobs:
 
   create-testing:
     if: github.ref == 'refs/heads/master' && github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    needs: [windows-msys, windows-msvc, ubuntu-x86, ubuntu-arm, macos-x86]
+    needs: [windows-msys32, windows-msvc, ubuntu-x86, ubuntu-arm, macos-x86]
     runs-on: ubuntu-latest
     steps:
       - name: Download Artifacts
@@ -317,7 +375,7 @@ jobs:
 
   update-release:
     if: ${{ github.event_name == 'release' }}
-    needs: [windows-msys, windows-msvc, ubuntu-x86, ubuntu-arm, macos-x86]
+    needs: [windows-msys32, windows-msvc, ubuntu-x86, ubuntu-arm, macos-x86]
     runs-on: ubuntu-latest
 
     strategy:
@@ -336,21 +394,12 @@ jobs:
             artifact_name: quake3e-linux-x86_64.zip
 
           - artifact_dir: windows-mingw-x86
-#           artifact_name: quake3e-windows-mingw-x86.zip
             artifact_name: quake3e-windows-x86.zip 
 
           - artifact_dir: windows-mingw-x86_64
-#           artifact_name: quake3e-windows-mingw-x86_64.zip
             artifact_name: quake3e-windows-x86_64.zip
 
-#         - artifact_dir: windows-msvc-x86
-#           artifact_name: quake3e-windows-msvc-x86.zip
-
-#         - artifact_dir: windows-msvc-x86_64
-#           artifact_name: quake3e-windows-msvc-x86_64.zip
-
           - artifact_dir: windows-msvc-arm64
-#           artifact_name: quake3e-windows-msvc-arm64.zip
             artifact_name: quake3e-windows-arm64.zip
 
           - artifact_dir: macos-x86_64
