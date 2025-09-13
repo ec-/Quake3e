@@ -22,7 +22,7 @@ on:
 
 jobs:
   windows-msys:
-    name: ${{ matrix.btype }} Windows-GCC ${{ matrix.arch }}
+    name: ${{ matrix.btype }} Windows-${{ matrix.cc }} ${{ matrix.arch }}
     runs-on: windows-2022
     strategy:
       fail-fast: false
@@ -74,19 +74,20 @@ jobs:
     - uses: actions/upload-artifact@v4
       if: matrix.cc == 'gcc' && matrix.btype == 'Release'
       with:
-        name: windows-mingw-${{ matrix.arch }}
+        name: windows-${{ matrix.cc }}-${{ matrix.arch }}
         path: bin
         if-no-files-found: error
         retention-days: 5
 
   windows-msys32:
-    name: ${{ matrix.btype }} Windows-GCC ${{ matrix.arch }}
+    name: ${{ matrix.btype }} Windows-msys32 ${{ matrix.arch }}
     runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
         arch: [x86, x86_64]
-        btype: [Release, Debug]
+#       btype: [Release, Debug]
+        btype: [Release]
         include:
           - arch: x86
             prefix: mingw-w64-i686
@@ -97,8 +98,8 @@ jobs:
           - btype: Release
             rule: install
 
-          - btype: Debug
-            rule: debug
+#         - btype: Debug
+#           rule: debug
 
     steps:
     - name: Checkout current repo
@@ -129,7 +130,7 @@ jobs:
         make ${{ matrix.rule }} ARCH=${{ matrix.arch }} DESTDIR=bin USE_SDL=0 USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=opengl
 
     - uses: actions/upload-artifact@v4
-      if: matrix.cc == 'gcc' && matrix.btype == 'Release'
+      if: matrix.btype == 'Release'
       with:
         name: windows-mingw-${{ matrix.arch }}
         path: bin
@@ -354,8 +355,8 @@ jobs:
           7z a -r quake3e-linux-x86_64.zip         ./linux-x86_64/*
           7z a -r quake3e-windows-mingw-x86.zip    ./windows-mingw-x86/*
           7z a -r quake3e-windows-mingw-x86_64.zip ./windows-mingw-x86_64/*
-          7z a -r quake3e-windows-msvc-x86.zip     ./windows-msvc-x86/*
-          7z a -r quake3e-windows-msvc-x86_64.zip  ./windows-msvc-x86_64/*
+#         7z a -r quake3e-windows-msvc-x86.zip     ./windows-msvc-x86/*
+#         7z a -r quake3e-windows-msvc-x86_64.zip  ./windows-msvc-x86_64/*
           7z a -r quake3e-windows-msvc-arm64.zip   ./windows-msvc-arm64/*
           7z a -r quake3e-macos-x86_64.zip         ./macos-x86_64/*
           7z a -r quake3e-macos-aarch64.zip        ./macos-aarch64/*
