@@ -13,4 +13,5 @@ make install
 make distclean
 ./configure --prefix=/q3e-lib64 --host=x86_64-w64-mingw32 ${OPTIONS}
 make -j32
-make install          
+make install
+

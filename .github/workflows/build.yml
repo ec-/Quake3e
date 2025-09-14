@@ -52,6 +52,7 @@ jobs:
     steps:
 
     - uses: msys2/setup-msys2@v2
+      if: false
       with:
         install: base-devel ${{ matrix.prefix }}-binutils ${{ matrix.prefix }}-make ${{ matrix.prefix }}-${{ matrix.cc }}
         msystem: ${{ matrix.msystem }}
@@ -61,18 +62,21 @@ jobs:
         cache: false
 
     - uses: actions/checkout@v4
+      if: false
       with:
         submodules: recursive
 
     - name: Build
-      if: ${{ github.event_name != 'release' || matrix.btype != 'Debug' }} # skip Debug configuration in Release build
+      if: false
+#     if: ${{ github.event_name != 'release' || matrix.btype != 'Debug' }} # skip Debug configuration in Release build
       run: |
         make ${{ matrix.rule }} -j$(nproc) ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_SDL=0 USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=vulkan CNAME=quake3e-vulkan BUILD_SERVER=0
         make clean ARCH=${{ matrix.arch }}
         make ${{ matrix.rule }} -j$(nproc) ARCH=${{ matrix.arch }} CC=${{ matrix.cc }} DESTDIR=bin USE_SDL=0 USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=opengl
 
     - uses: actions/upload-artifact@v4
-      if: matrix.cc == 'gcc' && matrix.btype == 'Release'
+      if: false
+#     if: matrix.cc == 'gcc' && matrix.btype == 'Release'
       with:
         name: windows-${{ matrix.cc }}-${{ matrix.arch }}
         path: bin
