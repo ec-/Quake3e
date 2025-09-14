@@ -9,7 +9,7 @@ on:
       - 'docs/*'
   push:
     branches:
-      - master
+      - main
     paths-ignore:
       - '**.md'
       - '*.txt'
@@ -342,7 +342,7 @@ jobs:
         retention-days: 5
 
   create-testing:
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: [windows-msys32, windows-msvc, ubuntu-x86, ubuntu-arm, macos-x86]
     runs-on: ubuntu-latest
     steps:
