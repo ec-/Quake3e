@@ -29,7 +29,7 @@ cvar_t	*cl_debugMove;
 cvar_t	*cl_motd;
 
 #ifdef USE_RENDERER_DLOPEN
-cvar_t	*cl_renderer;
+static cvar_t *cl_renderer;
 #endif
 
 cvar_t	*rcon_client_password;
@@ -3358,7 +3358,7 @@ static void CL_InitRef( void ) {
 	refexport_t	*ret;
 #ifdef USE_RENDERER_DLOPEN
 	GetRefAPI_t		GetRefAPI;
-	char			dllName[ MAX_OSPATH ];
+	char			dllName[ MAX_OSPATH ], *ospath;
 #endif
 
 	CL_InitGLimp_Cvars();
@@ -3374,12 +3374,14 @@ static void CL_InitRef( void ) {
 #endif
 
 	Com_sprintf( dllName, sizeof( dllName ), RENDERER_PREFIX "_%s_" REND_ARCH_STRING DLL_EXT, cl_renderer->string );
-	rendererLib = FS_LoadLibrary( dllName );
+	ospath = FS_BuildOSPath( Sys_DefaultBasePath(), dllName, NULL );
+	rendererLib = Sys_LoadLibrary( ospath );
 	if ( !rendererLib )
 	{
 		Cvar_ForceReset( "cl_renderer" );
 		Com_sprintf( dllName, sizeof( dllName ), RENDERER_PREFIX "_%s_" REND_ARCH_STRING DLL_EXT, cl_renderer->string );
-		rendererLib = FS_LoadLibrary( dllName );
+		ospath = FS_BuildOSPath( Sys_DefaultBasePath(), dllName, NULL );
+		rendererLib = Sys_LoadLibrary( ospath );
 		if ( !rendererLib )
 		{
 			Com_Error( ERR_FATAL, "Failed to load renderer %s", dllName );
