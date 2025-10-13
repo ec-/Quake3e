@@ -3807,7 +3807,7 @@ void Com_Init( char *commandLine ) {
 	Com_StartupVariable( "sv_master2" );
 	Com_StartupVariable( "sv_master3" );
 	Cvar_Get( "sv_master1", MASTER_SERVER_NAME, CVAR_INIT );
-	Cvar_Get( "sv_master2", "master.ioquake3.org", CVAR_INIT );
+	Cvar_Get( "sv_master2", "directory.ioquake3.org", CVAR_INIT );
 	Cvar_Get( "sv_master3", "master.maverickservers.com", CVAR_INIT );
 
 	com_protocol = Cvar_Get( "protocol", XSTRING( DEFAULT_PROTOCOL_VERSION ), 0 );
