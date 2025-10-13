@@ -1083,6 +1083,11 @@ static qboolean ParseStage( shaderStage_t *stage, const char **text )
 		else if ( !Q_stricmp( token, "depthFragment" ) && s_extendedShader )
 		{
 			stage->depthFragment = qtrue;
+			continue;
+		}
+		else if ( !Q_stricmp( token, "dlight" ) && s_extendedShader )
+		{
+			stage->bundle[0].dlight = 1;
 		}
 		else
 		{
@@ -2403,8 +2408,15 @@ Key complex shaders to validate/check:
 static void FindLightingStage( const int stage ) {
 	int i, selected, lightmap;
 
-	shader.lightingBundle = 0;
-	shader.lightingStage = -1;
+	for ( i = 0; i < stage; i++ ) {
+		if ( stages[i].bundle[0].image == NULL ) {
+			continue; // sanity check
+		}
+		if ( stages[i].bundle[0].dlight ) {
+			shader.lightingStage = i;
+			return; // already defined via 'dlight' keyword
+		}
+	}
 
 	if ( shader.isSky || (shader.surfaceFlags & (SURF_NODLIGHT | SURF_SKY)) /* || shader.sort == SS_ENVIRONMENT || shader.sort >= SS_FOG */ ) {
 		return;
@@ -2981,6 +2993,11 @@ static void InitShader( const char *name, int lightmapIndex ) {
 	for ( i = 0 ; i < MAX_SHADER_STAGES ; i++ ) {
 		stages[i].bundle[0].texMods = texMods[i];
 	}
+
+#ifdef USE_PMLIGHT
+	shader.lightingBundle = 0;
+	shader.lightingStage = -1;
+#endif
 }
 
 
@@ -3215,6 +3232,19 @@ static shader_t *FinishShader( void ) {
 			pStage->bundle[0].alphaGen = AGEN_SKIP;
 	}
 
+	// whiteimage + "filter" texture == texture
+	if ( stage > 1 && stages[0].bundle[0].image[0] == tr.whiteImage && stages[0].bundle[0].numImageAnimations <= 1 && stages[0].bundle[0].rgbGen == CGEN_IDENTITY && stages[0].bundle[0].alphaGen == AGEN_SKIP ) {
+		if ( stages[1].stateBits == ( GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO ) ) {
+			stages[1].stateBits = stages[0].stateBits & ( GLS_DEPTHMASK_TRUE | GLS_DEPTHTEST_DISABLE | GLS_DEPTHFUNC_EQUAL );
+#ifdef USE_PMLIGHT
+			stages[1].bundle[0].dlight |= stages[0].bundle[0].dlight;
+#endif
+			memmove( &stages[0], &stages[1], sizeof( stages[0] ) * ( stage - 1 ) );
+			stages[stage - 1].active = qfalse;
+			stage--;
+		}
+	}
+
 	//
 	// if we are in r_vertexLight mode, never use a lightmap texture
 	//
@@ -3222,16 +3252,6 @@ static shader_t *FinishShader( void ) {
 		VertexLightingCollapse();
 		stage = 1;
 		hasLightmapStage = qfalse;
-	}
-
-	// whiteimage + "filter" texture == texture
-	if ( stage > 1 && stages[0].bundle[0].image[0] == tr.whiteImage && stages[0].bundle[0].numImageAnimations <= 1 && stages[0].bundle[0].rgbGen == CGEN_IDENTITY && stages[0].bundle[0].alphaGen == AGEN_SKIP ) {
-		if ( stages[1].stateBits == ( GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO ) ) {
-			stages[1].stateBits = stages[0].stateBits & ( GLS_DEPTHMASK_TRUE | GLS_DEPTHTEST_DISABLE | GLS_DEPTHFUNC_EQUAL );
-			memmove( &stages[0], &stages[1], sizeof( stages[0] ) * ( stage - 1 ) );
-			stages[stage - 1].active = qfalse;
-			stage--;
-		}
 	}
 
 	for ( i = 0; i < stage; i++ ) {
