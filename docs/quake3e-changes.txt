@@ -1,3 +1,44 @@
+14-Oct-2025:
+* Client: increase default \cl_maxpackets to 125
+* Client: search for modular renderers nearby main executable oly
+* Server: reset \sv_maxclients modified flag after startup
+* Server: improved gamestate acknowledge function
+* Server: don't allow active clients to start downloads
+* Win32: use GlobalMemoryStatusEx() on modern platforms for Sys_LowPhysicalMemory()
+* Win32: try to minimize game window at break point, useful when debugging from full-screen crashes
+* Win32: unregister exception handler to avoid recursive errors on exit()
+* SDL: paste text on CMD-v for MacOS
+* Sound: print messages about missing sounds in developer mode only
+* FS: allow scanning external directories recursively via FS_MATCH_SUBDIRS flag, enabled for cfg and demo files completion
+* FS: sort mod list, strip ending newlines in mod descriptions
+* FS: fixed crash on directory traversal pattern match
+* FS: reworked FS_LoadLibrary() to use predefined search paths only, not referencing current game dir anymore
+* Makefile: disable unsafe FP optimizations for QVM modules (mostly for interpreter) to be IEEE754-compliant when handling NaNs
+* QVM: reuse rounded up data segment space for extra pStack if possible
+* Renderers: simplify tr.sinTable initialization
+* Renderers: increase default geometric detail on characters and patches
+* Renderers: implement \r_teleporterFlash cvar
+* Renderers: correct 'tcMod transform' for indexed lightmaps with \r_mergeLightmaps enabled
+* Renderers: fix grates on map 'tscabdm3'
+* Renderers: reworked lighting stage detection to fix all known issues
+* Renderers: added support for 'dlight' shader stage keyword to override stage used for dlight pass, available in .shaderx files
+* OpenGL: perform alpha tests after vertex color multiplication in VBO shaders
+* Vulkan: fix wrong semaphore state at buffer resize
+* Vulkan: use dedicated descriptor layout for flare test pipeline to reduce generic pipeline layout size from 6 to 5
+* Vulkan: fix missing texture bound for \r_showNormals 1
+* Vulkan: handle glConfig.textureEnvAddAvailable as well, similar to OpenGL renderer
+* Vulkan: enabled USE_BUFFER_CLEAR by default, optimized related code paths
+* Vulkan: implemented (a sort of) \r_finish functionality
+* Vulkan: check whenever vk_clear_color() can be used at all, avoid using it for \r_showImages
+* Vulkan: separate swapchain image acquisition from fence wait
+* Vulkan: do not mipmap images with 1-pixel width or height
+* Vulkan: don't do double image upload on scratch image creation, misc.code cleanup
+* Vulkan: handle VK_ERROR_OUT_OF_DATE_KHR more properly during swapchain acquisition
+* Vulkan: added VK_PRESENT_MODE_FIFO_LATEST_READY_EXT definition
+* Vulkan: do not print presentation info at swapchain restart
+* Vulkan: use dedicated rendering finished semaphore for each swapchain image
+* Vulkan: use larger staging/geometry buffers by default if possible
+
 14-Oct-2024:
 * Common: improved 'wait' command handling, now it will wait exact amount of client/server frames
 * Common: allow src and dest buffers to be overlapped in Q_strncpy() for QVM compatibility reasons
