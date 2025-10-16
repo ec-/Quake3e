@@ -439,14 +439,14 @@ BOOL Win_CheckHotkeyMod( void ) {
 	if ( !(HotKey & HK_MOD_XMASK) )
  		return TRUE;
 
- 	if ((HotKey&HK_MOD_LALT) && !GetAsyncKeyState(VK_LMENU)) return FALSE;
- 	if ((HotKey&HK_MOD_RALT) && !GetAsyncKeyState(VK_RMENU)) return FALSE;
- 	if ((HotKey&HK_MOD_LSHIFT) && !GetAsyncKeyState(VK_LSHIFT)) return FALSE;
- 	if ((HotKey&HK_MOD_RSHIFT) && !GetAsyncKeyState(VK_RSHIFT)) return FALSE;
- 	if ((HotKey&HK_MOD_LCONTROL) && !GetAsyncKeyState(VK_LCONTROL)) return FALSE;
- 	if ((HotKey&HK_MOD_RCONTROL) && !GetAsyncKeyState(VK_RCONTROL)) return FALSE;
- 	if ((HotKey&HK_MOD_LWIN) && !GetAsyncKeyState(VK_LWIN)) return FALSE;
- 	if ((HotKey&HK_MOD_RWIN) && !GetAsyncKeyState(VK_RWIN)) return FALSE;
+ 	if ((HotKey&HK_MOD_LALT) && !GetKeyState(VK_LMENU)) return FALSE;
+ 	if ((HotKey&HK_MOD_RALT) && !GetKeyState(VK_RMENU)) return FALSE;
+ 	if ((HotKey&HK_MOD_LSHIFT) && !GetKeyState(VK_LSHIFT)) return FALSE;
+ 	if ((HotKey&HK_MOD_RSHIFT) && !GetKeyState(VK_RSHIFT)) return FALSE;
+ 	if ((HotKey&HK_MOD_LCONTROL) && !GetKeyState(VK_LCONTROL)) return FALSE;
+ 	if ((HotKey&HK_MOD_RCONTROL) && !GetKeyState(VK_RCONTROL)) return FALSE;
+ 	if ((HotKey&HK_MOD_LWIN) && !GetKeyState(VK_LWIN)) return FALSE;
+ 	if ((HotKey&HK_MOD_RWIN) && !GetKeyState(VK_RWIN)) return FALSE;
 
  	return TRUE;
 }
@@ -933,7 +933,7 @@ LRESULT WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam 
 
 	case WM_SYSKEYDOWN:
 	case WM_KEYDOWN:
-		if ( wParam == VK_RETURN && ( uMsg == WM_SYSKEYDOWN || GetAsyncKeyState( VK_RMENU ) & 0x8000 ) ) {
+		if ( wParam == VK_RETURN && ( uMsg == WM_SYSKEYDOWN || GetKeyState( VK_RMENU ) & 0x8000 ) ) {
 			Cvar_SetIntegerValue( "r_fullscreen", glw_state.cdsFullscreen ? 0 : 1 );
 			Cbuf_AddText( "vid_restart\n" );
 			return 0;

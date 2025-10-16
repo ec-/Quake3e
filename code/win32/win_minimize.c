@@ -7,7 +7,7 @@ struct hk_token
 	const char *name;
 } ;
 
-static struct hk_token tokens[] = 
+static const struct hk_token tokens[] =
 {
 	{ VK_BACK,		"BS"  },
 	{ VK_BACK,		"BACK"  },
