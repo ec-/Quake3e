@@ -452,6 +452,8 @@ IN_DeactivateMouse
 */
 static void IN_DeactivateMouse( void )
 {
+	const char* drv = SDL_GetCurrentVideoDriver();
+
 	if ( !mouseAvailable )
 		return;
 
@@ -472,7 +474,9 @@ static void IN_DeactivateMouse( void )
 			if ( glw_state.isFullscreen )
 				SDL_ShowCursor( SDL_TRUE );
 
-			SDL_WarpMouseGlobal( glw_state.desktop_width / 2, glw_state.desktop_height / 2 );
+			if ( drv && strcmp( drv, "x11" ) == 0 ) {
+				SDL_WarpMouseGlobal( glw_state.desktop_width / 2, glw_state.desktop_height / 2 );
+			}
 		}
 
 		mouseActive = qfalse;
