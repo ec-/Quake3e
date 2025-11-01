@@ -63,13 +63,22 @@ GLimp_Shutdown
 */
 void GLimp_Shutdown( qboolean unloadDLL )
 {
+	const char* drv = SDL_GetCurrentVideoDriver();
+
 	IN_Shutdown();
 
-	SDL_DestroyWindow( SDL_window );
-	SDL_window = NULL;
+	if ( glw_state.isFullscreen ) {
+		if ( drv && strcmp( drv, "x11" ) == 0 ) {
+			SDL_WarpMouseGlobal( glw_state.desktop_width / 2, glw_state.desktop_height / 2 );
+		} else {
+			SDL_ShowCursor( SDL_TRUE );
+		}
+	}
 
-	if ( glw_state.isFullscreen )
-		SDL_WarpMouseGlobal( glw_state.desktop_width / 2, glw_state.desktop_height / 2 );
+	if ( SDL_window ) {
+		SDL_DestroyWindow( SDL_window );
+		SDL_window = NULL;
+	}
 
 	if ( unloadDLL )
 		SDL_QuitSubSystem( SDL_INIT_VIDEO );
@@ -776,13 +785,22 @@ VKimp_Shutdown
 */
 void VKimp_Shutdown( qboolean unloadDLL )
 {
+	const char* drv = SDL_GetCurrentVideoDriver();
+
 	IN_Shutdown();
 
-	SDL_DestroyWindow( SDL_window );
-	SDL_window = NULL;
+	if ( glw_state.isFullscreen ) {
+		if ( drv && strcmp( drv, "x11" ) == 0 ) {
+			SDL_WarpMouseGlobal( glw_state.desktop_width / 2, glw_state.desktop_height / 2 );
+		} else {
+			SDL_ShowCursor( SDL_TRUE );
+		}
+	}
 
-	if ( glw_state.isFullscreen )
-		SDL_WarpMouseGlobal( glw_state.desktop_width / 2, glw_state.desktop_height / 2 );
+	if ( SDL_window ) {
+		SDL_DestroyWindow( SDL_window );
+		SDL_window = NULL;
+	}
 
 	if ( unloadDLL )
 		SDL_QuitSubSystem( SDL_INIT_VIDEO );
