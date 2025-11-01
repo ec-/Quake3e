@@ -1104,7 +1104,7 @@ static const char *eventName( SDL_WindowEventID event )
 
 /*
 ===============
-IN_DeactivateMouse
+IN_SyncModifiers
 ===============
 */
 static void IN_SyncModifiers( void ) {
