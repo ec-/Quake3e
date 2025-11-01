@@ -1104,6 +1104,20 @@ static const char *eventName( SDL_WindowEventID event )
 
 /*
 ===============
+IN_DeactivateMouse
+===============
+*/
+static void IN_SyncModifiers( void ) {
+    SDL_Keymod mod = SDL_GetModState();
+
+    keys[K_CTRL].down  = (mod & KMOD_CTRL)  ? qtrue : qfalse;
+    keys[K_SHIFT].down = (mod & KMOD_SHIFT) ? qtrue : qfalse;
+    keys[K_ALT].down   = (mod & KMOD_ALT)   ? qtrue : qfalse;
+}
+
+
+/*
+===============
 HandleEvents
 ===============
 */
@@ -1118,6 +1132,8 @@ void HandleEvents( void )
 			return;
 
 	in_eventTime = Sys_Milliseconds();
+
+	IN_SyncModifiers();
 
 	while ( SDL_PollEvent( &e ) )
 	{
@@ -1280,8 +1296,8 @@ void HandleEvents( void )
 					case SDL_WINDOWEVENT_RESTORED:
 					case SDL_WINDOWEVENT_MAXIMIZED:		gw_minimized = qfalse; break;
 					// keyboard focus:
-					case SDL_WINDOWEVENT_FOCUS_LOST:	lastKeyDown = 0; Key_ClearStates(); gw_active = qfalse; break;
-					case SDL_WINDOWEVENT_FOCUS_GAINED:	lastKeyDown = 0; Key_ClearStates(); gw_active = qtrue; gw_minimized = qfalse;
+					case SDL_WINDOWEVENT_FOCUS_LOST:	lastKeyDown = 0; Key_ClearStates(); IN_SyncModifiers(); gw_active = qfalse; break;
+					case SDL_WINDOWEVENT_FOCUS_GAINED:	lastKeyDown = 0; Key_ClearStates(); IN_SyncModifiers(); gw_active = qtrue; gw_minimized = qfalse;
 														if ( re.SetColorMappings ) {
 															re.SetColorMappings();
 														}
