@@ -2409,7 +2409,7 @@ static void FindLightingStage( const int stage ) {
 	int i, selected, lightmap;
 
 	for ( i = 0; i < stage; i++ ) {
-		if ( stages[i].bundle[0].image == NULL ) {
+		if ( stages[i].bundle[0].image[0] == NULL ) {
 			continue; // sanity check
 		}
 		if ( stages[i].bundle[0].dlight ) {
