@@ -1004,7 +1004,7 @@ static float LodErrorForVolume( vec3_t local, float radius ) {
 	return r_lodCurveError->value / d;
 }
 
-
+#ifdef USE_VBO_GRID
 void RB_SurfaceGridEstimate( srfGridMesh_t *cv, int *numVertexes, int *numIndexes )
 {
 	int		lodWidth, lodHeight;
@@ -1068,7 +1068,7 @@ void RB_SurfaceGridEstimate( srfGridMesh_t *cv, int *numVertexes, int *numIndexe
 	tess.numVertexes = 0;
 	tess.numIndexes = 0;
 }
-
+#endif // USE_VBO_GRID
 
 /*
 =============
@@ -1097,7 +1097,7 @@ static void RB_SurfaceGrid( srfGridMesh_t *cv ) {
 	int		*vDlightBits;
 #endif
 
-#ifdef USE_VBO
+#ifdef USE_VBO_GRID
 #ifdef USE_LEGACY_DLIGHTS
 	if ( tess.allowVBO && cv->vboItemIndex && !cv->dlightBits ) {
 #else
@@ -1119,14 +1119,18 @@ static void RB_SurfaceGrid( srfGridMesh_t *cv ) {
 	}
 
 	VBO_Flush();
-#endif // USE_VBO
+#else
+#ifdef USE_VBO
+	VBO_Flush();
+#endif
+#endif
 
 #ifdef USE_LEGACY_DLIGHTS
 	dlightBits = cv->dlightBits;
 	tess.dlightBits |= dlightBits;
 #endif
 
-#ifdef USE_VBO
+#ifdef USE_VBO_GRID
 	tess.surfType = SF_GRID;
 
 	// determine the allowable discrepance
@@ -1137,7 +1141,7 @@ static void RB_SurfaceGrid( srfGridMesh_t *cv ) {
 #endif
 		lodError = r_lodCurveError->value; // fixed quality for VBO
 	else
-#endif
+#endif // USE_VBO_GRID
 		lodError = LodErrorForVolume( cv->lodOrigin, cv->lodRadius );
 
 	// determine which rows and columns of the subdivision
@@ -1178,13 +1182,13 @@ static void RB_SurfaceGrid( srfGridMesh_t *cv ) {
 			if ( vrows < 2 || irows < 1 ) {
 				if ( tr.mapLoading ) {
 					// estimate and flush
-#ifdef USE_VBO
+#ifdef USE_VBO_GRID
 					if ( cv->vboItemIndex ) {
 						VBO_PushData( cv->vboItemIndex, &tess );
 						tess.numIndexes = 0;
 						tess.numVertexes = 0;
 					} else
-#endif
+#endif // USE_VBO_GRID
 						ri.Error( ERR_DROP, "Unexpected grid flush during map loading!\n" );
 				} else {
 					RB_EndSurface();

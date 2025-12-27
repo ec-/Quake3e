@@ -3951,7 +3951,7 @@ void vk_initialize( void )
 
 	vk.cmd = vk.tess + 0;
 	vk.uniform_alignment = props.limits.minUniformBufferOffsetAlignment;
-	vk.uniform_item_size = PAD( sizeof( vkUniform_t ), vk.uniform_alignment );
+	vk.uniform_item_size = PAD( (uint32_t)sizeof( vkUniform_t ), vk.uniform_alignment );
 
 	// for flare visibility tests
 	vk.storage_alignment = MAX( props.limits.minStorageBufferOffsetAlignment, sizeof( uint32_t ) );

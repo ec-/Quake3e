@@ -324,7 +324,7 @@ typedef struct vk_tess_s {
 
 	VkBuffer vertex_buffer;
 	byte *vertex_buffer_ptr; // pointer to mapped vertex buffer
-	VkDeviceSize vertex_buffer_offset;
+	uint32_t vertex_buffer_offset; // VkDeviceSize
 
 	VkDescriptorSet uniform_descriptor;
 	uint32_t		uniform_read_offset;

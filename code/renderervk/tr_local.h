@@ -39,6 +39,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define USE_BUFFER_CLEAR	/* clear attachments on render pass begin */
 
+#ifdef USE_VBO
+//#define USE_VBO_GRID		/* put SF_GRID to VBO */
+#endif
+
 //#define USE_TESS_NEEDS_NORMAL
 //#define USE_TESS_NEEDS_ST2
 
@@ -1557,7 +1561,9 @@ void		RE_RemapShader(const char *oldShader, const char *newShader, const char *t
 //
 // tr_surface.c
 //
+#ifdef USE_VBO_GRID
 void		RB_SurfaceGridEstimate( srfGridMesh_t *cv, int *numVertexes, int *numIndexes ); 
+#endif
 
 /*
 ====================================================================

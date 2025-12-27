@@ -35,6 +35,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 //#define USE_TESS_NEEDS_ST2
 #define USE_FBO
 
+#ifdef USE_VBO
+//#define USE_VBO_GRID		/* put SF_GRID to VBO */
+#endif
+
 #include "../qcommon/q_shared.h"
 #include "../qcommon/qfiles.h"
 #include "../qcommon/qcommon.h"
