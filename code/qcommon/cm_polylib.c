@@ -217,15 +217,16 @@ winding_t *BaseWindingForPlane (vec3_t normal, vec_t dist)
 	x = -1;
 	for (i=0 ; i<3; i++)
 	{
-		v = fabs(normal[i]);
+		v = fabsf( normal[i] );
 		if (v > max)
 		{
 			x = i;
 			max = v;
 		}
 	}
-	if (x==-1)
-		Com_Error (ERR_DROP, "BaseWindingForPlane: no axis found");
+
+	if ( x < 0 )
+		Com_Error( ERR_DROP, "BaseWindingForPlane: no axis found" );
 		
 	VectorCopy (vec3_origin, vup);
 	switch (x)
