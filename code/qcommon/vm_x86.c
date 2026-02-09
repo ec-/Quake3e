@@ -107,7 +107,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
   edx	scratch (required for divisions)
   esi*	programStack
   edi*	opStack
-  ebp*  procStack ( dataBase + programStack )
+  ebp*  procBase ( dataBase + programStack )
   -------------
   rax   scratch
   rbx*  dataBase
@@ -115,7 +115,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
   rdx   scratch (required for divisions)
   rsi*  programStack
   rdi*  opStack
-  rbp*  procStack ( dataBase + programStack )
+  rbp*  procBase ( dataBase + programStack )
   rsp*
   r8    scratch
   r9    scratch
@@ -137,9 +137,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
   Example how data segment will look like during vmMain execution:
   | .... |
-  |------| vm->programStack -=36 (8+12+16) // set by vmMain
-  | ???? | +0 - unused, reserved for interpreter
-  | ???? | +4 - unused, reserved for interpreter
+  |------| vm->programStack -=36 (8+12+16) // set by vmMain -> procBase
+  | ???? | +0 - unused/scratch, reserved for interpreter
+  | ???? | +4 - unused/scratch, reserved for interpreter
   |-------
   | arg0 | +8  \
   | arg4 | +12  | - passed arguments, accessible from subroutines
@@ -149,9 +149,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
   | loc4 | +24  \ - locals, accessible only from local scope
   | loc8 | +28  /
   | lc12 | +32 /
-  |------| vm->programStack -= 24 ( 8 + MAX_VMMAIN_CALL_ARGS*4 ) // set by VM_CallCompiled()
-  | ???? | +0 - unused, reserved for interpreter
-  | ???? | +4 - unused, reserved for interpreter
+  |------| vm->programStack -= 24 ( 8 + MAX_VMMAIN_CALL_ARGS*4 ) // set by VM_CallCompiled() -> procBase
+  | ???? | +0 - unused/scratch, reserved for interpreter
+  | ???? | +4 - unused/scratch, reserved for interpreter
   | arg0 | +8  \
   | arg1 | +12  \ - passed arguments, accessible from vmMain
   | arg2 | +16  /
@@ -1124,12 +1124,6 @@ static void emit_mov_sx( uint32_t dst, uint32_t src )
 	emit_op_reg( 0x0F, 0x28, src, dst );
 }
 
-static void emit_mov_sx_rx( uint32_t xmmreg, uint32_t intreg )
-{
-	Emit1( 0x66 );
-	emit_op_reg( 0x0F, 0x6E, intreg, xmmreg );
-}
-
 static void emit_mov_rx_sx( uint32_t intreg, uint32_t xmmreg )
 {
 	Emit1( 0x66 );
@@ -1161,6 +1155,19 @@ static void emit_load_sx_index( uint32_t reg, uint32_t base, uint32_t index )
 {
 	Emit1( 0xF3 );
 	emit_op_reg_base_index( 0x0F, 0x10, reg, base, index, 1, 0 );
+}
+
+static void emit_mov_sx_rx( uint32_t xmmreg, uint32_t intreg )
+{
+	if ( CPU_Flags & CPU_SSE2 && 0 ) {
+		// movd xmmreg, intreg
+		Emit1( 0x66 );
+		emit_op_reg( 0x0F, 0x6E, intreg, xmmreg );
+	} else {
+		// SSE1 CPUs do not initialize FP register domain with movd so use movss
+		emit_store_rx( intreg, R_PROCBASE, 0 );	// mov [procBase + 0], eax
+		emit_load_sx( xmmreg, R_PROCBASE, 0 );	// mov xmm0, [procBase + 0]
+	}
 }
 
 #if 0
@@ -1240,14 +1247,6 @@ static void emit_cvttss2si( uint32_t intreg, uint32_t xmmreg )
 	Emit1( 0xF3 );
 	emit_op_reg( 0x0F, 0x2C, xmmreg, intreg );
 }
-
-#if id386
-static void emit_cvtss2si( uint32_t intreg, uint32_t xmmreg )
-{
-	Emit1( 0xF3 );
-	emit_op_reg( 0x0F, 0x2D, xmmreg, intreg );
-}
-#endif
 
 static void emit_sqrt( uint32_t xmmreg, uint32_t base, int32_t offset )
 {
@@ -2171,7 +2170,7 @@ static uint32_t alloc_sx_const( uint32_t pref, uint32_t imm )
 }
 
 
-static uint32_t dyn_alloc_rx( uint32_t pref )
+static uint32_t dyn_alloc_rx( void )
 {
 	const uint32_t _rx_mask = build_rx_mask();
 	const uint32_t mask = _rx_mask | build_opstack_mask( TYPE_RX );
@@ -2233,7 +2232,7 @@ static uint32_t alloc_rx( uint32_t pref )
 
 #ifdef DYN_ALLOC_RX
 	if ( ( pref & FORCED ) == 0 ) {
-		uint32_t v = dyn_alloc_rx( pref );
+		uint32_t v = dyn_alloc_rx();
 		if ( v == ~0U ) {
 			DROP( "no free registers at ip %i, pref %x, opStack %i, mask %04x", ip, pref, opstack * 4, build_rx_mask() );
 		}
@@ -2259,7 +2258,7 @@ static uint32_t alloc_rx( uint32_t pref )
 }
 
 
-static uint32_t dyn_alloc_sx( uint32_t pref )
+static uint32_t dyn_alloc_sx( void )
 {
 	const uint32_t _sx_mask = build_sx_mask();
 	const uint32_t mask = _sx_mask | build_opstack_mask( TYPE_SX );
@@ -2321,7 +2320,7 @@ static uint32_t alloc_sx( uint32_t pref )
 
 #ifdef DYN_ALLOC_SX
 	if ( ( pref & FORCED ) == 0 ) {
-		uint32_t v = dyn_alloc_sx( pref );
+		uint32_t v = dyn_alloc_sx();
 		if ( v == ~0U ) {
 			DROP( "no free registers at ip %i, pref %x, opStack %i, mask %04x", ip, pref, opstack * 4, build_sx_mask() );
 		}
@@ -4619,22 +4618,7 @@ __compile:
 				if ( HasSSEFP() ) {
 					rx[0] = alloc_rx( R_EAX );
 					sx[0] = load_sx_opstack( R_XMM0 | RCONST ); // xmm0 = *opstack
-#if idx64
 					emit_cvttss2si( rx[0], sx[0] );		// cvttss2si xmm0, eax
-#else
-					if ( CPU_Flags & CPU_SSE2 ) {
-						emit_cvttss2si( rx[0], sx[0] );	// cvttss2si xmm0, eax
-					} else {
-						static int32_t sse_cw[2] = { 0x0000, 0x7FA0 }; // [0] - current value, [1] - round towards zero
-						EmitString( "0F AE 1D" );		// stmxcsr [0x12345678]
-						Emit4( (intptr_t) &sse_cw[0] );
-						EmitString( "0F AE 15" );		// ldmxcsr [0x12345678]
-						Emit4( (intptr_t) &sse_cw[1] );
-						emit_cvtss2si( rx[0], sx[0] );	// cvtss2si xmm0, eax
-						EmitString( "0F AE 15" );		// ldmxcsr [0x12345678]
-						Emit4( (intptr_t) &sse_cw[0] );
-					}
-#endif
 					unmask_sx( sx[0] );
 					store_rx_opstack( rx[0] );				// *opstack = eax
 				} else {
