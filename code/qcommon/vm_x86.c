@@ -1159,7 +1159,7 @@ static void emit_load_sx_index( uint32_t reg, uint32_t base, uint32_t index )
 
 static void emit_mov_sx_rx( uint32_t xmmreg, uint32_t intreg )
 {
-	if ( CPU_Flags & CPU_SSE2 && 0 ) {
+	if ( CPU_Flags & CPU_SSE2 ) {
 		// movd xmmreg, intreg
 		Emit1( 0x66 );
 		emit_op_reg( 0x0F, 0x6E, intreg, xmmreg );
