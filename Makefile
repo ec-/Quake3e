@@ -296,6 +296,9 @@ endif
 ifeq ($(ARCH),aarch64)
   HAVE_VM_COMPILED = true
 endif
+ifeq ($(ARCH),ppc64le)
+  HAVE_VM_COMPILED = true
+endif
 
 BASE_CFLAGS =
 
@@ -1173,6 +1176,9 @@ ifeq ($(HAVE_VM_COMPILED),true)
   ifeq ($(ARCH),aarch64)
     Q3OBJ += $(B)/client/qvm/vm_aarch64.o
   endif
+  ifeq ($(ARCH),ppc64le)
+    Q3OBJ += $(B)/client/qvm/vm_powerpc.o
+  endif
 endif
 
 ifeq ($(USE_CURL),1)
@@ -1367,6 +1373,9 @@ ifeq ($(HAVE_VM_COMPILED),true)
   endif
   ifeq ($(ARCH),aarch64)
     Q3DOBJ += $(B)/ded/qvm/vm_aarch64.o
+  endif
+  ifeq ($(ARCH),ppc64le)
+    Q3DOBJ += $(B)/ded/qvm/vm_powerpc.o
   endif
 endif
 
