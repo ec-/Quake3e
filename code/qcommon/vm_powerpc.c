@@ -21,8 +21,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
 
-// load time compiler and execution environment for PPC64 (ppc64le)
-// using ELFv2 ABI, without dynamic register allocation
+// load time compiler and execution environment for PPC64
+// supports both ELFv2 ABI (ppc64le) and ELFv1 ABI (ppc64 big-endian)
+// without dynamic register allocation
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -32,6 +33,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <math.h>
 
 #include "vm_local.h"
+
+// Detect ELFv1 (ppc64 big-endian) vs ELFv2 (ppc64le) ABI
+#if defined(_CALL_ELF) && _CALL_ELF == 2
+#define PPC64_ELFv2 1
+#elif defined(_CALL_ELF) && _CALL_ELF == 1
+#define PPC64_ELFv1 1
+#elif defined(__LITTLE_ENDIAN__) || defined(__LITTLE_ENDIAN)
+#define PPC64_ELFv2 1
+#else
+#define PPC64_ELFv1 1
+#endif
 
 #define NUM_PASSES 1
 
@@ -873,19 +885,39 @@ savedOffset[ FUNC_SYSC ] = compiledOfs;
 
 savedOffset[ FUNC_SYSF ] = compiledOfs;
 
-	// ELFv2 ABI stack frame layout:
-	//   SP+0:    back chain (8 bytes, set by stdu)
-	//   SP+8:    CR save area (8 bytes)
-	//   SP+16:   LR save area (8 bytes, callee saves our LR here)
-	//   SP+24:   TOC save area (8 bytes, reserved)
+	// Stack frame layout for syscall handler:
+	//
+	// ELFv1 ABI (ppc64 big-endian):
+	//   SP+0:    back chain (8)
+	//   SP+8:    CR save (8)
+	//   SP+16:   LR save area (8)
+	//   SP+24:   compiler/linker (8)
+	//   SP+32:   reserved (8)
+	//   SP+40:   TOC save (8) -- save R2 here before external call
+	//   SP+48:   parameter save area (64 bytes, 8 slots)
+	//   SP+112:  args[0..15] (16 * 8 = 128 bytes) -- local storage
+	//   SP+240:  our saved LR (8)
+	//   SP+248:  our saved rOPSTACK (8)
+	//   Total:   256 bytes (16-byte aligned)
+	//
+	// ELFv2 ABI (ppc64le):
+	//   SP+0:    back chain (8)
 	//   SP+32:   args[0..15] (16 * 8 = 128 bytes) -- parameter/local area
-	//   SP+160:  our saved LR (8 bytes)
-	//   SP+168:  our saved rOPSTACK (8 bytes)
+	//   SP+160:  our saved LR (8)
+	//   SP+168:  our saved rOPSTACK (8)
 	//   Total:   176 bytes (16-byte aligned)
+#ifdef PPC64_ELFv1
+	#define SYSC_FRAME 256
+	#define SYSC_ARGS  112     // offset to args array within frame
+	#define SYSC_LR    240     // offset to our saved LR
+	#define SYSC_OPST  248     // offset to our saved rOPSTACK
+	#define SYSC_TOC   40      // offset to TOC save slot
+#else
 	#define SYSC_FRAME 176
 	#define SYSC_ARGS  32      // offset to args array within frame
 	#define SYSC_LR    160     // offset to our saved LR
 	#define SYSC_OPST  168     // offset to our saved rOPSTACK
+#endif
 
 	// Allocate stack space
 	emit( PPC_STDU( R1, -SYSC_FRAME, R1 ) );
@@ -916,11 +948,24 @@ savedOffset[ FUNC_SYSF ] = compiledOfs;
 	// R3 = pointer to args array
 	emit( PPC_ADDI( R3, R1, SYSC_ARGS ) );
 
-	// Load vm->systemCall into R12 and call it
+	// Load vm->systemCall and call it
+#ifdef PPC64_ELFv1
+	// ELFv1: vm->systemCall is a function descriptor pointer
+	// descriptor[0] = entry point, descriptor[1] = TOC, descriptor[2] = env
+	emit( PPC_LD( R11, offsetof(vm_t, systemCall), rVMBASE ) ); // R11 = descriptor ptr
+	emit( PPC_STD( R2, SYSC_TOC, R1 ) );                       // save our TOC
+	emit( PPC_LD( R0, 0, R11 ) );                               // R0 = entry point
+	emit( PPC_LD( R2, 8, R11 ) );                               // R2 = callee's TOC
+	emit( PPC_MTCTR( R0 ) );
+	emit( PPC_BCTRL() );
+	emit( PPC_LD( R2, SYSC_TOC, R1 ) );                        // restore our TOC
+#else
+	// ELFv2: vm->systemCall is the entry point directly
 	// ELFv2 ABI requires R12 = target address before bctrl
 	emit( PPC_LD( R12, offsetof(vm_t, systemCall), rVMBASE ) );
 	emit( PPC_MTCTR( R12 ) );
 	emit( PPC_BCTRL() );
+#endif
 
 	// Return value is in R3, store it to opstack+4
 	emit( PPC_STW( R3, 4, rOPSTACK ) );
@@ -1085,46 +1130,53 @@ __recompile:
 	init_opstack();
 
 	// ===== PROLOGUE =====
-	// ELFv2 ABI: create stack frame, save callee-saved registers and LR
-	// We need to save: LR, R14-R22 (9 GPRs), F14 (1 FPR for scratch save area)
+	// Create stack frame, save callee-saved registers and LR
+	// We need to save: LR, R14-R22 (9 GPRs)
 	// Stack frame: 16-byte aligned
-	// Layout (from SP):
-	//   SP+0:    back chain (8 bytes)
-	//   SP+8:    CR save (8 bytes)
-	//   SP+16:   LR save (stored by us, not in standard position but fine since we restore it)
-	//   SP+24:   R14
-	//   SP+32:   R15
-	//   SP+40:   R16
-	//   SP+48:   R17
-	//   SP+56:   R18
-	//   SP+64:   R19
-	//   SP+72:   R20
-	//   SP+80:   R21
-	//   SP+88:   R22
-	//   SP+96:   F14 (8 bytes, for int<->float conversion scratch)
-	//   Total: 104, rounded up to 112 (16-byte aligned)
-	// Actually, ELFv2 ABI: LR is saved by callee at caller's SP+16
-	// But since we control everything, we'll use a simpler layout.
+	//
+	// ELFv1 ABI (ppc64 big-endian):
+	//   SP+0:    back chain (8)
+	//   SP+8:    CR save (8)
+	//   SP+16:   LR save area (8)
+	//   SP+24:   compiler/linker (8)
+	//   SP+32:   reserved (8)
+	//   SP+40:   TOC save (8)
+	//   SP+48:   parameter save area (64 bytes, 8 slots)
+	//   SP+112:  first available for locals
+	//   R14-R22 saved at SP+112..SP+176 (9 * 8 = 72)
+	//   Total: 184, rounded up to 192
+	//
+	// ELFv2 ABI (ppc64le):
+	//   SP+0:    back chain (8)
+	//   SP+32:   first available for locals (no mandatory parameter save area)
+	//   R14-R22 saved at SP+48..SP+112 (9 * 8 = 72)
+	//   Total: 120, we use 160 (generous, 16-byte aligned)
 
-	#define FRAME_SIZE 160  // generous, 16-byte aligned
+#ifdef PPC64_ELFv1
+	#define FRAME_SIZE 192
+	#define FRAME_GPR_BASE 112  // first callee-saved GPR save offset
+#else
+	#define FRAME_SIZE 160
+	#define FRAME_GPR_BASE 48
+#endif
 
 	// Create stack frame
 	emit( PPC_STDU( R1, -FRAME_SIZE, R1 ) );
 
-	// Save LR
+	// Save LR in caller's frame (standard position: caller's SP+16)
 	emit( PPC_MFLR( R0 ) );
-	emit( PPC_STD( R0, FRAME_SIZE + 16, R1 ) );  // save LR in caller's frame (standard ELFv2 position)
+	emit( PPC_STD( R0, FRAME_SIZE + 16, R1 ) );
 
 	// Save callee-saved GPRs
-	emit( PPC_STD( R14, 48, R1 ) );
-	emit( PPC_STD( R15, 56, R1 ) );
-	emit( PPC_STD( R16, 64, R1 ) );
-	emit( PPC_STD( R17, 72, R1 ) );
-	emit( PPC_STD( R18, 80, R1 ) );
-	emit( PPC_STD( R19, 88, R1 ) );
-	emit( PPC_STD( R20, 96, R1 ) );
-	emit( PPC_STD( R21, 104, R1 ) );
-	emit( PPC_STD( R22, 112, R1 ) );
+	emit( PPC_STD( R14, FRAME_GPR_BASE + 0, R1 ) );
+	emit( PPC_STD( R15, FRAME_GPR_BASE + 8, R1 ) );
+	emit( PPC_STD( R16, FRAME_GPR_BASE + 16, R1 ) );
+	emit( PPC_STD( R17, FRAME_GPR_BASE + 24, R1 ) );
+	emit( PPC_STD( R18, FRAME_GPR_BASE + 32, R1 ) );
+	emit( PPC_STD( R19, FRAME_GPR_BASE + 40, R1 ) );
+	emit( PPC_STD( R20, FRAME_GPR_BASE + 48, R1 ) );
+	emit( PPC_STD( R21, FRAME_GPR_BASE + 56, R1 ) );
+	emit( PPC_STD( R22, FRAME_GPR_BASE + 64, R1 ) );
 
 	// Load VM state into dedicated registers
 	emit_MOVi64( rVMBASE, (intptr_t)vm );
@@ -1149,15 +1201,15 @@ __recompile:
 #endif
 
 	// Restore callee-saved GPRs
-	emit( PPC_LD( R14, 48, R1 ) );
-	emit( PPC_LD( R15, 56, R1 ) );
-	emit( PPC_LD( R16, 64, R1 ) );
-	emit( PPC_LD( R17, 72, R1 ) );
-	emit( PPC_LD( R18, 80, R1 ) );
-	emit( PPC_LD( R19, 88, R1 ) );
-	emit( PPC_LD( R20, 96, R1 ) );
-	emit( PPC_LD( R21, 104, R1 ) );
-	emit( PPC_LD( R22, 112, R1 ) );
+	emit( PPC_LD( R14, FRAME_GPR_BASE + 0, R1 ) );
+	emit( PPC_LD( R15, FRAME_GPR_BASE + 8, R1 ) );
+	emit( PPC_LD( R16, FRAME_GPR_BASE + 16, R1 ) );
+	emit( PPC_LD( R17, FRAME_GPR_BASE + 24, R1 ) );
+	emit( PPC_LD( R18, FRAME_GPR_BASE + 32, R1 ) );
+	emit( PPC_LD( R19, FRAME_GPR_BASE + 40, R1 ) );
+	emit( PPC_LD( R20, FRAME_GPR_BASE + 48, R1 ) );
+	emit( PPC_LD( R21, FRAME_GPR_BASE + 56, R1 ) );
+	emit( PPC_LD( R22, FRAME_GPR_BASE + 64, R1 ) );
 
 	// Restore LR
 	emit( PPC_LD( R0, FRAME_SIZE + 16, R1 ) );
@@ -1220,12 +1272,28 @@ __recompile:
 				}
 
 				// Save LR, opStack, pStack, procBase on native stack
+			// ELFv1: minimum frame is 112 bytes, locals start at 112
+			// ELFv2: minimum frame is 32 bytes, locals start at 32
+			// Scratch space for CVIF/CVFI is at ENTER_SCRATCH (8 bytes)
+#ifdef PPC64_ELFv1
+			#define ENTER_FRAME    160
+			#define ENTER_OPST     112
+			#define ENTER_PST      120
+			#define ENTER_PROC     128
+			#define ENTER_SCRATCH  136
+#else
+			#define ENTER_FRAME    80
+			#define ENTER_OPST     32
+			#define ENTER_PST      40
+			#define ENTER_PROC     48
+			#define ENTER_SCRATCH  56
+#endif
 				emit( PPC_MFLR( R0 ) );
-				emit( PPC_STDU( R1, -64, R1 ) );	// create local frame
-				emit( PPC_STD( R0, 64 + 16, R1 ) );	// save LR in caller's frame
-				emit( PPC_STD( rOPSTACK, 32, R1 ) );
-				emit( PPC_STW( rPSTACK, 40, R1 ) );
-				emit( PPC_STD( rPROCBASE, 48, R1 ) );
+				emit( PPC_STDU( R1, -ENTER_FRAME, R1 ) );	// create local frame
+				emit( PPC_STD( R0, ENTER_FRAME + 16, R1 ) );	// save LR in caller's frame
+				emit( PPC_STD( rOPSTACK, ENTER_OPST, R1 ) );
+				emit( PPC_STW( rPSTACK, ENTER_PST, R1 ) );
+				emit( PPC_STD( rPROCBASE, ENTER_PROC, R1 ) );
 
 				// Subtract frame size from programStack
 				if ( (int16_t)ci->value == ci->value ) {
@@ -1260,12 +1328,12 @@ __recompile:
 				}
 
 				// Restore saved state
-				emit( PPC_LD( rPROCBASE, 48, R1 ) );
-				emit( PPC_LWZ( rPSTACK, 40, R1 ) );
-				emit( PPC_LD( rOPSTACK, 32, R1 ) );
-				emit( PPC_LD( R0, 64 + 16, R1 ) );  // restore LR
+				emit( PPC_LD( rPROCBASE, ENTER_PROC, R1 ) );
+				emit( PPC_LWZ( rPSTACK, ENTER_PST, R1 ) );
+				emit( PPC_LD( rOPSTACK, ENTER_OPST, R1 ) );
+				emit( PPC_LD( R0, ENTER_FRAME + 16, R1 ) );  // restore LR
 				emit( PPC_MTLR( R0 ) );
-				emit( PPC_ADDI( R1, R1, 64 ) );     // destroy local frame
+				emit( PPC_ADDI( R1, R1, ENTER_FRAME ) );     // destroy local frame
 				emit( PPC_BLR() );
 				break;
 
@@ -1643,35 +1711,39 @@ __recompile:
 			case OP_CVIF:
 				// Convert integer to float
 				// Load 32-bit int from opstack, convert to float, store back
-				// Method: use the stack as scratch space
-				// 1. Load int32 from opstack
-				// 2. Sign-extend to 64-bit
-				// 3. Store as int64 to scratch, load as double (fcfid), round to single (frsp), store
-				// On Power ISA 2.06+ (Power7+), we can use fcfids (convert from int64 to single)
-				//
-				// scratch area: use R1+120 (within our frame)
-				load_opstack( R3 );                     // R3 = int32 value
-				emit( PPC_EXTSW( R3, R3 ) );           // sign-extend to 64-bit
-				emit( PPC_STD( R3, 120, R1 ) );        // store int64 to stack scratch
-				emit( PPC_LFD( F0, 120, R1 ) );       // load as double (reinterpret int64 bits)
-				emit( PPC_FCFIDS( F0, F0 ) );          // convert int64 -> float single
-				emit( PPC_STFS( F0, opstack, rOPSTACK ) ); // store float to opstack
-				break;
+			// Method: use the stack as scratch space
+			// 1. Load int32 from opstack
+			// 2. Sign-extend to 64-bit
+			// 3. Store as int64 to scratch, load as double (fcfid), round to single (frsp), store
+			// On Power ISA 2.06+ (Power7+), we can use fcfids (convert from int64 to single)
+			//
+			// scratch area: use R1+ENTER_SCRATCH (within our frame)
+			load_opstack( R3 );                     // R3 = int32 value
+			emit( PPC_EXTSW( R3, R3 ) );           // sign-extend to 64-bit
+			emit( PPC_STD( R3, ENTER_SCRATCH, R1 ) );   // store int64 to stack scratch
+			emit( PPC_LFD( F0, ENTER_SCRATCH, R1 ) );   // load as double (reinterpret int64 bits)
+			emit( PPC_FCFIDS( F0, F0 ) );          // convert int64 -> float single
+			emit( PPC_STFS( F0, opstack, rOPSTACK ) ); // store float to opstack
+			break;
 
-			case OP_CVFI:
-				// Convert float to integer (truncate toward zero)
-				// 1. Load float from opstack
-				// 2. fctiwz -> convert to int32 in FPR (stored in low 32 bits of doubleword)
-				// 3. stfd to scratch, load low 32 bits
-				emit( PPC_LFS( F0, opstack, rOPSTACK ) );   // load float
-				emit( PPC_FCTIWZ( F0, F0 ) );               // convert to int32 (in FPR)
-				emit( PPC_STFD( F0, 120, R1 ) );            // store doubleword to scratch
-				// On little-endian, the int32 result is in the first 4 bytes (offset 0)
-				// On big-endian, it would be at offset 4
-				// For ppc64le: the integer result is at the low address
-				emit( PPC_LWZ( R3, 120, R1 ) );             // load int32 from scratch (LE: offset 0)
-				store_opstack( R3 );
-				break;
+		case OP_CVFI:
+			// Convert float to integer (truncate toward zero)
+			// 1. Load float from opstack
+			// 2. fctiwz -> convert to int32 in FPR (stored in low 32 bits of doubleword)
+			// 3. stfd to scratch, load low 32 bits
+			emit( PPC_LFS( F0, opstack, rOPSTACK ) );      // load float
+			emit( PPC_FCTIWZ( F0, F0 ) );                  // convert to int32 (in FPR)
+			emit( PPC_STFD( F0, ENTER_SCRATCH, R1 ) );     // store doubleword to scratch
+			// fctiwz places the 32-bit int in the low-order word of the doubleword.
+			// On little-endian, the low-order word is at the base address (offset+0).
+			// On big-endian, the low-order word is at offset+4.
+#ifdef PPC64_ELFv1
+			emit( PPC_LWZ( R3, ENTER_SCRATCH + 4, R1 ) );  // load int32 (BE: offset+4)
+#else
+			emit( PPC_LWZ( R3, ENTER_SCRATCH, R1 ) );      // load int32 (LE: offset+0)
+#endif
+			store_opstack( R3 );
+			break;
 
 			default:
 				Com_Error( ERR_DROP, "VM: bad opcode %02x at instruction %i", ci->op, ip - 1 );
@@ -1695,34 +1767,83 @@ __recompile:
 	emitBlockCopyFunc( vm );
 
 	savedOffset[ FUNC_BADJ ] = compiledOfs;
+#ifdef PPC64_ELFv1
+	// ELFv1: function pointer is a descriptor; resolve entry+TOC at JIT compile time
+	{ intptr_t *desc = (intptr_t*)(intptr_t)BadJump;
+	emit_MOVi64( R0, desc[0] );   // entry point
+	emit_MOVi64( R2, desc[1] );   // TOC
+	emit( PPC_MTCTR( R0 ) );
+	emit( PPC_BCTRL() ); }
+#else
 	emit_MOVi64( R12, (intptr_t)BadJump );
 	emit( PPC_MTCTR( R12 ) );
 	emit( PPC_BCTRL() );
+#endif
 
 	savedOffset[ FUNC_OUTJ ] = compiledOfs;
+#ifdef PPC64_ELFv1
+	{ intptr_t *desc = (intptr_t*)(intptr_t)OutJump;
+	emit_MOVi64( R0, desc[0] );
+	emit_MOVi64( R2, desc[1] );
+	emit( PPC_MTCTR( R0 ) );
+	emit( PPC_BCTRL() ); }
+#else
 	emit_MOVi64( R12, (intptr_t)OutJump );
 	emit( PPC_MTCTR( R12 ) );
 	emit( PPC_BCTRL() );
+#endif
 
 	savedOffset[ FUNC_OSOF ] = compiledOfs;
+#ifdef PPC64_ELFv1
+	{ intptr_t *desc = (intptr_t*)(intptr_t)ErrBadOpStack;
+	emit_MOVi64( R0, desc[0] );
+	emit_MOVi64( R2, desc[1] );
+	emit( PPC_MTCTR( R0 ) );
+	emit( PPC_BCTRL() ); }
+#else
 	emit_MOVi64( R12, (intptr_t)ErrBadOpStack );
 	emit( PPC_MTCTR( R12 ) );
 	emit( PPC_BCTRL() );
+#endif
 
 	savedOffset[ FUNC_PSOF ] = compiledOfs;
+#ifdef PPC64_ELFv1
+	{ intptr_t *desc = (intptr_t*)(intptr_t)ErrBadProgramStack;
+	emit_MOVi64( R0, desc[0] );
+	emit_MOVi64( R2, desc[1] );
+	emit( PPC_MTCTR( R0 ) );
+	emit( PPC_BCTRL() ); }
+#else
 	emit_MOVi64( R12, (intptr_t)ErrBadProgramStack );
 	emit( PPC_MTCTR( R12 ) );
 	emit( PPC_BCTRL() );
+#endif
 
 	savedOffset[ FUNC_BADR ] = compiledOfs;
+#ifdef PPC64_ELFv1
+	{ intptr_t *desc = (intptr_t*)(intptr_t)ErrBadDataRead;
+	emit_MOVi64( R0, desc[0] );
+	emit_MOVi64( R2, desc[1] );
+	emit( PPC_MTCTR( R0 ) );
+	emit( PPC_BCTRL() ); }
+#else
 	emit_MOVi64( R12, (intptr_t)ErrBadDataRead );
 	emit( PPC_MTCTR( R12 ) );
 	emit( PPC_BCTRL() );
+#endif
 
 	savedOffset[ FUNC_BADW ] = compiledOfs;
+#ifdef PPC64_ELFv1
+	{ intptr_t *desc = (intptr_t*)(intptr_t)ErrBadDataWrite;
+	emit_MOVi64( R0, desc[0] );
+	emit_MOVi64( R2, desc[1] );
+	emit( PPC_MTCTR( R0 ) );
+	emit( PPC_BCTRL() ); }
+#else
 	emit_MOVi64( R12, (intptr_t)ErrBadDataWrite );
 	emit( PPC_MTCTR( R12 ) );
 	emit( PPC_BCTRL() );
+#endif
 
 	} // pass
 
@@ -1801,7 +1922,30 @@ int32_t VM_CallCompiled( vm_t *vm, int nargs, int32_t *args )
 	vm->opStack = opStack;
 	vm->opStackTop = opStack + ARRAY_LEN( opStack ) - 1;
 
+#ifdef PPC64_ELFv1
+	// ELFv1: vm->codeBase.ptr is raw code, not a function descriptor.
+	// Use inline asm to branch directly to JIT code, bypassing the
+	// ELFv1 function descriptor mechanism which expects a descriptor
+	// at the target address rather than raw code.
+	{
+		register void *entry = vm->codeBase.ptr;
+		__asm__ __volatile__ (
+			"std  2, 40(1)\n\t"  // save TOC (R2) to standard TOC save slot
+			"mtctr %0\n\t"       // load JIT entry into CTR
+			"bctrl\n\t"          // branch to JIT code
+			"ld   2, 40(1)\n\t"  // restore TOC after return
+			:
+			: "r" (entry)
+			: "ctr", "lr", "cr0", "cr1", "cr5", "cr6", "cr7",
+			  "r0", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12",
+			  "fr0", "fr1", "fr2", "fr3", "fr4", "fr5", "fr6", "fr7",
+			  "fr8", "fr9", "fr10", "fr11", "fr12", "fr13",
+			  "memory"
+		);
+	}
+#else
 	vm->codeBase.func(); // go into generated code
+#endif
 
 #ifdef DEBUG_VM
 	if ( opStack[0] != 0xDEADC0DE ) {
