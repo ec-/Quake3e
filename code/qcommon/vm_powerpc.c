@@ -45,6 +45,23 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define PPC64_ELFv1 1
 #endif
 
+// Detect ISA level at compile time for optional instruction optimizations.
+// ISA 2.07 (POWER8): direct-move instructions (mtvsrwa, mfvsrwz, xscvdpsxws)
+// These eliminate memory round-trips in CVIF/CVFI conversions.
+#if defined(_ARCH_PWR8) || defined(__POWER8_VECTOR__)
+#define USE_ISA_2_07 1
+#else
+#define USE_ISA_2_07 0
+#endif
+
+// ISA 3.0 (POWER9): modsw, moduw instructions
+// These replace the 3-instruction divw+mullw+sub sequence for modulo.
+#if defined(_ARCH_PWR9) || defined(__POWER9_VECTOR__)
+#define USE_ISA_3_0 1
+#else
+#define USE_ISA_3_0 0
+#endif
+
 #define NUM_PASSES 1
 
 // additional integrity checks
@@ -575,6 +592,27 @@ static void VM_FreeBuffers( void )
 // -- Floating-Point round to single (frsp) --
 // frsp frt, frb  (round to single precision)
 #define PPC_FRSP(frt, frb)			PPC_X(63, frt, 0, frb, 12, 0)
+
+// -- ISA 3.0 (POWER9) integer modulo --
+#if USE_ISA_3_0
+// modsw rt, ra, rb  (signed word modulo)
+#define PPC_MODSW(rt, ra, rb)		PPC_X(31, rt, ra, rb, 779, 0)
+// moduw rt, ra, rb  (unsigned word modulo)
+#define PPC_MODUW(rt, ra, rb)		PPC_X(31, rt, ra, rb, 267, 0)
+#endif
+
+// -- ISA 2.07 (POWER8) direct-move and VSX conversion --
+#if USE_ISA_2_07
+// mtvsrwa vsr, ra  (move to VSR word algebraic, sign-extends 32-bit GPR to 64-bit in VSR)
+// For FPR0-31 (VSR 0-31), SX=0.
+#define PPC_MTVSRWA(vsr, ra)		PPC_X(31, vsr, ra, 0, 211, 0)
+// mfvsrwz ra, vsr  (move from VSR word and zero-extend, low 32 bits of VSR to GPR)
+// Note: instruction encoding has VSR in RS position, GPR in RA position.
+#define PPC_MFVSRWZ(ra, vsr)		PPC_X(31, vsr, ra, 0, 115, 0)
+// xscvdpsxws vrt, vrb  (convert scalar double-precision to signed word, saturate)
+// XX2-form: opcode 60, XO=88. For FPR0-31 (VSR 0-31, BX=TX=0).
+#define PPC_XSCVDPSXWS(vt, vb)		( (60u<<26) | (((unsigned)(vt)&0x1F)<<21) | (((unsigned)(vb)&0x1F)<<11) | (88u<<2) )
+#endif
 
 // -- Trap --
 // trap  (tw 31, 0, 0)
@@ -1592,23 +1630,32 @@ __recompile:
 				break;
 
 			case OP_MODI:
-				// mod = a - (a/b)*b
+				// mod = a % b (signed)
 				load_opstack( R4 );        // R4 = b (top)
 				dec_opstack();
 				load_opstack( R3 );        // R3 = a (second)
+#if USE_ISA_3_0
+				emit( PPC_MODSW( R3, R3, R4 ) );  // R3 = a % b (single instruction)
+#else
 				emit( PPC_DIVW( R5, R3, R4 ) );   // R5 = a / b (signed)
 				emit( PPC_MULLW( R5, R5, R4 ) );  // R5 = (a/b) * b
 				emit( PPC_SUB( R3, R3, R5 ) );    // R3 = a - (a/b)*b
+#endif
 				store_opstack( R3 );
 				break;
 
 			case OP_MODU:
+				// mod = a % b (unsigned)
 				load_opstack( R4 );
 				dec_opstack();
 				load_opstack( R3 );
+#if USE_ISA_3_0
+				emit( PPC_MODUW( R3, R3, R4 ) );  // R3 = a % b (single instruction)
+#else
 				emit( PPC_DIVWU( R5, R3, R4 ) );
 				emit( PPC_MULLW( R5, R5, R4 ) );
 				emit( PPC_SUB( R3, R3, R5 ) );
+#endif
 				store_opstack( R3 );
 				break;
 
@@ -1710,27 +1757,39 @@ __recompile:
 			// ---- Type conversion ----
 			case OP_CVIF:
 				// Convert integer to float
-				// Load 32-bit int from opstack, convert to float, store back
-			// Method: use the stack as scratch space
-			// 1. Load int32 from opstack
-			// 2. Sign-extend to 64-bit
-			// 3. Store as int64 to scratch, load as double (fcfid), round to single (frsp), store
-			// On Power ISA 2.06+ (Power7+), we can use fcfids (convert from int64 to single)
-			//
-			// scratch area: use R1+ENTER_SCRATCH (within our frame)
+#if USE_ISA_2_07
+			// ISA 2.07 (POWER8): use mtvsrwa to move GPR directly to VSR,
+			// avoiding the memory round-trip through the stack scratch area.
+			// mtvsrwa sign-extends the 32-bit GPR value to 64-bit in the VSR.
+			load_opstack( R3 );                        // R3 = int32 value
+			emit( PPC_MTVSRWA( F0, R3 ) );            // F0(VSR) = sign-extend(R3)
+			emit( PPC_FCFIDS( F0, F0 ) );             // F0 = convert int64 -> float
+			emit( PPC_STFS( F0, opstack, rOPSTACK ) ); // store float to opstack
+#else
+			// Fallback: memory round-trip via stack scratch area
+			// 1. Load int32 from opstack, sign-extend to 64-bit
+			// 2. Store as int64 to scratch, load as double (for fcfids input)
 			load_opstack( R3 );                     // R3 = int32 value
 			emit( PPC_EXTSW( R3, R3 ) );           // sign-extend to 64-bit
 			emit( PPC_STD( R3, ENTER_SCRATCH, R1 ) );   // store int64 to stack scratch
 			emit( PPC_LFD( F0, ENTER_SCRATCH, R1 ) );   // load as double (reinterpret int64 bits)
 			emit( PPC_FCFIDS( F0, F0 ) );          // convert int64 -> float single
 			emit( PPC_STFS( F0, opstack, rOPSTACK ) ); // store float to opstack
+#endif
 			break;
 
 		case OP_CVFI:
 			// Convert float to integer (truncate toward zero)
-			// 1. Load float from opstack
-			// 2. fctiwz -> convert to int32 in FPR (stored in low 32 bits of doubleword)
-			// 3. stfd to scratch, load low 32 bits
+#if USE_ISA_2_07
+			// ISA 2.07 (POWER8): use xscvdpsxws + mfvsrwz to avoid memory round-trip.
+			// This also eliminates the BE/LE offset difference since there is no
+			// intermediate memory store.
+			emit( PPC_LFS( F0, opstack, rOPSTACK ) );      // load float
+			emit( PPC_XSCVDPSXWS( F0, F0 ) );              // convert double -> signed int32 in VSR
+			emit( PPC_MFVSRWZ( R3, F0 ) );                 // move low 32 bits of VSR -> GPR
+			store_opstack( R3 );
+#else
+			// Fallback: memory round-trip via stack scratch area
 			emit( PPC_LFS( F0, opstack, rOPSTACK ) );      // load float
 			emit( PPC_FCTIWZ( F0, F0 ) );                  // convert to int32 (in FPR)
 			emit( PPC_STFD( F0, ENTER_SCRATCH, R1 ) );     // store doubleword to scratch
@@ -1743,6 +1802,7 @@ __recompile:
 			emit( PPC_LWZ( R3, ENTER_SCRATCH, R1 ) );      // load int32 (LE: offset+0)
 #endif
 			store_opstack( R3 );
+#endif
 			break;
 
 			default:
