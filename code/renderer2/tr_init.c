@@ -1570,7 +1570,9 @@ static void RE_Shutdown( refShutdownCode_t code ) {
 
 	// shut down platform specific OpenGL stuff
 	if ( code != REF_KEEP_CONTEXT ) {
-		ri.GLimp_Shutdown( code == REF_UNLOAD_DLL ? qtrue: qfalse );
+		if ( ri.GLimp_Shutdown ) {
+			ri.GLimp_Shutdown( code == REF_UNLOAD_DLL ? qtrue: qfalse );
+		}
 
 		Com_Memset( &glConfig, 0, sizeof( glConfig ) );
 		Com_Memset( &glRefConfig, 0, sizeof( glRefConfig ) );

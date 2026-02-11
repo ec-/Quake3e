@@ -1976,7 +1976,9 @@ static void RE_Shutdown( refShutdownCode_t code ) {
 		Com_Memset( &glState, 0, sizeof( glState ) );
 
 		if ( code != REF_KEEP_WINDOW ) {
-			ri.VKimp_Shutdown( code == REF_UNLOAD_DLL ? qtrue : qfalse );
+			if ( ri.VKimp_Shutdown ) {
+				ri.VKimp_Shutdown( code == REF_UNLOAD_DLL ? qtrue : qfalse );
+			}
 			Com_Memset( &glConfig, 0, sizeof( glConfig ) );
 		}
 #else
@@ -1984,7 +1986,9 @@ static void RE_Shutdown( refShutdownCode_t code ) {
 		Com_Memset( &glState, 0, sizeof( glState ) );
 
 		if ( code != REF_KEEP_WINDOW ) {
-			ri.GLimp_Shutdown( code == REF_UNLOAD_DLL ? qtrue : qfalse );
+			if ( ri.GLimp_Shutdown ) {
+				ri.GLimp_Shutdown( code == REF_UNLOAD_DLL ? qtrue : qfalse );
+			}
 			Com_Memset( &glConfig, 0, sizeof( glConfig ) );
 		}
 #endif
