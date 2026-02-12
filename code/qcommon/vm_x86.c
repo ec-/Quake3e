@@ -1145,19 +1145,20 @@ static void emit_comiss( uint32_t base, uint32_t reg )
 	emit_op_reg( 0x0F, 0x2F, reg, base );
 }
 
-static void emit_load_sx( uint32_t reg, uint32_t base, int32_t offset )
+static void emit_load_sx( uint32_t xmmreg, uint32_t base, int32_t offset )
 {
 	Emit1( 0xF3 );
-	emit_op_reg_base_offset( 0x0F, 0x10, reg, base, offset );
+	emit_op_reg_base_offset( 0x0F, 0x10, xmmreg, base, offset );
 }
 
-static void emit_load_sx_index( uint32_t reg, uint32_t base, uint32_t index )
+static void emit_load_sx_index( uint32_t xmmreg, uint32_t base, uint32_t index )
 {
 	Emit1( 0xF3 );
-	emit_op_reg_base_index( 0x0F, 0x10, reg, base, index, 1, 0 );
+	emit_op_reg_base_index( 0x0F, 0x10, xmmreg, base, index, 1, 0 );
 }
 
-static void emit_mov_sx_rx( uint32_t xmmreg, uint32_t intreg )
+// wrapper function
+static void mov_sx_rx( uint32_t xmmreg, uint32_t intreg )
 {
 	if ( CPU_Flags & CPU_SSE2 ) {
 		// movd xmmreg, intreg
@@ -1165,8 +1166,8 @@ static void emit_mov_sx_rx( uint32_t xmmreg, uint32_t intreg )
 		emit_op_reg( 0x0F, 0x6E, intreg, xmmreg );
 	} else {
 		// SSE1 CPUs do not initialize FP register domain with movd so use movss
-		emit_store_rx( intreg, R_PROCBASE, 0 );	// mov [procBase + 0], eax
-		emit_load_sx( xmmreg, R_PROCBASE, 0 );	// mov xmm0, [procBase + 0]
+		emit_store_rx( intreg, R_PROCBASE, 0 );	// mov dword ptr [procBase + 0], eax
+		emit_load_sx( xmmreg, R_PROCBASE, 0 );	// movss xmm0, [procBase + 0]
 	}
 }
 
@@ -1207,6 +1208,7 @@ static void emit_mul_sx( uint32_t dst, uint32_t src )
 
 static void emit_div_sx( uint32_t dst, uint32_t src )
 {
+	Emit1( 0xF3 ); // use divss instead of divps to avoid division by zero from src[32...127] and triggering "invalid operation" bit
 	emit_op_reg( 0x0F, 0x5E, src, dst );
 }
 
@@ -1327,13 +1329,13 @@ static uint32_t alloc_sx( uint32_t pref );
 
 // register allocation preferences
 
-#define FORCED 0x20  // load function must return specified register
+#define FORCED 0x20  // load function must return specified register, no dynamic allocation allowed
 #define TEMP   0x40  // hint: temporary allocation, will not be stored on opStack
 #define RCONST 0x80  // register value will be not modified
 #define XMASK  0x100 // exclude masked registers
 #define SHIFT4 0x200 // load bottom item
 
-#define RMASK  0x0F
+#define RMASK  0x0F  // mask to get register number from preference
 
 // array sizes for cached/meta registers
 #if idx64
@@ -1712,7 +1714,7 @@ static void mov_sx_imm( uint32_t reg, uint32_t imm32 )
 		emit_xor_sx( reg, reg );
 	} else {
 		uint32_t rx = alloc_rx_const( R_ECX | TEMP, imm32 ); // ecx = imm32
-		emit_mov_sx_rx( reg, rx ); // xmmX = ecx
+		mov_sx_rx( reg, rx ); // xmmX = ecx
 		unmask_rx( rx );
 	}
 }
@@ -2695,7 +2697,7 @@ static uint32_t load_sx_opstack( uint32_t pref )
 		// should never happen with FPU type promotion, except syscalls
 		reg = alloc_sx( pref );
 
-		emit_mov_sx_rx( reg, it->value );
+		mov_sx_rx( reg, it->value );
 
 		it->type = TYPE_RAW;
 		return reg;
@@ -2719,7 +2721,7 @@ static uint32_t load_sx_opstack( uint32_t pref )
 		reg = alloc_sx( pref );
 		rx = alloc_rx_local( R_ECX | RCONST, it->value );
 
-		emit_mov_sx_rx( reg, rx ); // move from integer to scalar
+		mov_sx_rx( reg, rx ); // move from integer to scalar
 
 		unmask_rx( rx );
 
