@@ -1243,7 +1243,7 @@ void AAS_InitRouting(void)
 #endif //ROUTING_DEBUG
 	//
 	routingcachesize = 0;
-	max_routingcachesize = 1024 * (int) LibVarValue("max_routingcache", "4096");
+	max_routingcachesize = 1024 * (int) LibVarValue("max_routingcache", "12288");
 	// read any routing cache if available
 	AAS_ReadRouteCache();
 } //end of the function AAS_InitRouting
@@ -1627,7 +1627,7 @@ static int AAS_AreaRouteToGoalArea(int areanum, vec3_t origin, int goalareanum, 
 	} //end if
 
 	// make sure the routing cache doesn't grow to large
-	while ( routingcachesize > 12 * 1024 * 1024 ) {
+	while ( routingcachesize > max_routingcachesize ) {
 		if ( !AAS_FreeOldestCache() ) {
 			break;
 		}

@@ -485,7 +485,7 @@ name:						default:			module(s):			description:
 "rs_maxjumpfallheight"		"450"				be_aas_move.c
 
 "max_aaslinks"				"4096"				be_aas_sample.c		maximum links in the AAS
-"max_routingcache"			"4096"				be_aas_route.c		maximum routing cache size in KB
+"max_routingcache"			"12288"				be_aas_route.c		maximum routing cache size in KB
 "forceclustering"			"0"					be_aas_main.c		force recalculation of clusters
 "forcereachability"			"0"					be_aas_main.c		force recalculation of reachabilities
 "forcewrite"				"0"					be_aas_main.c		force writing of aas file
