@@ -4101,6 +4101,19 @@ void vk_initialize( void )
 	Com_sprintf( glConfig.version_string, sizeof( glConfig.version_string ), "API: %i.%i.%i, Driver: %s",
 		major, minor, patch, driver_version );
 
+#ifdef _WIN32
+	// Intel iGPU drivers from 101.5333 to 101.6737 have a known bug that causes
+	// VK_ERROR_DEVICE_LOST during vkQueueSubmit, see https://github.com/ec-/Quake3e/issues/312
+	if ( props.vendorID == 0x8086 ) {
+		int drvMajor = (int)( props.driverVersion >> 14 );
+		int drvMinor = (int)( props.driverVersion & 0x3FFF );
+		if ( drvMajor == 101 && drvMinor >= 5333 && drvMinor <= 6737 ) {
+			ri.Printf( PRINT_WARNING, "WARNING: Intel driver %i.%i is known to cause Vulkan crashes (VK_ERROR_DEVICE_LOST).\n", drvMajor, drvMinor );
+			ri.Printf( PRINT_WARNING, "Consider updating to driver >= 101.6790 or downgrading to <= 101.5186.\n" );
+		}
+	}
+#endif
+
 	vk.offscreenRender = qtrue;
 
 	if ( props.vendorID == 0x1002 ) {
