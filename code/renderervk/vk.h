@@ -646,6 +646,8 @@ typedef struct {
 		VkDeviceSize geometry_size;
 	} defaults;
 
+	char driverNote[200];
+
 } Vk_Instance;
 
 typedef struct {

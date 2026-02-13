@@ -482,6 +482,10 @@ extern	vec4_t		colorDkGrey;
 #define S_COLOR_MAGENTA	"^6"
 #define S_COLOR_WHITE	"^7"
 
+#define S_COLOR_DEVEL	S_COLOR_CYAN
+#define S_COLOR_WARNING	S_COLOR_YELLOW
+#define S_COLOR_ERROR	S_COLOR_RED
+
 extern const vec4_t	g_color_table[ 64 ];
 extern int ColorIndexFromChar( char ccode );
 

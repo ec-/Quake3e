@@ -271,7 +271,7 @@ void FORMAT_PRINTF(1, 2) QDECL Com_DPrintf( const char *fmt, ... ) {
 	Q_vsnprintf( msg, sizeof( msg ), fmt, argptr );
 	va_end( argptr );
 
-	Com_Printf( S_COLOR_CYAN "%s", msg );
+	Com_Printf( S_COLOR_DEVEL "%s", msg );
 }
 
 

@@ -155,19 +155,19 @@ static __attribute__ ((format (printf, 2, 3))) void QDECL BotImport_Print(int ty
 			break;
 		}
 		case PRT_WARNING: {
-			Com_Printf(S_COLOR_YELLOW "Warning: %s", str);
+			Com_Printf(S_COLOR_WARNING "Warning: %s", str);
 			break;
 		}
 		case PRT_ERROR: {
-			Com_Printf(S_COLOR_RED "Error: %s", str);
+			Com_Printf(S_COLOR_ERROR "Error: %s", str);
 			break;
 		}
 		case PRT_FATAL: {
-			Com_Printf(S_COLOR_RED "Fatal: %s", str);
+			Com_Printf(S_COLOR_ERROR "Fatal: %s", str);
 			break;
 		}
 		case PRT_EXIT: {
-			Com_Error(ERR_DROP, S_COLOR_RED "Exit: %s", str);
+			Com_Error(ERR_DROP, S_COLOR_ERROR "Exit: %s", str);
 			break;
 		}
 		default: {
@@ -468,7 +468,7 @@ int SV_BotLibSetup( void ) {
 	}
 
 	if ( !botlib_export ) {
-		Com_Printf( S_COLOR_RED "Error: SV_BotLibSetup without SV_BotInitBotLib\n" );
+		Com_Printf( S_COLOR_ERROR "Error: SV_BotLibSetup without SV_BotInitBotLib\n" );
 		return -1;
 	}
 

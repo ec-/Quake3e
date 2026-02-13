@@ -1326,6 +1326,11 @@ static void GfxInfo( void )
 	ri.Printf( PRINT_ALL, "VK_RENDERER: %s\n", glConfig.renderer_string );
 	ri.Printf( PRINT_ALL, "VK_VERSION: %s\n", glConfig.version_string );
 
+	if ( vk.driverNote[0] != '\0' )
+	{
+		ri.Printf( PRINT_ALL, "%s", vk.driverNote );
+	}
+
 	ri.Printf( PRINT_DEVELOPER, "VK_EXTENSIONS: " );
 	R_PrintLongString( glConfig.extensions_string );
 
