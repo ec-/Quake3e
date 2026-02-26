@@ -572,6 +572,14 @@ static void R_InitExtensions( void )
 		}
 	}
 #endif // USE_FBO
+	
+	// Check if dynamic lights are available
+#ifdef USE_PMLIGHT	
+	if (r_dlightMode->integer && !qglGenProgramsARB) 
+	{
+			ri.Printf( PRINT_ALL, "...Per-pixel dynamic lights disabled. Missing ARB shader support\n" );
+	}
+#endif	
 }
 
 

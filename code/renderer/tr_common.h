@@ -136,4 +136,6 @@ IMPLEMENTATION SPECIFIC FUNCTIONS
 ====================================================================
 */
 
+int R_GetDlightMode( void );
+
 #endif
