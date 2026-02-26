@@ -26,6 +26,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 glconfig_t	glConfig;
 qboolean	nonPowerOfTwoTextures;
 qboolean	textureFilterAnisotropic;
+qboolean    textureBorderClampAvailable;
 int			maxAnisotropy;
 int			gl_version;
 int			gl_clamp_mode;	// GL_CLAMP or GL_CLAMP_TO_EGGE
@@ -121,6 +122,7 @@ cvar_t	*r_ext_compressed_textures;
 cvar_t	*r_ext_multitexture;
 cvar_t	*r_ext_compiled_vertex_array;
 cvar_t	*r_ext_texture_env_add;
+cvar_t  *r_ext_texture_border_clamp;
 cvar_t	*r_ext_texture_filter_anisotropic;
 cvar_t	*r_ext_max_anisotropy;
 
@@ -329,6 +331,8 @@ static void R_InitExtensions( void )
 
 	glConfig.textureEnvAddAvailable = qfalse;
 
+	textureBorderClampAvailable = qfalse;
+
 	textureFilterAnisotropic = qfalse;
 	maxAnisotropy = 0;
 
@@ -410,6 +414,19 @@ static void R_InitExtensions( void )
 		}
 	} else {
 		ri.Printf( PRINT_ALL, "...GL_EXT_texture_env_add not found\n" );
+	}
+
+	// GL_ARB_texture_border_clamp
+	if ( R_HaveExtension( "GL_ARB_texture_border_clamp" ) ) {
+		if ( r_ext_texture_border_clamp->integer ) {
+			textureBorderClampAvailable = qtrue;
+			ri.Printf( PRINT_ALL, "...using GL_ARB_texture_border_clamp\n" );
+		} else {
+			textureBorderClampAvailable = qfalse;
+			ri.Printf( PRINT_ALL, "...ignoring GL_ARB_texture_border_clamp\n" );
+		}
+	} else {
+		ri.Printf( PRINT_ALL, "...GL_ARB_texture_border_clamp not found\n" );
 	}
 
 	// GL_ARB_multitexture
@@ -1514,7 +1531,7 @@ static void R_Register( void )
 	ri.Cvar_SetDescription( r_texturebits, "Number of texture bits per texture." );
 
 	r_mergeLightmaps = ri.Cvar_Get( "r_mergeLightmaps", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	ri.Cvar_SetDescription( r_mergeLightmaps, "Merge built-in small lightmaps into bigger lightmaps (atlases)." );
+	ri.Cvar_SetDescription( r_mergeLightmaps, "Merge built-in small lightmaps into bigger lightmaps (atlases). Requires \\r_ext_texture_border_clamp" );
 
 #ifdef USE_VBO
 	r_vbo = ri.Cvar_Get( "r_vbo", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
@@ -1756,6 +1773,8 @@ static void R_Register( void )
 	ri.Cvar_SetDescription( r_ext_compiled_vertex_array, "Enables hardware-compiled vertex array rendering method." );
 	r_ext_texture_env_add = ri.Cvar_Get( "r_ext_texture_env_add", "1", CVAR_ARCHIVE_ND | CVAR_LATCH | CVAR_DEVELOPER );
 	ri.Cvar_SetDescription( r_ext_texture_env_add, "Enables additive blending in multitexturing. Requires \\r_ext_multitexture 1." );
+	r_ext_texture_border_clamp = ri.Cvar_Get( "r_ext_texture_border_clamp","1", CVAR_ARCHIVE_ND | CVAR_LATCH | CVAR_DEVELOPER);
+	ri.Cvar_SetDescription( r_ext_texture_border_clamp, "Allow clamping texture with a custom border color");
 
 	r_ext_texture_filter_anisotropic = ri.Cvar_Get( "r_ext_texture_filter_anisotropic",	"1", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	ri.Cvar_CheckRange( r_ext_texture_filter_anisotropic, "0", "1", CV_INTEGER );
