@@ -431,7 +431,7 @@ static void R_LoadLightmaps( const lump_t *l ) {
 
 	numLightmaps = l->filelen / (LIGHTMAP_SIZE * LIGHTMAP_SIZE * 3);
 
-	if ( r_mergeLightmaps->integer && numLightmaps > 1 ) {
+	if ( r_mergeLightmaps->integer && numLightmaps > 1 && textureBorderClampAvailable) {
 		// check for low texture sizes
 		if ( glConfig.maxTextureSize >= LIGHTMAP_LEN * 2 ) {
 			tr.mergeLightmaps = qtrue;

@@ -261,7 +261,7 @@ static void RE_AddDynamicLightToScene( const vec3_t org, float intensity, float 
 	}
 #ifdef USE_PMLIGHT
 #ifdef USE_LEGACY_DLIGHTS
-	if ( r_dlightMode->integer )
+	if ( R_GetDlightMode() )
 #endif
 	{
 		r *= r_dlightIntensity->value;
@@ -312,7 +312,7 @@ void RE_AddLinearLightToScene( const vec3_t start, const vec3_t end, float inten
 	}
 #ifdef USE_PMLIGHT
 #ifdef USE_LEGACY_DLIGHTS
-	if ( r_dlightMode->integer )
+	if ( R_GetDlightMode() )
 #endif
 	{
 		r *= r_dlightIntensity->value;

@@ -818,6 +818,11 @@ void R_BuildWorldVBO( msurface_t *surf, int surfCount )
 	if ( !qglBindBufferARB || !r_vbo->integer )
 		return;
 
+	if (!qglGenProgramsARB) {
+		ri.Printf( PRINT_WARNING, "... ARB shaders required for VBO\n" );
+		return;
+	}
+	
 	if ( glConfig.numTextureUnits < 3 ) {
 		ri.Printf( PRINT_WARNING, "... not enough texture units for VBO\n" );
 		return;

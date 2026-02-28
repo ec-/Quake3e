@@ -980,7 +980,7 @@ void RB_StageIteratorGeneric( void )
 	//
 #ifdef USE_LEGACY_DLIGHTS
 #ifdef USE_PMLIGHT
-	if ( !r_dlightMode->integer )
+	if ( !R_GetDlightMode() )
 #endif
 	if ( tess.dlightBits && tess.shader->sort <= SS_OPAQUE && !(tess.shader->surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) )
 	{
