@@ -810,7 +810,7 @@ void RB_StageIteratorSky( void ) {
 
 #ifdef USE_PMLIGHT
 #ifdef USE_LEGACY_DLIGHTS
-	if ( R_GetDlightMode() ) 
+	if ( R_GetDlightMode() )
 #endif 
 	{
 		GL_ProgramDisable();

@@ -89,7 +89,6 @@ extern cvar_t *r_ext_compressed_textures;		// these control use of specific exte
 extern cvar_t *r_ext_multitexture;
 extern cvar_t *r_ext_compiled_vertex_array;
 extern cvar_t *r_ext_texture_env_add;
-extern cvar_t *r_ext_texture_border_clamp;
 
 extern cvar_t *r_ext_texture_filter_anisotropic;
 extern cvar_t *r_ext_max_anisotropy;
