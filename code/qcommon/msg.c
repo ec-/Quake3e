@@ -108,6 +108,11 @@ void MSG_WriteBits( msg_t *msg, int value, int bits ) {
 		bits = -bits;
 	}
 	if (msg->oob) {
+		if ( msg->cursize + ( bits >> 3 ) > msg->maxsize ) {
+			msg->overflowed = qtrue;
+			return;
+		}
+
 		if ( bits == 8 ) {
 			msg->data[msg->cursize] = value;
 			msg->cursize += 1;
@@ -130,6 +135,10 @@ void MSG_WriteBits( msg_t *msg, int value, int bits ) {
 		if ( bits & 7 ) {
 			int nbits;
 			nbits = bits&7;
+			if ( msg->bit + nbits > msg->maxsize << 3 ) {
+				msg->overflowed = qtrue;
+				return;
+			}
 			for ( i = 0; i < nbits ; i++ ) {
 				HuffmanPutBit( msg->data, msg->bit, (value & 1) );
 				msg->bit++;
@@ -141,6 +150,10 @@ void MSG_WriteBits( msg_t *msg, int value, int bits ) {
 			for( i = 0 ; i < bits ; i += 8 ) {
 				msg->bit += HuffmanPutSymbol( msg->data, msg->bit, (value & 0xFF) );
 				value = (value>>8);
+				if ( msg->bit > msg->maxsize << 3 ) {
+					msg->overflowed = qtrue;
+					return;
+				}
 			}
 		}
 		msg->cursize = (msg->bit>>3)+1;
@@ -162,6 +175,10 @@ static int MSG_ReadBits( msg_t *msg, int bits ) {
 	if ( msg->bit >= msg->maxbits )
 		return 0;
 
+	if ( msg->readcount > msg->cursize ) {
+		return 0;
+	}
+
 	value = 0;
 
 	if ( bits < 0 ) {
@@ -172,6 +189,11 @@ static int MSG_ReadBits( msg_t *msg, int bits ) {
 	}
 
 	if ( msg->oob ) {
+		if (msg->readcount + (bits>>3) > msg->cursize) {
+			msg->readcount = msg->cursize + 1;
+			return 0;
+		}
+
 		if( bits == 8 )
 		{
 			value = *(buffer + msg->readcount);
@@ -199,6 +221,10 @@ static int MSG_ReadBits( msg_t *msg, int bits ) {
 		int bitIndex = msg->bit; // dereference optimization
 		if ( nbits )
 		{		
+			if (msg->bit + nbits > msg->cursize << 3) {
+				msg->readcount = msg->cursize + 1;
+				return 0;
+			}
 			for ( i = 0; i < nbits; i++ ) {
 				value |= HuffmanGetBit( buffer, bitIndex ) << i;
 				bitIndex++;
@@ -211,6 +237,11 @@ static int MSG_ReadBits( msg_t *msg, int bits ) {
 			{
 				bitIndex += HuffmanGetSymbol( &sym, buffer, bitIndex );
 				value |= ( sym << (i+nbits) );
+
+				if (msg->bit > msg->cursize<<3) {
+					msg->readcount = msg->cursize + 1;
+					return 0;
+				}
 			}
 		}
 		msg->bit = bitIndex;
