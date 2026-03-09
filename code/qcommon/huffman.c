@@ -311,14 +311,14 @@ static void Huff_transmit( huff_t *huff, int ch, byte *fout ) {
 
 void Huff_Decompress(msg_t *mbuf, int offset) {
 	int			ch, cch, i, j, size;
-	byte		seq[65536];
+	byte		seq[MAX_INFO_STRING*2];
 	byte*		buffer;
 	huff_t		huff;
 
 	size = mbuf->cursize - offset;
 	buffer = mbuf->data + offset;
 
-	if ( size <= 0 ) {
+	if ( size < 2 ) {
 		return;
 	}
 
@@ -334,6 +334,9 @@ void Huff_Decompress(msg_t *mbuf, int offset) {
 	// don't overflow with bad messages
 	if ( cch > mbuf->maxsize - offset ) {
 		cch = mbuf->maxsize - offset;
+	}
+	if ( cch > sizeof( seq ) ) {
+		cch = sizeof( seq );
 	}
 	bloc = 16;
 
@@ -352,7 +355,7 @@ void Huff_Decompress(msg_t *mbuf, int offset) {
 				ch = (ch<<1) + get_bit(buffer);
 			}
 		}
-    
+
 		seq[j] = ch;									/* Write symbol */
 
 		Huff_addRef(&huff, (byte)ch);								/* Increment node */
@@ -364,15 +367,19 @@ void Huff_Decompress(msg_t *mbuf, int offset) {
 
 void Huff_Compress(msg_t *mbuf, int offset) {
 	int			i, ch, size;
-	byte		seq[65536];
+	// worst compression ratio is ~1.2x (rounded up to 2x) plus 2 plus 256 of possible NYT's
+	byte		seq[MAX_INFO_STRING*4 + 2 + 256];
 	byte*		buffer;
 	huff_t		huff;
 
 	size = mbuf->cursize - offset;
 	buffer = mbuf->data + offset;
 
-	if (size<=0) {
+	if ( size <= 0 ) {
 		return;
+	}
+	if ( size > MAX_INFO_STRING*2 ) {
+		size = MAX_INFO_STRING*2;
 	}
 
 	Com_Memset(&huff, 0, sizeof(huff_t));
