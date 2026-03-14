@@ -34,6 +34,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "vm_local.h"
 
+#define DROP( reason, args... ) \
+	do { \
+		VM_FreeBuffers(); \
+		Com_Error( ERR_DROP, "%s: " reason, __func__, ##args ); \
+	} while(0)
+
+
 // Detect ELFv1 (ppc64 big-endian) vs ELFv2 (ppc64le) ABI
 #if defined(_CALL_ELF) && _CALL_ELF == 2
 #define PPC64_ELFv2 1
@@ -66,6 +73,23 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 // additional integrity checks
 #define DEBUG_VM
+
+#define DYN_ALLOC_RX
+#define DYN_ALLOC_SX
+
+#define CONST_CACHE_RX
+#define CONST_CACHE_SX
+
+#define REGS_OPTIMIZE
+//#define ADDR_OPTIMIZE
+//#define LOAD_OPTIMIZE
+#define FPU_OPTIMIZE
+//#define CONST_OPTIMIZE
+
+// allow sharing both variables and constants in registers
+#define REG_TYPE_MASK
+// number of variables/memory mappings per register
+#define REG_MAP_COUNT 4
 
 #define FUNC_ALIGN 16
 
@@ -126,6 +150,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define F0	0	// scratch
 #define F1	1	// scratch
 #define F2	2	// scratch
+#define F3	3	// scratch
+#define F4	4	// scratch
+#define F5	5	// scratch
+#define F6	6	// scratch
+#define F7	7	// scratch
+
+#define SP	R1
 
 // VM state registers (callee-saved)
 #define rVMBASE			R14		// pointer to vm_t struct
@@ -165,8 +196,6 @@ static uint32_t pass;
 
 static uint32_t savedOffset[ OFFSET_T_LAST ];
 
-// opstack tracking (simplified - no dynamic register allocation)
-static int opstack;
 
 static void VM_FreeBuffers( void )
 {
@@ -585,6 +614,7 @@ static void VM_FreeBuffers( void )
 // -- Floating-Point Conversion --
 // fctiwz frt, frb  (convert to integer word, round toward zero)
 #define PPC_FCTIWZ(frt, frb)		PPC_X(63, frt, 0, frb, 15, 0)
+
 // fcfids frt, frb  (convert from integer doubleword to single, Power ISA 2.06+)
 // This is the modern way to do int-to-float on Power7+
 #define PPC_FCFIDS(frt, frb)		PPC_X(59, frt, 0, frb, 846, 0)
@@ -605,13 +635,24 @@ static void VM_FreeBuffers( void )
 #if USE_ISA_2_07
 // mtvsrwa vsr, ra  (move to VSR word algebraic, sign-extends 32-bit GPR to 64-bit in VSR)
 // For FPR0-31 (VSR 0-31), SX=0.
-#define PPC_MTVSRWA(vsr, ra)		PPC_X(31, vsr, ra, 0, 211, 0)
+#define PPC_MTVSRWA(frt, ra)		PPC_X(31, frt, ra, 0, 211, 0)
+
+// mtvsrwя vsr, ra  (move to VSR word, zero-extension)
+// For FPR0-31 (VSR 0-31), SX=0.
+#define PPC_MTVSRWZ(frt, ra)		PPC_X(31, frt, ra, 0, 243, 0)
+
 // mfvsrwz ra, vsr  (move from VSR word and zero-extend, low 32 bits of VSR to GPR)
 // Note: instruction encoding has VSR in RS position, GPR in RA position.
 #define PPC_MFVSRWZ(ra, vsr)		PPC_X(31, vsr, ra, 0, 115, 0)
+
 // xscvdpsxws vrt, vrb  (convert scalar double-precision to signed word, saturate)
 // XX2-form: opcode 60, XO=88. For FPR0-31 (VSR 0-31, BX=TX=0).
 #define PPC_XSCVDPSXWS(vt, vb)		( (60u<<26) | (((unsigned)(vt)&0x1F)<<21) | (((unsigned)(vb)&0x1F)<<11) | (88u<<2) )
+
+// xscvdpsxws vrt, vrb  (convert scalar single-precision to double-precision)
+// XX2-form: opcode 60, XO=329. For FPR0-31 (VSR 0-31, BX=TX=0).
+#define PPC_XSCVSPDP(vt, vb)		( (60u<<26) | (((unsigned)(vt)&0x1F)<<21) | (((unsigned)(vb)&0x1F)<<11) | (329u<<2) )
+
 #endif
 
 // -- Trap --
@@ -643,45 +684,6 @@ static void emitAlign( int align )
 {
 	while ( compiledOfs & ( align - 1 ) )
 		emit( PPC_NOP() );
-}
-
-
-// =========================================================================
-// Opstack helpers (simplified, no dynamic register allocation)
-// =========================================================================
-//
-// The operand stack is tracked as an offset from rOPSTACK.
-// Values are always stored to/loaded from memory at rOPSTACK + opstack*4.
-// This is the simplest approach: every operation loads from opStack memory,
-// does the operation, and stores back. No register caching.
-
-static void init_opstack( void )
-{
-	opstack = 0;
-}
-
-static void inc_opstack( void )
-{
-	opstack += 4;
-}
-
-static void dec_opstack( void )
-{
-	opstack -= 4;
-}
-
-// Load the top of opstack into a GPR
-// rt = *(rOPSTACK + opstack)
-static void load_opstack( int rt )
-{
-	emit( PPC_LWZ( rt, opstack, rOPSTACK ) );
-}
-
-// Store a GPR to the top of opstack
-// *(rOPSTACK + opstack) = rs
-static void store_opstack( int rs )
-{
-	emit( PPC_STW( rs, opstack, rOPSTACK ) );
 }
 
 
@@ -750,6 +752,173 @@ static void emit_MOVi32( int rt, uint32_t imm )
 	emit( PPC_LIS( rt, hi ) );
 	if ( lo )
 		emit( PPC_ORI( rt, rt, lo ) );
+}
+
+
+// -------------- virtual opStack management ---------------
+
+// array sizes for cached/meta registers
+#define NUM_RX_REGS 11 // max[R3..R10] + 1
+#define NUM_SX_REGS 8  // max[F0..F7] + 1
+
+// general-purpose register list available for dynamic allocation
+#ifdef DYN_ALLOC_RX
+static const uint32_t rx_list_alloc[] = {
+	R3, R4, R5, R6, R7, R8, R9, R10
+};
+#endif
+
+// FPU scalar register list available for dynamic allocation
+#ifdef DYN_ALLOC_SX
+static const uint32_t sx_list_alloc[] = {
+	F0, F1, F2, F3, F4, F5, F6, F7
+};
+#endif
+
+#ifdef CONST_CACHE_RX
+static const uint32_t rx_list_cache[] = {
+	R3, R4, R5, R6, R7, R8, R9, R10
+};
+#endif
+
+#ifdef CONST_CACHE_SX
+static const uint32_t sx_list_cache[] = {
+	F0, F1, F2, F3, F4, F5, F6, F7
+};
+#endif
+
+#include "vm_optimize.h"
+
+// platform-specific implementation:
+
+static void mov_rx( uint32_t dst, uint32_t src )
+{
+	emit( PPC_MR( dst, src ) );
+}
+
+
+static void mov_sx( uint32_t dst, uint32_t src )
+{
+	emit( PPC_FMR( dst, src ) );
+}
+
+
+static uint32_t clone_rx( uint32_t reg )
+{
+	const uint32_t rx = alloc_rx( R5 );
+	mov_rx( rx, reg );
+	unmask_rx( reg );
+	return rx;
+}
+
+
+static uint32_t clone_sx( uint32_t reg )
+{
+	const uint32_t sx = alloc_sx( F5 );
+	mov_sx( sx, reg );
+	unmask_sx( reg );
+	return sx;
+}
+
+
+static void mov_rx_sx( uint32_t gpreg, uint32_t fpreg )
+{
+//#if USE_ISA_2_07
+//	emit( PPC_MFVSRWZ( gpreg, fpreg ) ); // this didn't work properly
+//#else
+	emit( PPC_STFS( fpreg, 0, rPROCBASE ) ); // procBase[0] = fpreg
+	emit( PPC_LWZ( gpreg, 0, rPROCBASE ) );  // gpreg = procBase[0]
+//#endif
+}
+
+
+static void mov_sx_rx( uint32_t fpreg, uint32_t gpreg )
+{
+//#if USE_ISA_2_07
+//	emit( PPC_MTVSRWZ( fpreg, gpreg ) ); // this didn't work properly
+//#else
+	emit( PPC_STW( gpreg, 0, rPROCBASE ) ); // procBase[0] = gpreg
+	emit( PPC_LFS( fpreg, 0, rPROCBASE ) ); // fpreg = procBase[0]
+//#endif
+}
+
+
+static void mov_rx_imm32( uint32_t reg, uint32_t imm32 )
+{
+	emit_MOVi32( reg, imm32 );
+}
+
+
+static void mov_sx_imm32( uint32_t reg, uint32_t imm32 )
+{
+	uint32_t rx = alloc_rx_const( R6 | TEMP, imm32 );
+	mov_sx_rx( reg, rx );
+	unmask_rx( rx );
+}
+
+
+static void mov_rx_local( uint32_t reg, const uint32_t addr )
+{
+	if ( (int16_t)addr == addr ) {
+		emit( PPC_ADDI( reg, rPSTACK, addr) );
+	} else {
+		if ( find_rx_const( addr ) ) {
+			uint32_t rx = alloc_rx_const( R6, addr );	// R6 = const addr
+			emit( PPC_ADD( reg, rPSTACK, rx ) );		// reg = pstack + R6
+			unmask_rx( rx );
+		} else {
+			mov_rx_imm32( reg, addr );				// reg = addr
+			emit( PPC_ADD( reg, rPSTACK, reg ) );	// reg = pStack + reg
+		}
+	}
+}
+
+
+static void mov_sx_local( uint32_t reg, const uint32_t addr )
+{
+	const uint32_t rx = alloc_rx_local( R6 | RCONST, addr );
+	mov_sx_rx( reg, rx );
+	unmask_rx( rx );
+}
+
+
+static void load4_rx( uint32_t reg, uint32_t offset )
+{
+	emit( PPC_LWZ( reg, offset, rOPSTACK ) ); // load
+}
+
+
+static void load4_sx( uint32_t reg, uint32_t offset )
+{
+	emit( PPC_LFS( reg, offset, rOPSTACK ) );
+}
+
+
+static void store4_rx( uint32_t rx, uint32_t offset )
+{
+	emit( PPC_STW( rx, offset, rOPSTACK ) );
+}
+
+
+static void store4_sx( uint32_t sx, uint32_t offset )
+{
+	emit( PPC_STFS( sx, offset, rOPSTACK ) );
+}
+
+
+static void store4_const( uint32_t value, uint32_t offset )
+{
+	const uint32_t rx = alloc_rx_const( R6, value );
+	store4_rx( rx, offset );
+	unmask_rx( rx );
+}
+
+
+static void store4_local( uint32_t value, uint32_t offset )
+{
+	const uint32_t rx = alloc_rx_local( R6 | TEMP, value );
+	store4_rx( rx, offset );
+	unmask_rx( rx );
 }
 
 
@@ -848,17 +1017,17 @@ static void emit_CheckJump( vm_t *vm, int reg, int proc_base, int proc_len )
 		if ( (int16_t)proc_base == proc_base ) {
 			emit( PPC_ADDI( R11, reg, -proc_base ) ); // r11 = reg - proc_base
 		} else {
-			emit_MOVi32( R11, proc_base );
+			mov_rx_imm32( R11, proc_base );
 			emit( PPC_SUB( R11, reg, R11 ) );
 		}
 		// check if r11 > proc_len (unsigned, so negative wraps to large)
-		emit_MOVi32( R12, proc_len );
+		mov_rx_imm32( R12, proc_len );
 		emit( PPC_CMPLW( 0, R11, R12 ) );
 		emit( PPC_BLE( +8 ) ); // unsigned <=
 		emitFuncOffset( vm, FUNC_OUTJ );
 	} else {
 		// generic check: reg >= instructionCount
-		emit_MOVi32( R11, vm->instructionCount );
+		mov_rx_imm32( R11, vm->instructionCount );
 		emit( PPC_CMPLW( 0, reg, R11 ) );
 		emit( PPC_BLT( +8 ) ); // unsigned <
 		emitFuncOffset( vm, FUNC_OUTJ );
@@ -879,7 +1048,7 @@ static void emit_CheckProc( vm_t *vm, instruction_t *ins )
 	// opStack overflow check
 	if ( vm_rtChecks->integer & VM_RTCHECK_OPSTACK ) {
 		uint32_t n = ins->opStack;
-		emit_MOVi32( R11, n );
+		mov_rx_imm32( R11, n );
 		emit( PPC_ADD( R11, rOPSTACK, R11 ) );
 		emit( PPC_CMPLD( 0, R11, rOPSTACKTOP ) );
 		emit( PPC_BLE( +8 ) ); // unsigned <=
@@ -958,14 +1127,14 @@ savedOffset[ FUNC_SYSF ] = compiledOfs;
 #endif
 
 	// Allocate stack space
-	emit( PPC_STDU( R1, -SYSC_FRAME, R1 ) );
+	emit( PPC_STDU( SP, -SYSC_FRAME, SP ) );
 
 	// Save LR (will be clobbered by bctrl)
 	emit( PPC_MFLR( R0 ) );
-	emit( PPC_STD( R0, SYSC_LR, R1 ) );
+	emit( PPC_STD( R0, SYSC_LR, SP ) );
 
 	// Save opStack on stack too
-	emit( PPC_STD( rOPSTACK, SYSC_OPST, R1 ) );
+	emit( PPC_STD( rOPSTACK, SYSC_OPST, SP ) );
 
 	// modify VM stack pointer for recursive VM entry
 	// vm->programStack = pstack - 8
@@ -976,27 +1145,27 @@ savedOffset[ FUNC_SYSF ] = compiledOfs;
 	// args[0] = R3 (syscall number, already set)
 	// args[1..15] from procBase+8, procBase+12, ..., procBase+68
 	emit( PPC_EXTSW( R3, R3 ) );  // sign-extend syscall number
-	emit( PPC_STD( R3, SYSC_ARGS + 0, R1 ) );
+	emit( PPC_STD( R3, SYSC_ARGS + 0, SP ) );
 
 	for ( i = 1; i < 16; i++ ) {
 		emit( PPC_LWA( R0, 4 + i * 4, rPROCBASE ) );
-		emit( PPC_STD( R0, SYSC_ARGS + i * 8, R1 ) );
+		emit( PPC_STD( R0, SYSC_ARGS + i * 8, SP ) );
 	}
 
 	// R3 = pointer to args array
-	emit( PPC_ADDI( R3, R1, SYSC_ARGS ) );
+	emit( PPC_ADDI( R3, SP, SYSC_ARGS ) );
 
 	// Load vm->systemCall and call it
 #ifdef PPC64_ELFv1
 	// ELFv1: vm->systemCall is a function descriptor pointer
 	// descriptor[0] = entry point, descriptor[1] = TOC, descriptor[2] = env
 	emit( PPC_LD( R11, offsetof(vm_t, systemCall), rVMBASE ) ); // R11 = descriptor ptr
-	emit( PPC_STD( R2, SYSC_TOC, R1 ) );                       // save our TOC
+	emit( PPC_STD( R2, SYSC_TOC, SP ) );                       // save our TOC
 	emit( PPC_LD( R0, 0, R11 ) );                               // R0 = entry point
 	emit( PPC_LD( R2, 8, R11 ) );                               // R2 = callee's TOC
 	emit( PPC_MTCTR( R0 ) );
 	emit( PPC_BCTRL() );
-	emit( PPC_LD( R2, SYSC_TOC, R1 ) );                        // restore our TOC
+	emit( PPC_LD( R2, SYSC_TOC, SP ) );                        // restore our TOC
 #else
 	// ELFv2: vm->systemCall is the entry point directly
 	// ELFv2 ABI requires R12 = target address before bctrl
@@ -1009,14 +1178,14 @@ savedOffset[ FUNC_SYSF ] = compiledOfs;
 	emit( PPC_STW( R3, 4, rOPSTACK ) );
 
 	// Restore opStack
-	emit( PPC_LD( rOPSTACK, SYSC_OPST, R1 ) );
+	emit( PPC_LD( rOPSTACK, SYSC_OPST, SP ) );
 
 	// Restore LR
-	emit( PPC_LD( R0, SYSC_LR, R1 ) );
+	emit( PPC_LD( R0, SYSC_LR, SP ) );
 	emit( PPC_MTLR( R0 ) );
 
 	// Destroy stack frame
-	emit( PPC_ADDI( R1, R1, SYSC_FRAME ) );
+	emit( PPC_ADDI( SP, SP, SYSC_FRAME ) );
 
 	emit( PPC_BLR() );
 }
@@ -1025,7 +1194,7 @@ savedOffset[ FUNC_SYSF ] = compiledOfs;
 // =========================================================================
 // Block copy helper
 // =========================================================================
-// On entry: R3 = src offset, R4 = dst offset, R5 = count
+// On entry: R3 = src offset, R4 = dst offset, R5 = count, R6 - scratch
 
 static void emitBlockCopyFunc( vm_t *vm )
 {
@@ -1052,10 +1221,15 @@ static void emitBlockCopyFunc( vm_t *vm )
 	emit( PPC_BLE( +24 ) );  // skip if count <= 0
 
 	// loop:
-	emit( PPC_LBZ( R6, 0, R3 ) );         // R6 = *src
-	emit( PPC_STB( R6, 0, R4 ) );         // *dst = R6
-	emit( PPC_ADDI( R3, R3, 1 ) );        // src++
-	emit( PPC_ADDI( R4, R4, 1 ) );        // dst++
+	//emit( PPC_LBZ( R6, 0, R3 ) );         // R6 = *src
+	//emit( PPC_STB( R6, 0, R4 ) );         // *dst = R6
+	//emit( PPC_ADDI( R3, R3, 1 ) );        // src++
+	//emit( PPC_ADDI( R4, R4, 1 ) );        // dst++
+	emit( PPC_LWZ( R6, 0, R3 ) );         // R6 = *src
+	emit( PPC_STW( R6, 0, R4 ) );         // *dst = R6
+	emit( PPC_ADDI( R3, R3, 4 ) );        // src++
+	emit( PPC_ADDI( R4, R4, 4 ) );        // dst++
+
 	emit( PPC_ADDI( R5, R5, -1 ) );       // count--
 	emit( PPC_CMPWI( 0, R5, 0 ) );
 	emit( PPC_BGT( -24 ) );               // loop if count > 0
@@ -1125,6 +1299,9 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 {
 	const char *errMsg;
 	instruction_t *ci;
+	uint32_t rx[4];
+	uint32_t sx[3];
+	var_addr_t var;
 	int proc_base;
 	int proc_len;
 	int proc_end;
@@ -1199,30 +1376,30 @@ __recompile:
 #endif
 
 	// Create stack frame
-	emit( PPC_STDU( R1, -FRAME_SIZE, R1 ) );
+	emit( PPC_STDU( SP, -FRAME_SIZE, SP ) );
 
 	// Save LR in caller's frame (standard position: caller's SP+16)
 	emit( PPC_MFLR( R0 ) );
-	emit( PPC_STD( R0, FRAME_SIZE + 16, R1 ) );
+	emit( PPC_STD( R0, FRAME_SIZE + 16, SP ) );
 
 	// Save callee-saved GPRs
-	emit( PPC_STD( R14, FRAME_GPR_BASE + 0, R1 ) );
-	emit( PPC_STD( R15, FRAME_GPR_BASE + 8, R1 ) );
-	emit( PPC_STD( R16, FRAME_GPR_BASE + 16, R1 ) );
-	emit( PPC_STD( R17, FRAME_GPR_BASE + 24, R1 ) );
-	emit( PPC_STD( R18, FRAME_GPR_BASE + 32, R1 ) );
-	emit( PPC_STD( R19, FRAME_GPR_BASE + 40, R1 ) );
-	emit( PPC_STD( R20, FRAME_GPR_BASE + 48, R1 ) );
-	emit( PPC_STD( R21, FRAME_GPR_BASE + 56, R1 ) );
-	emit( PPC_STD( R22, FRAME_GPR_BASE + 64, R1 ) );
+	emit( PPC_STD( R14, FRAME_GPR_BASE + 0, SP ) );
+	emit( PPC_STD( R15, FRAME_GPR_BASE + 8, SP ) );
+	emit( PPC_STD( R16, FRAME_GPR_BASE + 16, SP ) );
+	emit( PPC_STD( R17, FRAME_GPR_BASE + 24, SP ) );
+	emit( PPC_STD( R18, FRAME_GPR_BASE + 32, SP ) );
+	emit( PPC_STD( R19, FRAME_GPR_BASE + 40, SP ) );
+	emit( PPC_STD( R20, FRAME_GPR_BASE + 48, SP ) );
+	emit( PPC_STD( R21, FRAME_GPR_BASE + 56, SP ) );
+	emit( PPC_STD( R22, FRAME_GPR_BASE + 64, SP ) );
 
 	// Load VM state into dedicated registers
 	emit_MOVi64( rVMBASE, (intptr_t)vm );
 	emit_MOVi64( rINSPOINTERS, (intptr_t)vm->instructionPointers );
 	emit_MOVi64( rDATABASE, (intptr_t)vm->dataBase );
 
-	emit_MOVi32( rDATAMASK, vm->dataMask );
-	emit_MOVi32( rPSTACKBOTTOM, vm->stackBottom );
+	mov_rx_imm32( rDATAMASK, vm->dataMask );
+	mov_rx_imm32( rPSTACKBOTTOM, vm->stackBottom );
 
 	// Load volatile VM state from vm_t struct
 	emit( PPC_LD( rOPSTACK, offsetof(vm_t, opStack), rVMBASE ) );
@@ -1239,22 +1416,22 @@ __recompile:
 #endif
 
 	// Restore callee-saved GPRs
-	emit( PPC_LD( R14, FRAME_GPR_BASE + 0, R1 ) );
-	emit( PPC_LD( R15, FRAME_GPR_BASE + 8, R1 ) );
-	emit( PPC_LD( R16, FRAME_GPR_BASE + 16, R1 ) );
-	emit( PPC_LD( R17, FRAME_GPR_BASE + 24, R1 ) );
-	emit( PPC_LD( R18, FRAME_GPR_BASE + 32, R1 ) );
-	emit( PPC_LD( R19, FRAME_GPR_BASE + 40, R1 ) );
-	emit( PPC_LD( R20, FRAME_GPR_BASE + 48, R1 ) );
-	emit( PPC_LD( R21, FRAME_GPR_BASE + 56, R1 ) );
-	emit( PPC_LD( R22, FRAME_GPR_BASE + 64, R1 ) );
+	emit( PPC_LD( R14, FRAME_GPR_BASE + 0, SP ) );
+	emit( PPC_LD( R15, FRAME_GPR_BASE + 8, SP ) );
+	emit( PPC_LD( R16, FRAME_GPR_BASE + 16, SP ) );
+	emit( PPC_LD( R17, FRAME_GPR_BASE + 24, SP ) );
+	emit( PPC_LD( R18, FRAME_GPR_BASE + 32, SP ) );
+	emit( PPC_LD( R19, FRAME_GPR_BASE + 40, SP ) );
+	emit( PPC_LD( R20, FRAME_GPR_BASE + 48, SP ) );
+	emit( PPC_LD( R21, FRAME_GPR_BASE + 56, SP ) );
+	emit( PPC_LD( R22, FRAME_GPR_BASE + 64, SP ) );
 
 	// Restore LR
-	emit( PPC_LD( R0, FRAME_SIZE + 16, R1 ) );
+	emit( PPC_LD( R0, FRAME_SIZE + 16, SP ) );
 	emit( PPC_MTLR( R0 ) );
 
 	// Destroy stack frame
-	emit( PPC_ADDI( R1, R1, FRAME_SIZE ) );
+	emit( PPC_ADDI( SP, SP, FRAME_SIZE ) );
 
 	// Return
 	emit( PPC_BLR() );
@@ -1269,6 +1446,15 @@ __recompile:
 	while ( ip < header->instructionCount ) {
 
 		ci = &inst[ ip ];
+
+#ifdef REGS_OPTIMIZE
+		if ( ci->jused )
+#endif
+		{
+			// we can safely perform register optimizations only in case if
+			// we are 100% sure that current instruction is not a jump label
+			flush_volatile();
+		}
 
 		vm->instructionPointers[ ip ] = compiledOfs;
 		ip++;
@@ -1310,50 +1496,50 @@ __recompile:
 				}
 
 				// Save LR, opStack, pStack, procBase on native stack
-			// ELFv1: minimum frame is 112 bytes, locals start at 112
-			// ELFv2: minimum frame is 32 bytes, locals start at 32
-			// Scratch space for CVIF/CVFI is at ENTER_SCRATCH (8 bytes)
+				// ELFv1: minimum frame is 112 bytes, locals start at 112
+				// ELFv2: minimum frame is 32 bytes, locals start at 32
+				// Scratch space for CVIF/CVFI is at ENTER_SCRATCH (8 bytes)
 #ifdef PPC64_ELFv1
-			#define ENTER_FRAME    160
-			#define ENTER_OPST     112
-			#define ENTER_PST      120
-			#define ENTER_PROC     128
-			#define ENTER_SCRATCH  136
+				#define ENTER_FRAME    160
+				#define ENTER_OPST     112
+				#define ENTER_PST      120
+				#define ENTER_PROC     128
+				#define ENTER_SCRATCH  136
 #else
-			#define ENTER_FRAME    80
-			#define ENTER_OPST     32
-			#define ENTER_PST      40
-			#define ENTER_PROC     48
-			#define ENTER_SCRATCH  56
+				#define ENTER_FRAME    80
+				#define ENTER_OPST     32
+				#define ENTER_PST      40
+				#define ENTER_PROC     48
+				#define ENTER_SCRATCH  56
 #endif
 				emit( PPC_MFLR( R0 ) );
-				emit( PPC_STDU( R1, -ENTER_FRAME, R1 ) );	// create local frame
-				emit( PPC_STD( R0, ENTER_FRAME + 16, R1 ) );	// save LR in caller's frame
-				emit( PPC_STD( rOPSTACK, ENTER_OPST, R1 ) );
-				emit( PPC_STW( rPSTACK, ENTER_PST, R1 ) );
-				emit( PPC_STD( rPROCBASE, ENTER_PROC, R1 ) );
+				emit( PPC_STDU( SP, -ENTER_FRAME, SP ) );		// create local frame
+				emit( PPC_STD( R0, ENTER_FRAME + 16, SP ) );	// save LR in caller's frame
+				emit( PPC_STD( rOPSTACK, ENTER_OPST, SP ) );
+				emit( PPC_STW( rPSTACK, ENTER_PST, SP ) );
+				emit( PPC_STD( rPROCBASE, ENTER_PROC, SP ) );
 
 				// Subtract frame size from programStack
 				if ( (int16_t)ci->value == ci->value ) {
 					emit( PPC_ADDI( rPSTACK, rPSTACK, -ci->value ) );
 				} else {
-					emit_MOVi32( R11, ci->value );
-					emit( PPC_SUB( rPSTACK, rPSTACK, R11 ) );
+					rx[0] = alloc_rx_const( R11, ci->value );	// r11 = arg
+					emit( PPC_SUB( rPSTACK, rPSTACK, rx[0] ) );
+					unmask_rx( rx[0] );
 				}
 
 				emit_CheckProc( vm, ci );
 
 				// procBase = dataBase + programStack
-				emit( PPC_EXTSW( R11, rPSTACK ) );           // sign-extend pStack to 64-bit
-				emit( PPC_ADD( rPROCBASE, R11, rDATABASE ) ); // procBase = pStack + dataBase
+				emit( PPC_ADD( rPROCBASE, rPSTACK, rDATABASE ) ); // procBase = pStack + dataBase
 				break;
 
 			case OP_LEAVE:
+				flush_opstack();
 				dec_opstack(); // opstack -= 4
 #ifdef DEBUG_VM
-				if ( opstack != 0 ) {
-					Com_Error( ERR_DROP, "VM: opStack corrupted on OP_LEAVE" );
-				}
+				if ( opstack != 0 )
+					DROP( "opStack corrupted on OP_LEAVE" );
 #endif
 				if ( !ci->endp && proc_base >= 0 ) {
 					// jump to last OP_LEAVE in this function
@@ -1366,74 +1552,69 @@ __recompile:
 				}
 
 				// Restore saved state
-				emit( PPC_LD( rPROCBASE, ENTER_PROC, R1 ) );
-				emit( PPC_LWZ( rPSTACK, ENTER_PST, R1 ) );
-				emit( PPC_LD( rOPSTACK, ENTER_OPST, R1 ) );
-				emit( PPC_LD( R0, ENTER_FRAME + 16, R1 ) );  // restore LR
+				emit( PPC_LD( rPROCBASE, ENTER_PROC, SP ) );
+				emit( PPC_LWZ( rPSTACK, ENTER_PST, SP ) );
+				emit( PPC_LD( rOPSTACK, ENTER_OPST, SP ) );
+				emit( PPC_LD( R0, ENTER_FRAME + 16, SP ) );  // restore LR
 				emit( PPC_MTLR( R0 ) );
-				emit( PPC_ADDI( R1, R1, ENTER_FRAME ) );     // destroy local frame
+				emit( PPC_ADDI( SP, SP, ENTER_FRAME ) );     // destroy local frame
 				emit( PPC_BLR() );
 				break;
 
 			case OP_CALL:
 				// Load callnum from opstack
-				load_opstack( R3 );  // R3 = *(rOPSTACK + opstack)
+				rx[0] = load_rx_opstack( R3 | FORCED ); // r3 = *opstack
+				flush_volatile();
 				// Adjust rOPSTACK so the helper stores return value at the right place.
 				// The helper stores the return value at rOPSTACK+4 (for syscalls).
 				// We want that to land at rOPSTACK + opstack (replacing the call number).
 				// So we adjust rOPSTACK by (opstack - 4) before calling, and restore after.
-				if ( opstack != 4 ) {
-					emit( PPC_ADDI( rOPSTACK, rOPSTACK, opstack - 4 ) );
+				if ( opstack != 1 ) {
+					emit( PPC_ADDI( rOPSTACK, rOPSTACK, (opstack - 1) * sizeof( int32_t ) ) );
 					emitFuncOffset( vm, FUNC_CALL );
-					emit( PPC_ADDI( rOPSTACK, rOPSTACK, -(opstack - 4) ) );
+					emit( PPC_ADDI( rOPSTACK, rOPSTACK, -(opstack - 1) * sizeof( int32_t ) ) );
 				} else {
 					emitFuncOffset( vm, FUNC_CALL );
 				}
+				unmask_rx( rx[0] );
 				// OP_CALL pops the call number but the return value takes its place,
 				// so the opstack level remains unchanged (same as aarch64).
 				break;
 
 			case OP_PUSH:
-				inc_opstack();
+				inc_opstack();			// opstack -= 4
 				if ( (ci + 1)->op == OP_LEAVE ) {
 					proc_base = -1;
 				}
 				break;
 
 			case OP_POP:
-				dec_opstack();
+				dec_opstack_discard();	// opstack -= 4
 				break;
 
 			case OP_CONST:
-				inc_opstack();
-				// Store constant to opstack
-				emit_MOVi32( R3, ci->value );
-				store_opstack( R3 );
+				inc_opstack(); // opstack += 4
+				store_item_opstack( ci );
 				break;
 
 			case OP_LOCAL:
-				inc_opstack();
-				// local address = programStack + value
-				if ( (int16_t)ci->value == ci->value ) {
-					emit( PPC_ADDI( R3, rPSTACK, ci->value ) );
-				} else {
-					emit_MOVi32( R3, ci->value );
-					emit( PPC_ADD( R3, rPSTACK, R3 ) );
-				}
-				store_opstack( R3 );
+				inc_opstack(); // opstack += 4
+				store_item_opstack( ci );
 				break;
 
 			case OP_JUMP:
 				// indirect jump: target = *opstack
-				load_opstack( R3 );
-				dec_opstack();
-				emit_CheckJump( vm, R3, proc_base, proc_len );
+				rx[0] = load_rx_opstack( R3 | RCONST ); dec_opstack();	// r3 = *opstack; opstack -= 4
+				flush_volatile();
+				emit_CheckJump( vm, rx[0], proc_base, proc_len );		// check if r3 is within current proc
 				// Load target address from instructionPointers[R3]
 				// R11 = R3 << 3
-				emit( PPC_RLWINM( R11, R3, 3, 0, 28 ) ); // shift left 3, mask to 32-bit
+				emit( PPC_RLWINM( R11, rx[0], 3, 0, 28 ) ); // shift left 3, mask to 32-bit
 				emit( PPC_LDX( R11, rINSPOINTERS, R11 ) );
 				emit( PPC_MTCTR( R11 ) );
 				emit( PPC_BCTR() );
+				unmask_rx( rx[0] );
+				wipe_vars();
 				break;
 
 			// ---- Integer comparisons ----
@@ -1444,11 +1625,11 @@ __recompile:
 			case OP_GTI:
 			case OP_GEI:
 				// pop two, compare (signed), branch
-				load_opstack( R4 );        // R4 = top
-				dec_opstack();
-				load_opstack( R3 );        // R3 = second
-				dec_opstack();
-				emit( PPC_CMPW( 0, R3, R4 ) );
+				rx[0] = load_rx_opstack( R4 | RCONST ); dec_opstack(); // r4 = *opstack; opstack -= 4
+				rx[1] = load_rx_opstack( R3 | RCONST ); dec_opstack(); // r3 = *opstack; opstack -= 4
+				unmask_rx( rx[0] );
+				unmask_rx( rx[1] );
+				emit( PPC_CMPW( 0, rx[1], rx[0] ) );
 				emit_branchConditional( vm, ci, ci->op );
 				break;
 
@@ -1457,11 +1638,11 @@ __recompile:
 			case OP_GTU:
 			case OP_GEU:
 				// pop two, compare (unsigned), branch
-				load_opstack( R4 );        // R4 = top
-				dec_opstack();
-				load_opstack( R3 );        // R3 = second
-				dec_opstack();
-				emit( PPC_CMPLW( 0, R3, R4 ) );
+				rx[0] = load_rx_opstack( R4 | RCONST ); dec_opstack(); // r4 = *opstack; opstack -= 4
+				rx[1] = load_rx_opstack( R3 | RCONST ); dec_opstack(); // r3 = *opstack; opstack -= 4
+				unmask_rx( rx[0] );
+				unmask_rx( rx[1] );
+				emit( PPC_CMPLW( 0, rx[1], rx[0] ) );
 				emit_branchConditional( vm, ci, ci->op );
 				break;
 
@@ -1476,73 +1657,65 @@ __recompile:
 				// Load as 32-bit words into FPRs via memory
 				// We use lfs which loads a single-precision float and converts to double in the FPR
 				// opstack values are stored as 32-bit IEEE 754 floats
-				emit( PPC_LFS( F1, opstack, rOPSTACK ) );  // F1 = top (float)
-				dec_opstack();
-				emit( PPC_LFS( F0, opstack, rOPSTACK ) );  // F0 = second (float)
-				dec_opstack();
-				emit( PPC_FCMPU( 0, F0, F1 ) );
+				sx[1] = load_sx_opstack( F1 | RCONST ); dec_opstack(); // F1 = *opstack; opstack -= 4
+				sx[0] = load_sx_opstack( F0 | RCONST ); dec_opstack(); // F0 = *opstack; opstack -= 4
+				emit( PPC_FCMPU( 0, sx[0], sx[1] ) );
 				emit_branchConditional( vm, ci, ci->op );
+				unmask_sx( sx[1] );
+				unmask_sx( sx[0] );
 				break;
 
 			// ---- Load operations ----
 			case OP_LOAD1:
-				load_opstack( R3 );  // R3 = address (from opstack top)
-				emit_CheckReg( vm, R3, FUNC_BADR );
-				emit( PPC_LBZX( R3, rDATABASE, R3 ) );  // R3 = dataBase[R3] (byte)
-				store_opstack( R3 );
-				break;
-
 			case OP_LOAD2:
-				load_opstack( R3 );
-				emit_CheckReg( vm, R3, FUNC_BADR );
-				emit( PPC_LHZX( R3, rDATABASE, R3 ) );  // R3 = dataBase[R3] (halfword)
-				store_opstack( R3 );
-				break;
-
 			case OP_LOAD4:
-				load_opstack( R3 );
-				emit_CheckReg( vm, R3, FUNC_BADR );
-				emit( PPC_LWZX( R3, rDATABASE, R3 ) );  // R3 = dataBase[R3] (word)
-				store_opstack( R3 );
+				// rx[0] = rx[1] = load_rx_opstack( R3 ); // target, address = *opstack
+				load_rx_opstack2( &rx[0], R3, &rx[1], R4 );
+				emit_CheckReg( vm, rx[1], FUNC_BADR );
+				switch ( ci->op ) {
+					case OP_LOAD1: emit( PPC_LBZX( rx[0], rDATABASE, rx[1] ) );  break; // R3 = dataBase[R4] (byte)
+					case OP_LOAD2: emit( PPC_LHZX( rx[0], rDATABASE, rx[1] ) );  break; // R3 = dataBase[R4] (halfword)
+					case OP_LOAD4: emit( PPC_LWZX( rx[0], rDATABASE, rx[1] ) );  break; // R3 = dataBase[R4] (word)
+				}
+				if ( rx[1] != rx[0] ) {
+					unmask_rx( rx[1] );
+				}
+				store_rx_opstack( rx[0] ); // *opstack = R3
 				break;
 
-			// ---- Store operations ----
 			case OP_STORE1:
-				// *(stack[top-1]) = stack[top] (byte)
-				load_opstack( R4 );        // R4 = value (top)
-				dec_opstack();
-				load_opstack( R3 );        // R3 = address (second)
-				dec_opstack();
-				if ( !ci->safe )
-					emit_CheckReg( vm, R3, FUNC_BADW );
-				emit( PPC_STBX( R4, rDATABASE, R3 ) );
-				break;
-
 			case OP_STORE2:
-				load_opstack( R4 );
-				dec_opstack();
-				load_opstack( R3 );
-				dec_opstack();
-				if ( !ci->safe )
-					emit_CheckReg( vm, R3, FUNC_BADW );
-				emit( PPC_STHX( R4, rDATABASE, R3 ) );
-				break;
-
 			case OP_STORE4:
-				load_opstack( R4 );
-				dec_opstack();
-				load_opstack( R3 );
-				dec_opstack();
+				rx[0] = load_rx_opstack( R3 | RCONST ); dec_opstack(); // r3 = *opstack; opstack -= 4
+				// address specified by register
+				rx[1] = load_rx_opstack( R4 | RCONST ); dec_opstack(); // r4 = *opstack; opstack -= 4
 				if ( !ci->safe )
-					emit_CheckReg( vm, R3, FUNC_BADW );
-				emit( PPC_STWX( R4, rDATABASE, R3 ) );
+					emit_CheckReg( vm, rx[1], FUNC_BADW );
+				switch ( ci->op ) {
+					case OP_STORE1: emit( PPC_STBX( rx[0], rDATABASE, rx[1] ) ); break; // (byte) dataBase[R3] = R4
+					case OP_STORE2: emit( PPC_STHX( rx[0], rDATABASE, rx[1] ) ); break; // (short) dataBase[R3] = R4
+					case OP_STORE4: emit( PPC_STWX( rx[0], rDATABASE, rx[1] ) ); break; // (word) dataBase[R3] = R4
+				}
+				wipe_vars(); // unknown/dynamic address, wipe all register mappings
+				unmask_rx( rx[1] );
+				unmask_rx( rx[0] );
 				break;
 
 			case OP_ARG:
 				// Store opstack top to procBase + ci->value
-				load_opstack( R3 );
-				dec_opstack();
-				emit( PPC_STW( R3, ci->value, rPROCBASE ) );
+				var.base = rPROCBASE;
+				var.addr = ci->value;
+				var.size = 4;
+				wipe_var_range( &var );
+				if ( scalar_on_top() ) {
+					sx[0] = load_sx_opstack( F0 | RCONST ); dec_opstack(); // f0 = *opstack; opstack -=4
+					emit( PPC_STFS( sx[0], var.addr, var.base ) );
+					unmask_sx( sx[0] );
+				} else {
+					rx[0] = load_rx_opstack( R3 | RCONST ); dec_opstack(); // r3 = *opstack; opstack -=4
+					emit( PPC_STW( rx[0], var.addr, var.base ) ); // [procBase + v] = r3
+					unmask_rx( rx[0] );
+				}
 				break;
 
 			case OP_BLOCK_COPY:
@@ -1552,265 +1725,188 @@ __recompile:
 				// OP_BLOCK_COPY: src = stack[top], dst = stack[top-1], count = ci->value
 				// Actually from vm_interpreted2.c: src = opStack[opStackOfs], dst = opStack[opStackOfs-1]
 				// i.e., top = src addr, second = dst addr
-				load_opstack( R3 );        // R3 = src (top)
-				dec_opstack();
-				load_opstack( R4 );        // R4 = dst (second)
-				dec_opstack();
-				emit_MOVi32( R5, ci->value );  // R5 = count
+				rx[0] = load_rx_opstack( R3 | FORCED ); dec_opstack();	// src: r3 = *opstack; opstack -=4
+				rx[1] = load_rx_opstack( R4 | FORCED ); dec_opstack();	// dst: r4 = *opstack; opstack -=4
+				rx[2] = alloc_rx( R5 | FORCED );						// flush and reserve r5 register
+				mov_rx_imm32( rx[2], ci->value >> 2 );					// mov r5, 0x12345678 / 4
+				flush_items( TYPE_RX, R6 );
+				wipe_rx_meta( R6 );
 				emitFuncOffset( vm, FUNC_BCPY );
+				unmask_rx( rx[2] );
+				unmask_rx( rx[1] );
+				unmask_rx( rx[0] );
+				wipe_vars();
 				break;
 
 			// ---- Sign extension ----
 			case OP_SEX8:
-				load_opstack( R3 );
-				emit( PPC_EXTSB( R3, R3 ) );
-				store_opstack( R3 );
-				break;
-
 			case OP_SEX16:
-				load_opstack( R3 );
-				emit( PPC_EXTSH( R3, R3 ) );
-				store_opstack( R3 );
-				break;
-
-			// ---- Integer arithmetic ----
 			case OP_NEGI:
-				load_opstack( R3 );
-				emit( PPC_NEG( R3, R3 ) );
-				store_opstack( R3 );
+			case OP_BCOM:
+				rx[0] = load_rx_opstack( R3 );	// r3 = *opstack
+				switch ( ci->op ) {
+					case OP_SEX8:  emit( PPC_EXTSB( rx[0], rx[0] ) ); break;
+					case OP_SEX16: emit( PPC_EXTSH( rx[0], rx[0] ) ); break;
+					case OP_NEGI:  emit( PPC_NEG( rx[0], rx[0] ) ); break;
+					case OP_BCOM:  emit( PPC_NOT( rx[0], rx[0] ) ); break;
+				}
+				store_rx_opstack( rx[0] );		// *opstack = r3
 				break;
 
 			case OP_ADD:
-				load_opstack( R4 );    // R4 = top
-				dec_opstack();
-				load_opstack( R3 );    // R3 = second
-				emit( PPC_ADD( R3, R3, R4 ) );
-				store_opstack( R3 );
-				break;
-
 			case OP_SUB:
-				load_opstack( R4 );    // R4 = top
-				dec_opstack();
-				load_opstack( R3 );    // R3 = second
-				emit( PPC_SUB( R3, R3, R4 ) );  // R3 = second - top
-				store_opstack( R3 );
-				break;
-
 			case OP_MULI:
-				load_opstack( R4 );
-				dec_opstack();
-				load_opstack( R3 );
-				emit( PPC_MULLW( R3, R3, R4 ) );
-				store_opstack( R3 );
-				break;
-
 			case OP_MULU:
-				// unsigned multiply - same instruction for low word
-				load_opstack( R4 );
-				dec_opstack();
-				load_opstack( R3 );
-				emit( PPC_MULLW( R3, R3, R4 ) );
-				store_opstack( R3 );
-				break;
-
 			case OP_DIVI:
-				load_opstack( R4 );
-				dec_opstack();
-				load_opstack( R3 );
-				emit( PPC_DIVW( R3, R3, R4 ) );
-				store_opstack( R3 );
-				break;
-
 			case OP_DIVU:
-				load_opstack( R4 );
-				dec_opstack();
-				load_opstack( R3 );
-				emit( PPC_DIVWU( R3, R3, R4 ) );
-				store_opstack( R3 );
-				break;
-
-			case OP_MODI:
-				// mod = a % b (signed)
-				load_opstack( R4 );        // R4 = b (top)
-				dec_opstack();
-				load_opstack( R3 );        // R3 = a (second)
-#if USE_ISA_3_0
-				emit( PPC_MODSW( R3, R3, R4 ) );  // R3 = a % b (single instruction)
-#else
-				emit( PPC_DIVW( R5, R3, R4 ) );   // R5 = a / b (signed)
-				emit( PPC_MULLW( R5, R5, R4 ) );  // R5 = (a/b) * b
-				emit( PPC_SUB( R3, R3, R5 ) );    // R3 = a - (a/b)*b
-#endif
-				store_opstack( R3 );
-				break;
-
-			case OP_MODU:
-				// mod = a % b (unsigned)
-				load_opstack( R4 );
-				dec_opstack();
-				load_opstack( R3 );
-#if USE_ISA_3_0
-				emit( PPC_MODUW( R3, R3, R4 ) );  // R3 = a % b (single instruction)
-#else
-				emit( PPC_DIVWU( R5, R3, R4 ) );
-				emit( PPC_MULLW( R5, R5, R4 ) );
-				emit( PPC_SUB( R3, R3, R5 ) );
-#endif
-				store_opstack( R3 );
-				break;
-
-			// ---- Bitwise operations ----
 			case OP_BAND:
-				load_opstack( R4 );
-				dec_opstack();
-				load_opstack( R3 );
-				emit( PPC_AND( R3, R3, R4 ) );
-				store_opstack( R3 );
-				break;
-
 			case OP_BOR:
-				load_opstack( R4 );
-				dec_opstack();
-				load_opstack( R3 );
-				emit( PPC_OR( R3, R3, R4 ) );
-				store_opstack( R3 );
-				break;
-
 			case OP_BXOR:
-				load_opstack( R4 );
-				dec_opstack();
-				load_opstack( R3 );
-				emit( PPC_XOR( R3, R3, R4 ) );
-				store_opstack( R3 );
-				break;
-
-			case OP_BCOM:
-				load_opstack( R3 );
-				emit( PPC_NOT( R3, R3 ) );
-				store_opstack( R3 );
-				break;
-
-			// ---- Shifts ----
 			case OP_LSH:
-				load_opstack( R4 );    // shift amount
-				dec_opstack();
-				load_opstack( R3 );    // value
-				emit( PPC_SLW( R3, R3, R4 ) );
-				store_opstack( R3 );
-				break;
-
 			case OP_RSHI:
-				load_opstack( R4 );
-				dec_opstack();
-				load_opstack( R3 );
-				emit( PPC_SRAW( R3, R3, R4 ) );
-				store_opstack( R3 );
-				break;
-
 			case OP_RSHU:
-				load_opstack( R4 );
-				dec_opstack();
-				load_opstack( R3 );
-				emit( PPC_SRW( R3, R3, R4 ) );
-				store_opstack( R3 );
+			case OP_MODI:
+			case OP_MODU:
+				// rx[0] = rx[1] = load_rx_opstack( R3 ); dec_opstack(); // source, target = *opstack
+				load_rx_opstack2( &rx[0], R3, &rx[1], R4 ); dec_opstack();
+				rx[2] = load_rx_opstack( R5 | RCONST ); // opstack -=4 ; r2 = *opstack
+				switch ( ci->op ) {
+					case OP_ADD:  emit( PPC_ADD( rx[0], rx[2], rx[1] ) ); break;
+					case OP_SUB:  emit( PPC_SUB( rx[0], rx[2], rx[1] ) ); break;
+					case OP_MULI: emit( PPC_MULLW( rx[0], rx[2], rx[1] ) ); break;
+					case OP_MULU: emit( PPC_MULLW( rx[0], rx[2], rx[1] ) ); break; // unsigned multiply - same instruction for low word
+					case OP_DIVI: emit( PPC_DIVW( rx[0], rx[2], rx[1] ) ); break;
+					case OP_DIVU: emit( PPC_DIVWU( rx[0], rx[2], rx[1] ) ); break;
+					case OP_BAND: emit( PPC_AND( rx[0], rx[2], rx[1] ) ); break;
+					case OP_BOR:  emit( PPC_OR( rx[0], rx[2], rx[1] ) ); break;
+					case OP_BXOR: emit( PPC_XOR( rx[0], rx[2], rx[1] ) ); break;
+					case OP_LSH:  emit( PPC_SLW( rx[0], rx[2], rx[1] ) ); break;
+					case OP_RSHI: emit( PPC_SRAW( rx[0], rx[2], rx[1] ) ); break;
+					case OP_RSHU: emit( PPC_SRW( rx[0], rx[2], rx[1] ) ); break;
+					case OP_MODI: {
+						rx[3] = alloc_rx( R6 | TEMP );
+#if USE_ISA_3_0
+						emit( PPC_MODSW( rx[0], rx[2], rx[1] ) );	// R3 = a % b (single instruction)
+#else
+						emit( PPC_DIVW( rx[3], rx[2], rx[1] ) );	// R6 = a / b (signed)
+						emit( PPC_MULLW( rx[3], rx[3], rx[1] ) );	// R6 = (a/b) * b
+						emit( PPC_SUB( rx[0], rx[2], rx[3] ) );		// R3 = a - (a/b)*b
+#endif
+						unmask_rx( rx[3] );
+						break;
+					}
+					case OP_MODU: {
+						rx[3] = alloc_rx( R6 | TEMP );
+#if USE_ISA_3_0
+						emit( PPC_MODUW( rx[0], rx[2], rx[1] ) );	// R3 = a % b (single instruction)
+#else
+						emit( PPC_DIVWU( rx[3], rx[2], rx[1] ) );	// R6 = a / b (signed)
+						emit( PPC_MULLW( rx[3], rx[3], rx[1] ) );	// R6 = (a/b) * b
+						emit( PPC_SUB( rx[0], rx[2], rx[3] ) );		// R3 = a - (a/b)*b
+#endif
+						unmask_rx( rx[3] );
+						break;
+					}
+				} // switch (ci->op)
+				unmask_rx( rx[2] );
+				if ( rx[1] != rx[0] ) {
+					unmask_rx( rx[1] );
+				}
+				store_rx_opstack( rx[0] ); // *opstack = r3
 				break;
 
 			// ---- Float arithmetic ----
 			case OP_NEGF:
-				emit( PPC_LFS( F0, opstack, rOPSTACK ) );
-				emit( PPC_FNEG( F0, F0 ) );
-				emit( PPC_STFS( F0, opstack, rOPSTACK ) );
+				//sx[1] = sx[0] = load_sx_opstack( F0 );	// F0 = F1 = *opstack
+				load_sx_opstack2( &sx[0], F0, &sx[1], F1 );
+				emit( PPC_FNEG( sx[0], sx[1] ) );			// F0 = -F1
+				if ( sx[1] != sx[0] ) {
+					unmask_sx( sx[1] );
+				}
+				store_sx_opstack( sx[0] );					// *opStack = F0
 				break;
 
 			case OP_ADDF:
-				emit( PPC_LFS( F1, opstack, rOPSTACK ) );  // F1 = top
-				dec_opstack();
-				emit( PPC_LFS( F0, opstack, rOPSTACK ) );  // F0 = second
-				emit( PPC_FADDS( F0, F0, F1 ) );
-				emit( PPC_STFS( F0, opstack, rOPSTACK ) );
-				break;
-
 			case OP_SUBF:
-				emit( PPC_LFS( F1, opstack, rOPSTACK ) );
-				dec_opstack();
-				emit( PPC_LFS( F0, opstack, rOPSTACK ) );
-				emit( PPC_FSUBS( F0, F0, F1 ) );  // second - top
-				emit( PPC_STFS( F0, opstack, rOPSTACK ) );
-				break;
-
 			case OP_MULF:
-				emit( PPC_LFS( F1, opstack, rOPSTACK ) );
-				dec_opstack();
-				emit( PPC_LFS( F0, opstack, rOPSTACK ) );
-				emit( PPC_FMULS( F0, F0, F1 ) );
-				emit( PPC_STFS( F0, opstack, rOPSTACK ) );
-				break;
-
 			case OP_DIVF:
-				emit( PPC_LFS( F1, opstack, rOPSTACK ) );
-				dec_opstack();
-				emit( PPC_LFS( F0, opstack, rOPSTACK ) );
-				emit( PPC_FDIVS( F0, F0, F1 ) );
-				emit( PPC_STFS( F0, opstack, rOPSTACK ) );
+				//sx[0] = sx[1] = load_sx_opstack( S0 ); dec_opstack();	// F0 = F1 = *opstack
+				load_sx_opstack2( &sx[0], F0, &sx[1], F1 ); dec_opstack();
+				sx[2] = load_sx_opstack( F2 | RCONST );	// opstack -= 4; F2 = *opstack
+				switch ( ci->op ) {
+					case OP_ADDF: emit( PPC_FADDS( sx[0], sx[2], sx[1] ) ); break;
+					case OP_SUBF: emit( PPC_FSUBS( sx[0], sx[2], sx[1] ) ); break;
+					case OP_MULF: emit( PPC_FMULS( sx[0], sx[2], sx[1] ) ); break;
+					case OP_DIVF: emit( PPC_FDIVS( sx[0], sx[2], sx[1] ) ); break;
+				}
+				if ( sx[1] != sx[0] ) {
+					unmask_sx( sx[1] );
+				}
+				unmask_sx( sx[2] );
+				store_sx_opstack( sx[0] ); // *opStack = F0
 				break;
 
 			// ---- Type conversion ----
 			case OP_CVIF:
 				// Convert integer to float
+				sx[0] = alloc_sx( F0 );	// f0 - destination register
+				rx[0] = load_rx_opstack( R3 | RCONST );			// r3 = *opstack
 #if USE_ISA_2_07
-			// ISA 2.07 (POWER8): use mtvsrwa to move GPR directly to VSR,
-			// avoiding the memory round-trip through the stack scratch area.
-			// mtvsrwa sign-extends the 32-bit GPR value to 64-bit in the VSR.
-			load_opstack( R3 );                        // R3 = int32 value
-			emit( PPC_MTVSRWA( F0, R3 ) );            // F0(VSR) = sign-extend(R3)
-			emit( PPC_FCFIDS( F0, F0 ) );             // F0 = convert int64 -> float
-			emit( PPC_STFS( F0, opstack, rOPSTACK ) ); // store float to opstack
+				// ISA 2.07 (POWER8): use mtvsrwa to move GPR directly to VSR,
+				// avoiding the memory round-trip through the stack scratch area.
+				// mtvsrwa sign-extends the 32-bit GPR value to 64-bit in the VSR.
+				emit( PPC_MTVSRWA( sx[0], rx[0]) );     // F0(VSR) = sign-extend(R3)
+				emit( PPC_FCFIDS( sx[0], sx[0] ) );     // F0 = convert int64 -> float
 #else
-			// Fallback: memory round-trip via stack scratch area
-			// 1. Load int32 from opstack, sign-extend to 64-bit
-			// 2. Store as int64 to scratch, load as double (for fcfids input)
-			load_opstack( R3 );                     // R3 = int32 value
-			emit( PPC_EXTSW( R3, R3 ) );           // sign-extend to 64-bit
-			emit( PPC_STD( R3, ENTER_SCRATCH, R1 ) );   // store int64 to stack scratch
-			emit( PPC_LFD( F0, ENTER_SCRATCH, R1 ) );   // load as double (reinterpret int64 bits)
-			emit( PPC_FCFIDS( F0, F0 ) );          // convert int64 -> float single
-			emit( PPC_STFS( F0, opstack, rOPSTACK ) ); // store float to opstack
+				rx[1] = alloc_rx( R4 | TEMP );
+				emit( PPC_EXTSW( rx[1], rx[0] ) );				// sign-extend (r3) to 64-bit (r4)
+				emit( PPC_STD( rx[1], ENTER_SCRATCH, SP ) );	// store int64 (r4) to stack scratch
+				emit( PPC_LFD( sx[0], ENTER_SCRATCH, SP ) );	// load as double (reinterpret int64 bits)
+				emit( PPC_FCFIDS( sx[0], sx[0] ) );				// convert int64 -> float single
+				unmask_rx( rx[1] );
 #endif
-			break;
+				unmask_rx( rx[0] );
+				store_sx_opstack( sx[0] );						// *opstack = f0
+				break;
 
-		case OP_CVFI:
-			// Convert float to integer (truncate toward zero)
+			case OP_CVFI:
+				rx[0] = alloc_rx( R3 );
+				sx[0] = load_sx_opstack( F0 | RCONST );		// f0 = *opstack
 #if USE_ISA_2_07
-			// ISA 2.07 (POWER8): use xscvdpsxws + mfvsrwz to avoid memory round-trip.
-			// This also eliminates the BE/LE offset difference since there is no
-			// intermediate memory store.
-			emit( PPC_LFS( F0, opstack, rOPSTACK ) );      // load float
-			emit( PPC_XSCVDPSXWS( F0, F0 ) );              // convert double -> signed int32 in VSR
-			emit( PPC_MFVSRWZ( R3, F0 ) );                 // move low 32 bits of VSR -> GPR
-			store_opstack( R3 );
-#else
-			// Fallback: memory round-trip via stack scratch area
-			emit( PPC_LFS( F0, opstack, rOPSTACK ) );      // load float
-			emit( PPC_FCTIWZ( F0, F0 ) );                  // convert to int32 (in FPR)
-			emit( PPC_STFD( F0, ENTER_SCRATCH, R1 ) );     // store doubleword to scratch
-			// fctiwz places the 32-bit int in the low-order word of the doubleword.
-			// On little-endian, the low-order word is at the base address (offset+0).
-			// On big-endian, the low-order word is at offset+4.
+				// ISA 2.07 (POWER8): use xscvdpsxws + mfvsrwz to avoid memory round-trip.
+				// This also eliminates the BE/LE offset difference since there is no
+				// intermediate memory store.
+				sx[1] = alloc_sx( F1 | TEMP );				// f0 = *opstack
+				unmask_sx( sx[1] );
+				emit( PPC_XSCVDPSXWS( sx[1], sx[0] ) );     // convert double -> signed int32 in VSR
+				emit( PPC_MFVSRWZ( rx[0], sx[1] ) );		// move low 32 bits of VSR -> GPR
+#else  // !USE_ISA_2_07
+				// Fallback: memory round-trip via stack scratch area
+				sx[1] = alloc_sx( F1 | TEMP );		 			// allocate scratch
+				emit( PPC_FCTIWZ( sx[1], sx[0] ) );             // convert to int32 (in FPR)
+				emit( PPC_STFD( sx[1], ENTER_SCRATCH, SP ) );	// store doubleword to scratch
+				// fctiwz places the 32-bit int in the low-order word of the doubleword.
+				// On little-endian, the low-order word is at the base address (offset+0).
+				// On big-endian, the low-order word is at offset+4.
+				unmask_sx( sx[1] );
 #ifdef PPC64_ELFv1
-			emit( PPC_LWZ( R3, ENTER_SCRATCH + 4, R1 ) );  // load int32 (BE: offset+4)
+				emit( PPC_LWZ( rx[0], ENTER_SCRATCH + 4, SP ) );	// load int32 (BE: offset+4)
 #else
-			emit( PPC_LWZ( R3, ENTER_SCRATCH, R1 ) );      // load int32 (LE: offset+0)
+				emit( PPC_LWZ( rx[0], ENTER_SCRATCH, SP ) );		// load int32 (LE: offset+0)
 #endif
-			store_opstack( R3 );
-#endif
-			break;
+#endif // !USE_ISA_2_07
+				unmask_sx( sx[0] );
+				store_rx_opstack( rx[0] );							// *opstack = r3
+				break;
 
 			default:
 				Com_Error( ERR_DROP, "VM: bad opcode %02x at instruction %i", ci->op, ip - 1 );
 				break;
 
-		} // switch op
+		} // switch ( ci->op )
 	} // while ip
+
+	flush_opstack();
 
 #ifdef FUNC_ALIGN
 	emitAlign( FUNC_ALIGN );

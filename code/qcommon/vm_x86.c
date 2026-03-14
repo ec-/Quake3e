@@ -3024,9 +3024,6 @@ __compile:
 									//var.addr += 1; var.size = 3;
 									//wipe_reg_range( rx_regs + rx[0], &var );
 									reduce_map_size( reg, 1 );
-									// modify constant
-									reg->cnst.value &= 0xFF;
-									reg->ext = Z_EXT8;
 								}
 								break;
 							case OP_LOAD2:
@@ -3036,9 +3033,6 @@ __compile:
 									//var.addr += 2; var.size = 2;
 									//wipe_reg_range( rx_regs + rx[0], &var );
 									reduce_map_size( reg, 2 );
-									// modify constant
-									reg->cnst.value &= 0xFFFF;
-									reg->ext = Z_EXT16;
 								}
 								break;
 							case OP_LOAD4:
@@ -3262,8 +3256,10 @@ __compile:
 				rx[1] = load_rx_opstack( R_EAX | FORCED | SHIFT4 );	// eax = *(opstack-4)
 				rx[2] = alloc_rx( R_EDX | FORCED );	// flush and reserve edx register
 				rx[0] = load_rx_opstack( R_ECX | RCONST | XMASK ); dec_opstack(); // ecx = *opstack; opstack -= 4
+#ifdef DYN_ALLOC_RX
 				if ( rx[0] == rx[2] || rx[1] == rx[2] )
 					DROP( "incorrect register setup, rx_mask=%04x", build_rx_mask() );
+#endif
 				if ( ci->op == OP_DIVI || ci->op == OP_MODI ) {
 					emit_cdq();						// cdq
 					emit_idiv_rx( rx[0] );			// idiv eax, ecx

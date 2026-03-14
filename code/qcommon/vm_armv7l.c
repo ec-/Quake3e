@@ -1493,9 +1493,6 @@ __recompile:
 									//var.addr += 1; var.size = 3;
 									//wipe_reg_range( rx_regs + rx[0], &var );
 									reduce_map_size( reg, 1 );
-									// modify constant
-									reg->cnst.value &= 0xFF;
-									reg->ext = Z_EXT8;
 								}
 								break;
 							case OP_LOAD2:
@@ -1505,9 +1502,6 @@ __recompile:
 									//var.addr += 2; var.size = 2;
 									//wipe_reg_range( rx_regs + rx[0], &var );
 									reduce_map_size( reg, 2 );
-									// modify constant
-									reg->cnst.value &= 0xFFFF;
-									reg->ext = Z_EXT16;
 								}
 								break;
 							case OP_LOAD4:
