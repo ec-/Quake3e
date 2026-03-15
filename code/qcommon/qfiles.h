@@ -46,20 +46,20 @@ QVM files
 #define	VM_MAGIC			0x12721444
 #define	VM_MAGIC_VER2	0x12721445
 typedef struct {
-	int32_t vmMagic;
+	uint32_t vmMagic;
 
-	int32_t instructionCount;
+	uint32_t instructionCount;
 
-	int32_t codeOffset;
-	int32_t codeLength;
+	uint32_t codeOffset;
+	uint32_t codeLength;
 
-	int32_t dataOffset;
-	int32_t dataLength;
-	int32_t litLength;			// ( dataLength - litLength ) should be byteswapped on load
-	int32_t bssLength;			// zero filled memory appended to datalength
+	uint32_t dataOffset;
+	uint32_t dataLength;
+	uint32_t litLength;			// ( dataLength - litLength ) should be byteswapped on load
+	uint32_t bssLength;			// zero filled memory appended to datalength
 
 	//!!! below here is VM_MAGIC_VER2 !!!
-	int32_t jtrgLength;			// number of jump table targets
+	uint32_t jtrgLength;			// number of jump table targets
 } vmHeader_t;
 
 /*
