@@ -135,7 +135,7 @@ typedef struct {
 } md3Shader_t;
 
 typedef struct {
-	int			indexes[3];
+	uint32_t	indexes[3];
 } md3Triangle_t;
 
 typedef struct {
