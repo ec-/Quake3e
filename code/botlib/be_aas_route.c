@@ -1244,7 +1244,7 @@ void AAS_InitRouting(void)
 #endif //ROUTING_DEBUG
 	//
 	routingcachesize = 0;
-	max_routingcachesize = 1024 * (int) LibVarValue("max_routingcache", "12288");
+	max_routingcachesize = 1024 * LibVarInteger("max_routingcache", "12288", 0, 65536);
 	// read any routing cache if available
 	AAS_ReadRouteCache();
 } //end of the function AAS_InitRouting

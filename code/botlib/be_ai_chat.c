@@ -244,7 +244,7 @@ static void InitConsoleMessageHeap(void)
 
 	if (consolemessageheap) FreeMemory(consolemessageheap);
 	//
-	max_messages = (int) LibVarValue("max_messages", "1024");
+	max_messages = LibVarInteger("max_messages", "1024", 2, 65536);
 	consolemessageheap = (bot_consolemessage_t *) GetClearedHunkMemory(max_messages *
 												sizeof(bot_consolemessage_t));
 	consolemessageheap[0].prev = NULL;
