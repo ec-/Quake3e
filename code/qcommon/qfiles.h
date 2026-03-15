@@ -350,12 +350,14 @@ typedef struct {
 #define MIN_WORLD_COORD		( -128*1024 )
 #define WORLD_SIZE			( MAX_WORLD_COORD - MIN_WORLD_COORD )
 
+#define VIS_HEADER			8
+
 //=============================================================================
 
 
 typedef struct {
-	int32_t fileofs;
-	int32_t filelen;
+	uint32_t fileofs;
+	uint32_t filelen;
 } lump_t;
 
 #define	LUMP_ENTITIES		0
