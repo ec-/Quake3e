@@ -689,6 +689,11 @@ static qboolean parse_file( const char *filename )
 	fseek( f, 0, SEEK_END );
 	size = ftell( f );
 	fseek( f, 0, SEEK_SET );
+	if ( size < 0 || size >= INT_MAX )
+	{
+		fclose( f );
+		return qfalse;
+	}
 
 	data = (char*) Z_Malloc( size + 1 );
 	if ( fread( data, size, 1, f ) != 1 )
