@@ -173,6 +173,130 @@ static void AAS_SwapAASData(void)
 		aasworld.clusters[i].firstportal = LittleLong(aasworld.clusters[i].firstportal);
 	} //end for
 } //end of the function AAS_SwapAASData
+
+#define CHECK_RANGE(first, count, limit) \
+	((uint64_t)(unsigned)(first) + (unsigned)(count) > (limit))
+
+#define UABS(c)	(((c) & 0x80000000) ? -(unsigned)c : (unsigned)c)
+
+static const char *AAS_ValidateAASData(void)
+{
+	unsigned c, numareas, numreachabilityareas;
+	int i, j;
+
+	c = aasworld.numvertexes ? aasworld.numvertexes : 1;
+
+	for (i = 0; i < aasworld.numedges; i++) {
+		if ((unsigned)aasworld.edges[i].v[0] >= c || (unsigned)aasworld.edges[i].v[1] >= c)
+			return "edges: bad vertexes";
+	}
+
+	for (i = 0; i < aasworld.edgeindexsize; i++) {
+		if (UABS(aasworld.edgeindex[i]) >= aasworld.numedges)
+			return "edgeindex: bad edge";
+	}
+
+	for (i = 0; i < aasworld.numfaces; i++) {
+		if ((unsigned)aasworld.faces[i].planenum >= aasworld.numplanes)
+			return "faces: bad planenum";
+		if (CHECK_RANGE(aasworld.faces[i].firstedge, aasworld.faces[i].numedges, aasworld.edgeindexsize))
+			return "faces: bad edges";
+		if ((unsigned)aasworld.faces[i].frontarea >= aasworld.numareas)
+			return "faces: bad frontarea";
+		if ((unsigned)aasworld.faces[i].backarea >= aasworld.numareas)
+			return "faces: bad backarea";
+	}
+
+	for (i = 0; i < aasworld.faceindexsize; i++) {
+		if (UABS(aasworld.faceindex[i]) >= aasworld.numfaces)
+			return "faceindex: bad face";
+	}
+
+	for (i = 0; i < aasworld.numareas; i++) {
+		if (CHECK_RANGE(aasworld.areas[i].firstface, aasworld.areas[i].numfaces, aasworld.faceindexsize))
+			return "areas: bad faces";
+	}
+
+	for (i = 0; i < aasworld.numareasettings; i++) {
+		if (CHECK_RANGE(aasworld.areasettings[i].firstreachablearea,
+						aasworld.areasettings[i].numreachableareas,
+						aasworld.reachabilitysize))
+			return "areasettings: bad reachable areas";
+		c = aasworld.areasettings[i].cluster;
+		if (c & 0x80000000) {
+			if (-c >= aasworld.numportals)
+				return "areasettings: bad portal";
+		} else {
+			if (c >= aasworld.numclusters)
+				return "areasettings: bad cluster";
+			if ((unsigned)aasworld.areasettings[i].clusterareanum >= (c ? aasworld.clusters[c].numareas : 1))
+				return "areasettings: bad clusterareanum";
+		}
+	}
+
+	for (i = 0; i < aasworld.reachabilitysize; i++) {
+		if ((unsigned)aasworld.reachability[i].areanum >= aasworld.numareasettings)
+			return "reachability: bad areanum";
+		switch (aasworld.reachability[i].traveltype & TRAVELTYPE_MASK)
+			case TRAVEL_ELEVATOR: case TRAVEL_JUMPPAD: case TRAVEL_FUNCBOB: continue;
+		if (UABS(aasworld.reachability[i].facenum) >= aasworld.numfaces)
+			return "reachability: bad facenum";
+		if (UABS(aasworld.reachability[i].edgenum) >= aasworld.numedges)
+			return "reachability: bad edgenum";
+	}
+
+	for (i = 0; i < aasworld.numnodes; i++) {
+		if ((unsigned)aasworld.nodes[i].planenum >= aasworld.numplanes)
+			return "nodes: bad planenum";
+		for (j = 0; j < 2; j++) {
+			c = aasworld.nodes[i].children[j];
+			if (c & 0x80000000) {
+				if (-c >= aasworld.numareasettings)
+					return "nodes: bad areasetting";
+			} else {
+				if (c >= aasworld.numnodes)
+					return "nodes: bad node";
+			}
+		}
+	}
+
+	for (i = 0; i < aasworld.numportals; i++) {
+		if ((unsigned)aasworld.portals[i].areanum >= aasworld.numareas)
+			return "portals: bad areanum";
+
+		c = aasworld.portals[i].frontcluster;
+		if (c >= aasworld.numclusters)
+			return "portals: bad frontcluster";
+		if ((unsigned)aasworld.portals[i].clusterareanum[0] >= (c ? aasworld.clusters[c].numareas : 1))
+			return "portals: bad clusterareanum[0]";
+
+		c = aasworld.portals[i].backcluster;
+		if (c >= aasworld.numclusters)
+			return "portals: bad backcluster";
+		if ((unsigned)aasworld.portals[i].clusterareanum[1] >= (c ? aasworld.clusters[c].numareas : 1))
+			return "portals: bad clusterareanum[1]";
+	}
+
+	for (i = 0; i < aasworld.portalindexsize; i++) {
+		if ((unsigned)aasworld.portalindex[i] >= aasworld.numportals)
+			return "portalindex: bad portal";
+	}
+
+	numareas = numreachabilityareas = 0;
+	for (i = 0; i < aasworld.numclusters; i++) {
+		if ((unsigned)aasworld.clusters[i].numareas > 0xffff - numareas)
+			return "clusters: bad numareas";
+		if ((unsigned)aasworld.clusters[i].numreachabilityareas > 0xffff - numreachabilityareas)
+			return "clusters: bad numreachabilityareas";
+		if (CHECK_RANGE(aasworld.clusters[i].firstportal, aasworld.clusters[i].numportals, aasworld.portalindexsize))
+			return "clusters: bad portals";
+		numareas += aasworld.clusters[i].numareas;
+		numreachabilityareas += aasworld.clusters[i].numreachabilityareas;
+	}
+
+	return NULL;
+}
+
 //===========================================================================
 // dump the current loaded aas file
 //
@@ -287,15 +411,22 @@ static void AAS_FileInfo(void)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-static char *AAS_LoadAASLump(fileHandle_t fp, int offset, int length, int *lastoffset, int size)
+static char *AAS_LoadAASLump(fileHandle_t fp, long offset, unsigned length, long *lastoffset, unsigned size)
 {
 	char *buf;
 	//
 	if (!length)
 	{
 		//just alloc a dummy
-		return (char *) GetClearedHunkMemory(size+1);
+		return (char *) GetClearedHunkMemory(size);
 	} //end if
+	if (length > INT_MAX || length % size || offset < 0 || length > LONG_MAX - offset)
+	{
+		AAS_Error("bad AAS lump offset/length\n");
+		AAS_DumpAASData();
+		botimport.FS_FCloseFile(fp);
+		return NULL;
+	}
 	//seek to the data
 	if (offset != *lastoffset)
 	{
@@ -309,13 +440,15 @@ static char *AAS_LoadAASLump(fileHandle_t fp, int offset, int length, int *lasto
 		} //end if
 	} //end if
 	//allocate memory
-	buf = (char *) GetClearedHunkMemory(length+1);
+	buf = (char *) GetClearedHunkMemory(length);
 	//read the data
-	//if (length)
-	{
-		botimport.FS_Read(buf, length, fp );
-		*lastoffset += length;
-	} //end if
+	if (botimport.FS_Read(buf, length, fp) != length) {
+		AAS_Error("can't read AAS file\n");
+		AAS_DumpAASData();
+		botimport.FS_FCloseFile(fp);
+		return NULL;
+	}
+	*lastoffset = offset + length;
 	return buf;
 } //end of the function AAS_LoadAASLump
 //===========================================================================
@@ -344,7 +477,9 @@ int AAS_LoadAASFile(char *filename)
 {
 	fileHandle_t fp;
 	aas_header_t header;
-	int offset, length, lastoffset;
+	long offset, lastoffset;
+	unsigned length;
+	const char *err;
 
 	botimport.Print(PRT_MESSAGE, "trying to load %s\n", filename);
 	//dump current loaded aas file
@@ -357,8 +492,13 @@ int AAS_LoadAASFile(char *filename)
 		return BLERR_CANNOTOPENAASFILE;
 	} //end if
 	//read the header
-	botimport.FS_Read(&header, sizeof(aas_header_t), fp );
-	lastoffset = sizeof(aas_header_t);
+	lastoffset = botimport.FS_Read(&header, sizeof(aas_header_t), fp);
+	if (lastoffset != sizeof(aas_header_t))
+	{
+		AAS_Error("AAS file %s is too short\n", filename);
+		botimport.FS_FCloseFile(fp);
+		return BLERR_CANNOTOPENAASFILE;
+	}
 	//check header identification
 	header.ident = LittleLong(header.ident);
 	if (header.ident != AASID)
@@ -476,6 +616,12 @@ int AAS_LoadAASFile(char *filename)
 	if (aasworld.numclusters && !aasworld.clusters) return BLERR_CANNOTREADAASLUMP;
 	//swap everything
 	AAS_SwapAASData();
+	err = AAS_ValidateAASData();
+	if (err) {
+		AAS_Error("AAS file %s is corrupted: %s\n", filename, err);
+		botimport.FS_FCloseFile(fp);
+		return BLERR_CANNOTREADAASLUMP;
+	}
 	//aas file is loaded
 	aasworld.loaded = qtrue;
 	//close the file
