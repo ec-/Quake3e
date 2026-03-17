@@ -1101,13 +1101,13 @@ temp file loading
 #define Z_TagMalloc(size, tag)			Z_TagMallocDebug(size, tag, #size, __FILE__, __LINE__)
 #define Z_Malloc(size)					Z_MallocDebug(size, #size, __FILE__, __LINE__)
 #define S_Malloc(size)					S_MallocDebug(size, #size, __FILE__, __LINE__)
-void *Z_TagMallocDebug( int size, memtag_t tag, char *label, char *file, int line );	// NOT 0 filled memory
-void *Z_MallocDebug( int size, char *label, char *file, int line );			// returns 0 filled memory
-void *S_MallocDebug( int size, char *label, char *file, int line );			// returns 0 filled memory
+void *Z_TagMallocDebug( size_t size, memtag_t tag, const char *label, const char *file, int line );	// NOT 0 filled memory
+void *Z_MallocDebug( size_t size, const char *label, const char *file, int line );			// returns 0 filled memory
+void *S_MallocDebug( size_t size, const char *label, const char *file, int line );			// returns 0 filled memory
 #else
-void *Z_TagMalloc( int size, memtag_t tag );	// NOT 0 filled memory
-void *Z_Malloc( int size );			// returns 0 filled memory
-void *S_Malloc( int size );			// NOT 0 filled memory only for small allocations
+void *Z_TagMalloc( size_t size, memtag_t tag );	// NOT 0 filled memory
+void *Z_Malloc( size_t size );			// returns 0 filled memory
+void *S_Malloc( size_t size );			// NOT 0 filled memory only for small allocations
 #endif
 void Z_Free( void *ptr );
 int Z_FreeTags( memtag_t tag );
@@ -1119,7 +1119,7 @@ void Hunk_ClearToMark( void );
 void Hunk_SetMark( void );
 qboolean Hunk_CheckMark( void );
 void Hunk_ClearTempMemory( void );
-void *Hunk_AllocateTempMemory( int size );
+void *Hunk_AllocateTempMemory( size_t size );
 void Hunk_FreeTempMemory( void *buf );
 int	Hunk_MemoryRemaining( void );
 void Hunk_Log( void);

@@ -288,4 +288,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #endif
 #endif // idx64
 
+// Modifier for printing size_t values portably
+
+#if (defined _WIN64)
+#define PRIz "I64"
+#elif (defined _WIN32)
+#define PRIz "I32"
+#elif (defined Q3_VM)
+#define PRIz ""
+#else
+#define PRIz "z"
+#endif
+
 #endif // __Q_PLATFORM_H
