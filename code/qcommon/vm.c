@@ -639,7 +639,13 @@ static int Load_JTS( vm_t *vm, uint32_t crc32, void *data, int vmPakIndex ) {
 		return length;
 	}
 
-	FS_Read( data, length, fh );
+	if ( FS_Read( data, length, fh ) != length ) {
+		if ( data )
+			Com_Printf( " error reading %s.\n", filename );
+		FS_FCloseFile( fh );
+		return -1;
+	}
+
 	FS_FCloseFile( fh );
 
 	// byte swap the data

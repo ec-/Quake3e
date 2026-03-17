@@ -2180,9 +2180,14 @@ int FS_ReadFile( const char *qpath, void **buffer ) {
 	}
 
 	buf = Hunk_AllocateTempMemory( len + 1 );
-	*buffer = buf;
 
-	FS_Read( buf, len, h );
+	if ( FS_Read( buf, len, h ) != len ) {
+		Hunk_FreeTempMemory( buf );
+		FS_FCloseFile( h );
+		return -1;
+	}
+
+	*buffer = buf;
 
 	fs_loadCount++;
 	fs_loadStack++;

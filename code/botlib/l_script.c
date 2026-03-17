@@ -1392,7 +1392,11 @@ script_t *LoadScriptFile(const char *filename)
 	SetScriptPunctuations(script, NULL);
 	//
 #ifdef BOTLIB
-	botimport.FS_Read(script->buffer, length, fp);
+	if (botimport.FS_Read(script->buffer, length, fp) != length)
+	{
+		FreeMemory(buffer);
+		script = NULL;
+	}
 	botimport.FS_FCloseFile(fp);
 #else
 	if (fread(script->buffer, length, 1, fp) != 1)
