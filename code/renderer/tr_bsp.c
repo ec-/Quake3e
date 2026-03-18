@@ -488,7 +488,7 @@ static void R_LoadVisibility( const lump_t *l ) {
 	unsigned numClusters, clusterBytes, len;
 	byte	*buf;
 
-	len = PAD( s_worldData.numClusters, 64 );
+	len = PAD( s_worldData.numClusters, 64 ) >> 3;
 	s_worldData.novis = ri.Hunk_Alloc( len, h_low );
 	Com_Memset( s_worldData.novis, 0xff, len );
 

@@ -321,7 +321,7 @@ static void CMod_LoadLeafs( const lump_t *l )
 	for ( i = 0; i < count; i++, in++, out++ )
 	{
 		out->cluster = LittleLong( in->cluster );
-		if ( out->cluster + 1U > INT_MAX - 31U )
+		if ( out->cluster + 1U > INT_MAX - 63U )
 			Com_Error( ERR_DROP, "%s: bad cluster", __func__ );
 
 		out->area = LittleLong( in->area );
@@ -523,11 +523,12 @@ static void CMod_LoadVisibility( const lump_t *l ) {
 	unsigned numClusters, clusterBytes, len;
 	byte	*buf;
 
+	len = PAD( cm.numClusters, 64 ) >> 3;
+	cm.novis = Hunk_Alloc( len, h_high );
+	Com_Memset( cm.novis, 0xff, len );
+
 	len = l->filelen;
 	if ( !len ) {
-		cm.clusterBytes = ( cm.numClusters + 31 ) & ~31;
-		cm.visibility = Hunk_Alloc( cm.clusterBytes, h_high );
-		Com_Memset( cm.visibility, 255, cm.clusterBytes );
 		return;
 	}
 
@@ -552,7 +553,6 @@ static void CMod_LoadVisibility( const lump_t *l ) {
 		Com_Error( ERR_DROP, "%s: bad clusterBytes", __func__ );
 	}
 
-	cm.vised = qtrue;
 	cm.visibility = Hunk_Alloc( len, h_high );
 	cm.numClusters = numClusters;
 	cm.clusterBytes = clusterBytes;
