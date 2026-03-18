@@ -298,12 +298,18 @@ qboolean find_sx_var( uint32_t *reg, const var_addr_t *v ) {
 
 
 void reduce_map_size( reg_t *reg, uint32_t size ) {
+#ifdef Q3_LITTLE_ENDIAN
 	int i;
 	for ( i = 0; i < ARRAY_LEN( reg->vars.map ); i++ ) {
 		if ( reg->vars.map[i].size > size ) {
 			reg->vars.map[i].size = size;
 		}
 	}
+#else
+	// zero/sign extension shifts memory mappings on BE systems
+	reg->type_mask &= ~RTYPE_VAR;
+	memset( reg->vars.map, 0x0, sizeof( reg->vars.map ) );
+#endif
 	// modify constant
 	if ( size == 1 ) {
 		reg->cnst.value &= 0xFF;

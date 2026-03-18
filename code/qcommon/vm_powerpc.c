@@ -1,7 +1,7 @@
 /*
 ===========================================================================
 Copyright (C) 1999-2005 Id Software, Inc.
-Copyright (C) 2020-2021 Quake3e project
+Copyright (C) 2020-2026 Quake3e project
 
 This file is part of Quake III Arena source code.
 
@@ -84,7 +84,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 //#define ADDR_OPTIMIZE
 //#define LOAD_OPTIMIZE
 #define FPU_OPTIMIZE
-//#define CONST_OPTIMIZE
+#define CONST_OPTIMIZE
 
 // allow sharing both variables and constants in registers
 #define REG_TYPE_MASK
@@ -1221,14 +1221,14 @@ static void emitBlockCopyFunc( vm_t *vm )
 	emit( PPC_BLE( +24 ) );  // skip if count <= 0
 
 	// loop:
-	//emit( PPC_LBZ( R6, 0, R3 ) );         // R6 = *src
-	//emit( PPC_STB( R6, 0, R4 ) );         // *dst = R6
-	//emit( PPC_ADDI( R3, R3, 1 ) );        // src++
-	//emit( PPC_ADDI( R4, R4, 1 ) );        // dst++
-	emit( PPC_LWZ( R6, 0, R3 ) );         // R6 = *src
-	emit( PPC_STW( R6, 0, R4 ) );         // *dst = R6
-	emit( PPC_ADDI( R3, R3, 4 ) );        // src++
-	emit( PPC_ADDI( R4, R4, 4 ) );        // dst++
+	emit( PPC_LBZ( R6, 0, R3 ) );         // R6 = *src
+	emit( PPC_STB( R6, 0, R4 ) );         // *dst = R6
+	emit( PPC_ADDI( R3, R3, 1 ) );        // src++
+	emit( PPC_ADDI( R4, R4, 1 ) );        // dst++
+	//emit( PPC_LWZ( R6, 0, R3 ) );         // R6 = *src
+	//emit( PPC_STW( R6, 0, R4 ) );         // *dst = R6
+	//emit( PPC_ADDI( R3, R3, 4 ) );        // src++
+	//emit( PPC_ADDI( R4, R4, 4 ) );        // dst++
 
 	emit( PPC_ADDI( R5, R5, -1 ) );       // count--
 	emit( PPC_CMPWI( 0, R5, 0 ) );
@@ -1289,6 +1289,91 @@ static void emit_branchConditional( vm_t *vm, instruction_t *ci, int op )
 		emit( PPC_B( targetOfs - 4 ) );    // -4 because compiledOfs advanced by 4
 	}
 }
+
+
+#ifdef CONST_OPTIMIZE
+static qboolean ConstOptimize( vm_t* vm, instruction_t* ci, instruction_t* ni )
+{
+	uint32_t rx[2];
+
+	switch ( ni->op ) {
+		case OP_ADD:
+		case OP_SUB:
+		case OP_MULI:
+		case OP_MULU:
+		case OP_BAND:
+		case OP_BOR:
+		case OP_BXOR:
+			if ( (int16_t)ci->value != ci->value )
+				return qfalse;
+			load_rx_opstack2( &rx[1], R1, &rx[0], R0 ); // r1 = r0 = *opstack
+			switch ( ni->op ) {
+				case OP_ADD: emit( PPC_ADDI( rx[1], rx[0], ci->value ) ); break;
+				case OP_SUB: emit( PPC_ADDI( rx[1], rx[0], -ci->value ) ); break;
+				case OP_MULI:
+				case OP_MULU: emit( PPC_MULLI( rx[1], rx[0], ci->value ) ); break;
+				case OP_BAND: emit( PPC_ANDI( rx[1], rx[0], ci->value ) );  break;
+				case OP_BOR:  emit( PPC_ORI( rx[1], rx[0], ci->value ) );  break;
+				case OP_BXOR: emit( PPC_XORI( rx[1], rx[0], ci->value ) );  break;
+			};
+			if ( rx[0] != rx[1] ) {
+				unmask_rx( rx[0] );
+			}
+			store_rx_opstack( rx[1] );				// *opstack = r1
+			ip += 1; // OP_ADD | OP_SUB | OP_MULI | OP_MULU
+			return qtrue;
+
+		case OP_RSHI:
+			if ( ci->value < 1 || ci->value > 31 )
+				return qfalse;
+			load_rx_opstack2( &rx[1], R1, &rx[0], R0 ); // r1 = r0 = *opstack
+			emit( PPC_SRAWI( rx[1], rx[0], ci->value ) );
+			if ( rx[0] != rx[1] ) {
+				unmask_rx( rx[0] );
+			}
+			store_rx_opstack( rx[1] );				// *opstack = r1
+			ip += 1;
+			return qtrue;
+
+		case OP_JUMP:
+			flush_volatile();
+			emit( PPC_B( vm->instructionPointers[ci->value] - compiledOfs ) );
+			ip += 1; // OP_JUMP
+			return qtrue;
+
+		case OP_CALL:
+			inc_opstack(); // opstack += 4
+			flush_volatile();
+			if ( ci->value < 0 ) { // syscall
+				mask_rx( R3 );
+				mov_rx_imm32( R3, ~ci->value ); // r0 = syscall number
+				if ( opstack != 1 ) {
+					emit( PPC_ADDI( rOPSTACK, rOPSTACK, (opstack - 1) * sizeof( int32_t ) ) );
+					emitFuncOffset( vm, FUNC_SYSF );
+					emit( PPC_ADDI( rOPSTACK, rOPSTACK, -(opstack - 1) * sizeof( int32_t ) ) );
+				} else {
+					emitFuncOffset( vm, FUNC_SYSF );
+				}
+				store_syscall_opstack( R3 );
+				ip += 1; // OP_CALL;
+				return qtrue;
+			}
+			if ( opstack != 1 ) {
+				emit( PPC_ADDI( rOPSTACK, rOPSTACK, (opstack - 1) * sizeof( int32_t ) ) );
+				emit( PPC_BL( vm->instructionPointers[ci->value] - compiledOfs ) );
+				emit( PPC_ADDI( rOPSTACK, rOPSTACK, -(opstack - 1) * sizeof( int32_t ) ) );
+			} else {
+				emit( PPC_BL( vm->instructionPointers[ci->value] - compiledOfs ) );
+			}
+			ip += 1; // OP_CALL;
+			return qtrue;
+
+		default:
+			break;
+	}
+	return qfalse;
+}
+#endif // CONST_OPTIMIZE
 
 
 // =========================================================================
@@ -1593,6 +1678,11 @@ __recompile:
 				break;
 
 			case OP_CONST:
+#ifdef CONST_OPTIMIZE
+				if ( ConstOptimize( vm, ci + 0, ci + 1 ) ) {
+					break;
+				}
+#endif
 				inc_opstack(); // opstack += 4
 				store_item_opstack( ci );
 				break;
@@ -1728,7 +1818,7 @@ __recompile:
 				rx[0] = load_rx_opstack( R3 | FORCED ); dec_opstack();	// src: r3 = *opstack; opstack -=4
 				rx[1] = load_rx_opstack( R4 | FORCED ); dec_opstack();	// dst: r4 = *opstack; opstack -=4
 				rx[2] = alloc_rx( R5 | FORCED );						// flush and reserve r5 register
-				mov_rx_imm32( rx[2], ci->value >> 2 );					// mov r5, 0x12345678 / 4
+				mov_rx_imm32( rx[2], ci->value );						// mov r5, 0x12345678
 				flush_items( TYPE_RX, R6 );
 				wipe_rx_meta( R6 );
 				emitFuncOffset( vm, FUNC_BCPY );

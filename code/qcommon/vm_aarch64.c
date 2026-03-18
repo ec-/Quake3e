@@ -1,7 +1,7 @@
 /*
 ===========================================================================
 Copyright (C) 1999-2005 Id Software, Inc.
-Copyright (C) 2020-2021 Quake3e project
+Copyright (C) 2020-2026 Quake3e project
 
 This file is part of Quake III Arena source code.
 
