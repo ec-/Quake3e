@@ -413,13 +413,16 @@ intptr_t	QDECL VM_Call( vm_t *vm, int nargs, int callNum, ... );
 void	VM_Debug( int level );
 void	VM_CheckBounds( const vm_t *vm, unsigned int address, unsigned int length );
 void	VM_CheckBounds2( const vm_t *vm, unsigned int addr1, unsigned int addr2, unsigned int length );
+void	VM_CheckBounds3( const vm_t *vm, unsigned int address, unsigned int count, unsigned int size );
 
 #if 1
 #define VM_CHECKBOUNDS VM_CheckBounds
 #define VM_CHECKBOUNDS2 VM_CheckBounds2
+#define VM_CHECKBOUNDS3 VM_CheckBounds3
 #else // for performance evaluation purposes
 #define VM_CHECKBOUNDS(vm,a,b)
 #define VM_CHECKBOUNDS2(vm,a,b,c)
+#define VM_CHECKBOUNDS3(vm,a,b,c)
 #endif
 
 void	*GVM_ArgPtr( intptr_t intValue );

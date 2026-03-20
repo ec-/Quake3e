@@ -458,7 +458,7 @@ static intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		SV_UnlinkEntity( VMA(1) );
 		return 0;
 	case G_ENTITIES_IN_BOX:
-		VM_CHECKBOUNDS( gvm, args[3], args[4] * sizeof( int ) );
+		VM_CHECKBOUNDS3( gvm, args[3], args[4], sizeof( int ) );
 		return SV_AreaEntities( VMA(1), VMA(2), VMA(3), args[4] );
 	case G_ENTITY_CONTACT:
 		return SV_EntityContact( VMA(1), VMA(2), VMA(3), /*int capsule*/ qfalse );
