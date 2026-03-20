@@ -69,7 +69,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define USE_ISA_3_0 0
 #endif
 
-#define NUM_PASSES 1
+#define NUM_PASSES		2
+
+#define PASS_INIT		0
 
 // additional integrity checks
 #define DEBUG_VM
@@ -606,6 +608,9 @@ static void VM_FreeBuffers( void )
 #define PPC_FADD(frt, fra, frb)		PPC_A(63, frt, fra, frb, 0, 21, 0)
 // fsub (double) frt, fra, frb
 #define PPC_FSUB(frt, fra, frb)		PPC_A(63, frt, fra, frb, 0, 20, 0)
+
+// fsqrt frt, frb  (fra=0, frc=0)
+#define PPC_FSQRTS(frt, frb)		PPC_A(59, frt, 0, frb, 0, 22, 0)
 
 // -- Floating-Point Compare (X-form) --
 // fcmpu cr, fra, frb
@@ -1238,6 +1243,23 @@ static void emitBlockCopyFunc( vm_t *vm )
 }
 
 
+static void emitFuncEntry( const void *func )
+{
+	// ELFv1: function pointer is a descriptor; resolve entry+TOC at JIT compile time
+#ifdef PPC64_ELFv1
+	const intptr_t* desc = (intptr_t*)(intptr_t)func;
+	emit_MOVi64( R0, desc[0] );
+	emit_MOVi64( R2, desc[1] );
+	emit( PPC_MTCTR( R0 ) );
+	emit( PPC_BCTRL() );
+#else
+	emit_MOVi64( R12, (intptr_t)func );
+	emit( PPC_MTCTR( R12 ) );
+	emit( PPC_BCTRL() );
+#endif
+}
+
+
 // =========================================================================
 // Condition code mapping for integer comparisons
 // =========================================================================
@@ -1265,10 +1287,12 @@ static void get_branch_cond( int op, int *bo, int *bi )
 		case OP_LEI: case OP_LEU: case OP_LEF: *bo = BO_FALSE; *bi = BI_GT; break;
 		case OP_GTI: case OP_GTU: case OP_GTF: *bo = BO_TRUE;  *bi = BI_GT; break;
 		case OP_GEI: case OP_GEU: case OP_GEF: *bo = BO_FALSE; *bi = BI_LT; break;
-		default:     *bo = -1; *bi = -1; break;
+		default: DROP( "incorrect opcode %i", op ); break;
 	}
 }
 
+
+#if 0
 static void emit_branchConditional( vm_t *vm, instruction_t *ci, int op )
 {
 	int32_t target = ci->value;  // target instruction index
@@ -1276,10 +1300,6 @@ static void emit_branchConditional( vm_t *vm, instruction_t *ci, int op )
 	int bo, bi;
 
 	get_branch_cond( op, &bo, &bi );
-	if ( bo == -1 ) {
-		emit( PPC_TRAP() );
-		return;
-	}
 
 	// Long form: inverted bc skips over unconditional b
 	// Invert: BO_TRUE(12) <-> BO_FALSE(4)
@@ -1288,6 +1308,25 @@ static void emit_branchConditional( vm_t *vm, instruction_t *ci, int op )
 		emit( PPC_BC( inv_bo, bi, +8 ) );  // skip next instruction if NOT condition
 		emit( PPC_B( targetOfs - 4 ) );    // -4 because compiledOfs advanced by 4
 	}
+}
+#endif
+
+
+static void emit_branchConditionalShort( vm_t* vm, instruction_t* ci )
+{
+	int32_t targetOfs = vm->instructionPointers[ ci->value ] - compiledOfs;
+	int bo, bi;
+
+	get_branch_cond( ci->op, &bo, &bi );
+
+	if ( pass != PASS_INIT ) {
+		if ( (int16_t)targetOfs != targetOfs ) {
+			// TODO: add/switch to expansion pass?
+			DROP( "offset is too large" );
+		}
+	}
+
+	emit( PPC_BC( bo, bi, targetOfs ) );
 }
 
 
@@ -1306,7 +1345,7 @@ static qboolean ConstOptimize( vm_t* vm, instruction_t* ci, instruction_t* ni )
 		case OP_BXOR:
 			if ( (int16_t)ci->value != ci->value )
 				return qfalse;
-			load_rx_opstack2( &rx[1], R1, &rx[0], R0 ); // r1 = r0 = *opstack
+			load_rx_opstack2( &rx[1], R1, &rx[0], R0 ); // r1 = r0 = *opStack
 			switch ( ni->op ) {
 				case OP_ADD: emit( PPC_ADDI( rx[1], rx[0], ci->value ) ); break;
 				case OP_SUB: emit( PPC_ADDI( rx[1], rx[0], -ci->value ) ); break;
@@ -1319,20 +1358,20 @@ static qboolean ConstOptimize( vm_t* vm, instruction_t* ci, instruction_t* ni )
 			if ( rx[0] != rx[1] ) {
 				unmask_rx( rx[0] );
 			}
-			store_rx_opstack( rx[1] );				// *opstack = r1
+			store_rx_opstack( rx[1] );				// *opStack = r1
 			ip += 1; // OP_ADD | OP_SUB | OP_MULI | OP_MULU
 			return qtrue;
 
 		case OP_RSHI:
 			if ( ci->value < 1 || ci->value > 31 )
 				return qfalse;
-			load_rx_opstack2( &rx[1], R1, &rx[0], R0 ); // r1 = r0 = *opstack
+			load_rx_opstack2( &rx[1], R1, &rx[0], R0 ); // r1 = r0 = *opStack
 			emit( PPC_SRAWI( rx[1], rx[0], ci->value ) );
 			if ( rx[0] != rx[1] ) {
 				unmask_rx( rx[0] );
 			}
 			store_rx_opstack( rx[1] );				// *opstack = r1
-			ip += 1;
+			ip += 1; // OP_RSHI
 			return qtrue;
 
 		case OP_JUMP:
@@ -1343,10 +1382,18 @@ static qboolean ConstOptimize( vm_t* vm, instruction_t* ci, instruction_t* ni )
 
 		case OP_CALL:
 			inc_opstack(); // opstack += 4
+			if ( ci->value == ~TRAP_SQRT ) {
+				uint32_t sx = alloc_sx( F0 | TEMP );
+				emit( PPC_LFS( sx, 8, rPROCBASE ) ); // f0 = [procBase + 8]
+				emit( PPC_FSQRTS( sx, sx ) );        // f0 = fsqrts(s0)
+				store_sx_opstack( sx );
+				ip += 1; // OP_CALL
+				return qtrue;
+			}
 			flush_volatile();
 			if ( ci->value < 0 ) { // syscall
 				mask_rx( R3 );
-				mov_rx_imm32( R3, ~ci->value ); // r0 = syscall number
+				mov_rx_imm32( R3, ~ci->value ); // r3 = syscall number
 				if ( opstack != 1 ) {
 					emit( PPC_ADDI( rOPSTACK, rOPSTACK, (opstack - 1) * sizeof( int32_t ) ) );
 					emitFuncOffset( vm, FUNC_SYSF );
@@ -1354,8 +1401,8 @@ static qboolean ConstOptimize( vm_t* vm, instruction_t* ci, instruction_t* ni )
 				} else {
 					emitFuncOffset( vm, FUNC_SYSF );
 				}
-				store_syscall_opstack( R3 );
-				ip += 1; // OP_CALL;
+				store_syscall_opstack( R3 );    // mark *opStack = r3
+				ip += 1; // OP_CALL
 				return qtrue;
 			}
 			if ( opstack != 1 ) {
@@ -1365,7 +1412,34 @@ static qboolean ConstOptimize( vm_t* vm, instruction_t* ci, instruction_t* ni )
 			} else {
 				emit( PPC_BL( vm->instructionPointers[ci->value] - compiledOfs ) );
 			}
-			ip += 1; // OP_CALL;
+			ip += 1; // OP_CALL
+			return qtrue;
+
+		case OP_EQ:
+		case OP_NE:
+		case OP_LTI:
+		case OP_LEI:
+		case OP_GTI:
+		case OP_GEI:
+		case OP_LTU:
+		case OP_LEU:
+		case OP_GTU:
+		case OP_GEU:
+			if ( (int16_t)ci->value != ci->value )
+				return qfalse;
+			rx[0] = load_rx_opstack( R3 | RCONST ); dec_opstack(); // r3 = *opstack; opstack -= 4
+			switch ( ni->op ) {
+				case OP_LTU:
+				case OP_LEU:
+				case OP_GTU:
+				case OP_GEU:
+					emit( PPC_CMPLWI( 0, rx[0], ci->value ) ); break;
+				default:
+					emit( PPC_CMPWI( 0, rx[0], ci->value ) ); break;
+			}
+			emit_branchConditionalShort( vm, ni );
+			unmask_rx( rx[0] );
+			ip += 1; // OP_cond
 			return qtrue;
 
 		default:
@@ -1714,26 +1788,25 @@ __recompile:
 			case OP_LEI:
 			case OP_GTI:
 			case OP_GEI:
-				// pop two, compare (signed), branch
-				rx[0] = load_rx_opstack( R4 | RCONST ); dec_opstack(); // r4 = *opstack; opstack -= 4
-				rx[1] = load_rx_opstack( R3 | RCONST ); dec_opstack(); // r3 = *opstack; opstack -= 4
-				unmask_rx( rx[0] );
-				unmask_rx( rx[1] );
-				emit( PPC_CMPW( 0, rx[1], rx[0] ) );
-				emit_branchConditional( vm, ci, ci->op );
-				break;
-
 			case OP_LTU:
 			case OP_LEU:
 			case OP_GTU:
 			case OP_GEU:
-				// pop two, compare (unsigned), branch
+				// pop two, compare, branch
 				rx[0] = load_rx_opstack( R4 | RCONST ); dec_opstack(); // r4 = *opstack; opstack -= 4
 				rx[1] = load_rx_opstack( R3 | RCONST ); dec_opstack(); // r3 = *opstack; opstack -= 4
 				unmask_rx( rx[0] );
 				unmask_rx( rx[1] );
-				emit( PPC_CMPLW( 0, rx[1], rx[0] ) );
-				emit_branchConditional( vm, ci, ci->op );
+				switch ( ci->op ) {
+					case OP_LTU:
+					case OP_LEU:
+					case OP_GTU:
+					case OP_GEU:
+						emit( PPC_CMPLW( 0, rx[1], rx[0] ) ); break;
+					default:
+						emit( PPC_CMPW( 0, rx[1], rx[0] ) ); break;
+				};
+				emit_branchConditionalShort( vm, ci );
 				break;
 
 			// ---- Float comparisons ----
@@ -1750,7 +1823,8 @@ __recompile:
 				sx[1] = load_sx_opstack( F1 | RCONST ); dec_opstack(); // F1 = *opstack; opstack -= 4
 				sx[0] = load_sx_opstack( F0 | RCONST ); dec_opstack(); // F0 = *opstack; opstack -= 4
 				emit( PPC_FCMPU( 0, sx[0], sx[1] ) );
-				emit_branchConditional( vm, ci, ci->op );
+				// emit_branchConditional( vm, ci, ci->op );
+				emit_branchConditionalShort( vm, ci );
 				unmask_sx( sx[1] );
 				unmask_sx( sx[0] );
 				break;
@@ -2013,83 +2087,22 @@ __recompile:
 	emitBlockCopyFunc( vm );
 
 	savedOffset[ FUNC_BADJ ] = compiledOfs;
-#ifdef PPC64_ELFv1
-	// ELFv1: function pointer is a descriptor; resolve entry+TOC at JIT compile time
-	{ intptr_t *desc = (intptr_t*)(intptr_t)BadJump;
-	emit_MOVi64( R0, desc[0] );   // entry point
-	emit_MOVi64( R2, desc[1] );   // TOC
-	emit( PPC_MTCTR( R0 ) );
-	emit( PPC_BCTRL() ); }
-#else
-	emit_MOVi64( R12, (intptr_t)BadJump );
-	emit( PPC_MTCTR( R12 ) );
-	emit( PPC_BCTRL() );
-#endif
+	emitFuncEntry( BadJump );
 
 	savedOffset[ FUNC_OUTJ ] = compiledOfs;
-#ifdef PPC64_ELFv1
-	{ intptr_t *desc = (intptr_t*)(intptr_t)OutJump;
-	emit_MOVi64( R0, desc[0] );
-	emit_MOVi64( R2, desc[1] );
-	emit( PPC_MTCTR( R0 ) );
-	emit( PPC_BCTRL() ); }
-#else
-	emit_MOVi64( R12, (intptr_t)OutJump );
-	emit( PPC_MTCTR( R12 ) );
-	emit( PPC_BCTRL() );
-#endif
+	emitFuncEntry( OutJump );
 
 	savedOffset[ FUNC_OSOF ] = compiledOfs;
-#ifdef PPC64_ELFv1
-	{ intptr_t *desc = (intptr_t*)(intptr_t)ErrBadOpStack;
-	emit_MOVi64( R0, desc[0] );
-	emit_MOVi64( R2, desc[1] );
-	emit( PPC_MTCTR( R0 ) );
-	emit( PPC_BCTRL() ); }
-#else
-	emit_MOVi64( R12, (intptr_t)ErrBadOpStack );
-	emit( PPC_MTCTR( R12 ) );
-	emit( PPC_BCTRL() );
-#endif
+	emitFuncEntry( ErrBadOpStack );
 
 	savedOffset[ FUNC_PSOF ] = compiledOfs;
-#ifdef PPC64_ELFv1
-	{ intptr_t *desc = (intptr_t*)(intptr_t)ErrBadProgramStack;
-	emit_MOVi64( R0, desc[0] );
-	emit_MOVi64( R2, desc[1] );
-	emit( PPC_MTCTR( R0 ) );
-	emit( PPC_BCTRL() ); }
-#else
-	emit_MOVi64( R12, (intptr_t)ErrBadProgramStack );
-	emit( PPC_MTCTR( R12 ) );
-	emit( PPC_BCTRL() );
-#endif
+	emitFuncEntry( ErrBadProgramStack );
 
 	savedOffset[ FUNC_BADR ] = compiledOfs;
-#ifdef PPC64_ELFv1
-	{ intptr_t *desc = (intptr_t*)(intptr_t)ErrBadDataRead;
-	emit_MOVi64( R0, desc[0] );
-	emit_MOVi64( R2, desc[1] );
-	emit( PPC_MTCTR( R0 ) );
-	emit( PPC_BCTRL() ); }
-#else
-	emit_MOVi64( R12, (intptr_t)ErrBadDataRead );
-	emit( PPC_MTCTR( R12 ) );
-	emit( PPC_BCTRL() );
-#endif
+	emitFuncEntry( ErrBadDataRead );
 
 	savedOffset[ FUNC_BADW ] = compiledOfs;
-#ifdef PPC64_ELFv1
-	{ intptr_t *desc = (intptr_t*)(intptr_t)ErrBadDataWrite;
-	emit_MOVi64( R0, desc[0] );
-	emit_MOVi64( R2, desc[1] );
-	emit( PPC_MTCTR( R0 ) );
-	emit( PPC_BCTRL() ); }
-#else
-	emit_MOVi64( R12, (intptr_t)ErrBadDataWrite );
-	emit( PPC_MTCTR( R12 ) );
-	emit( PPC_BCTRL() );
-#endif
+	emitFuncEntry( ErrBadDataWrite );
 
 	} // pass
 
@@ -2106,6 +2119,7 @@ __recompile:
 		vm->codeLength = allocSize;
 		vm->codeSize = compiledOfs;
 		code = (uint32_t*)vm->codeBase.ptr;
+		pass = NUM_PASSES - 1;  // repeat last pass
 		goto __recompile;
 	}
 
