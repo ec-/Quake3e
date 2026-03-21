@@ -143,6 +143,8 @@ Several Makefile options are available for linux/mingw/macos builds:
 
 `USE_SYSTEM_JPEG=0` - use current system JPEG library, disabled by default
 
+`USE_XDG=1` - use "$XDG_DATA_HOME/QuakeIIIe" as the default directory to store user files, enabled by default.
+
 Example:
 
 `make BUILD_SERVER=0 USE_RENDERER_DLOPEN=0 RENDERER_DEFAULT=vulkan` - which means do not build dedicated binary, build client with single static vulkan renderer

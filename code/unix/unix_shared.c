@@ -418,7 +418,6 @@ const char *Sys_DefaultHomePath( void )
             Com_Printf("SDL_GetPrefPath failed, using %s\n", homePath);
         }
         SDL_free(prefpath);
-
 # endif
 #endif
 		if ( mkdir( homePath, 0750 ) )
