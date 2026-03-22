@@ -234,7 +234,7 @@ static void dump_nodes( const filter_node_t *node, int level, int skip_tagged, F
 			{
 				if ( node->fop == FOP_LT ) // do not print default action for dates
 					s = "";
-				n = sprintf( buf, "date %s\"%s\"", s, node->p2.string );
+				n = Com_sprintf( buf, sizeof(buf), "date %s\"%s\"", s, node->p2.string );
 			}
 			else
 			{
@@ -244,13 +244,13 @@ static void dump_nodes( const filter_node_t *node, int level, int skip_tagged, F
 				if ( node->is_string )
 				{
 					if ( node->is_quoted )
-						n = sprintf( buf, "%s %s\"%s\"", node->p1, s, node->p2.string );
+						n = Com_sprintf( buf, sizeof(buf), "%s %s\"%s\"", node->p1, s, node->p2.string );
 					else
-						n = sprintf( buf, "%s %s%s", node->p1, s, node->p2.string );
+						n = Com_sprintf( buf, sizeof(buf), "%s %s%s", node->p1, s, node->p2.string );
 				}
 				else
 				{
-					n = sprintf( buf, "%s %s%i", node->p1, s, node->p2.integer );
+					n = Com_sprintf( buf, sizeof(buf), "%s %s%i", node->p1, s, node->p2.integer );
 				}
 			}
 
@@ -689,6 +689,11 @@ static qboolean parse_file( const char *filename )
 	fseek( f, 0, SEEK_END );
 	size = ftell( f );
 	fseek( f, 0, SEEK_SET );
+	if ( size < 0 || size >= INT_MAX )
+	{
+		fclose( f );
+		return qfalse;
+	}
 
 	data = (char*) Z_Malloc( size + 1 );
 	if ( fread( data, size, 1, f ) != 1 )

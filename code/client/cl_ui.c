@@ -63,6 +63,7 @@ static void LAN_LoadCachedServers( void ) {
 		return;
 	}
 
+	size = 0;
 	FS_Read( &cls.numglobalservers, sizeof(int), fileIn );
 	FS_Read( &cls.numfavoriteservers, sizeof(int), fileIn );
 	FS_Read( &size, sizeof(int), fileIn );

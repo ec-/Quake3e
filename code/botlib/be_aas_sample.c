@@ -103,9 +103,8 @@ void AAS_InitAASLinkHeap(void)
 #ifdef BSPC
 		max_aaslinks = 6144;
 #else
-		max_aaslinks = (int) LibVarValue("max_aaslinks", "6144");
+		max_aaslinks = LibVarInteger("max_aaslinks", "6144", 2, 65536);
 #endif
-		if (max_aaslinks < 0) max_aaslinks = 0;
 		aasworld.linkheapsize = max_aaslinks;
 		aasworld.linkheap = (aas_link_t *) GetHunkMemory(max_aaslinks * sizeof(aas_link_t));
 	} //end if

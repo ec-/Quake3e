@@ -41,28 +41,16 @@ static qhandle_t R_RegisterMD3(const char *name, model_t *mod)
 	} buf;
 	int			lod;
 	uint32_t	ident;
-	qboolean	loaded = qfalse;
-	int			numLoaded;
+	qboolean	loaded;
 	int			fileSize;
 	char filename[MAX_QPATH], namebuf[MAX_QPATH+20];
-	char *fext, defex[] = "md3";
+	const char *fext;
 
-	numLoaded = 0;
+	fext = COM_GetExtension(name); // always non-empty
+	COM_StripExtension(name, filename, sizeof(filename));
 
-	strcpy(filename, name);
-
-	fext = strchr(filename, '.');
-	if(!fext)
-		fext = defex;
-	else
-	{
-		*fext = '\0';
-		fext++;
-	}
-
-	for (lod = MD3_MAX_LODS - 1 ; lod >= 0 ; lod--)
-	{
-		if(lod)
+	for ( lod = 0 ; lod < MD3_MAX_LODS ; lod++ ) {
+		if ( lod )
 			Com_sprintf(namebuf, sizeof(namebuf), "%s_%d.%s", filename, lod, fext);
 		else
 			Com_sprintf(namebuf, sizeof(namebuf), "%s.%s", filename, fext);
@@ -78,34 +66,25 @@ static qhandle_t R_RegisterMD3(const char *name, model_t *mod)
 		}
 		
 		ident = LittleLong( *buf.u );
-		if ( ident == MD3_IDENT )
-			loaded = R_LoadMD3( mod, lod, buf.v, fileSize, name );
-		else
-			ri.Printf( PRINT_WARNING,"%s: unknown fileid for %s\n", __func__, name );
+		if ( ident == MD3_IDENT ) {
+			loaded = R_LoadMD3( mod, mod->numLods, buf.v, fileSize, name );
+		} else {
+			ri.Printf( PRINT_WARNING, "%s: unknown fileid for %s\n", __func__, name );
+			loaded = qfalse;
+		}
 		
 		ri.FS_FreeFile( buf.v );
 
-		if ( loaded )
-		{
+		if ( loaded ) {
 			mod->numLods++;
-			numLoaded++;
-		}
-		else
+		} else {
+			mod->md3[mod->numLods] = NULL;
 			break;
-	}
-
-	if ( numLoaded )
-	{
-		// duplicate into higher lod spots that weren't
-		// loaded, in case the user changes r_lodbias on the fly
-		for ( lod--; lod >= 0; lod-- )
-		{
-			mod->numLods++;
-			mod->md3[lod] = mod->md3[lod + 1];
 		}
-
-		return mod->index;
 	}
+
+	if ( mod->numLods )
+		return mod->index;
 
 	ri.Printf( PRINT_DEVELOPER, S_COLOR_YELLOW "%s: couldn't load %s\n", __func__, name );
 
@@ -393,8 +372,8 @@ static qboolean R_LoadMD3( model_t *mod, int lod, void *buffer, int fileSize, co
 	md3St_t				*st;
 	md3XyzNormal_t		*xyz;
 	md3Tag_t			*tag;
-	int					version;
-	int					size;
+	uint32_t			version;
+	uint32_t			size, bytesToEnd;
 
 	pinmodel = (md3Header_t *)buffer;
 
@@ -439,20 +418,16 @@ static qboolean R_LoadMD3( model_t *mod, int lod, void *buffer, int fileSize, co
 		ri.Printf( PRINT_WARNING, "%s: %s has corrupted header\n", __func__, mod_name );
 		return qfalse;
 	}
-	if ( (unsigned)( hdr->numFrames | hdr->numTags | hdr->numSkins ) > (1 << 20) ) {
-		ri.Printf( PRINT_WARNING, "%s: %s has corrupted header\n", __func__, mod_name );
-		return qfalse;
-	}
 
-	if ( hdr->ofsFrames + hdr->numFrames * sizeof( md3Frame_t ) > fileSize ) {
+	if ( hdr->numFrames > (size - hdr->ofsFrames) / sizeof( md3Frame_t ) ) {
 		ri.Printf( PRINT_WARNING, "%s: %s has corrupted header\n", __func__, mod_name );
 		return qfalse;
 	}
-	if ( hdr->ofsTags + hdr->numTags * hdr->numFrames * sizeof( md3Tag_t ) > fileSize ) {
+	if ( hdr->numTags > (size - hdr->ofsTags) / (sizeof( md3Tag_t ) * hdr->numFrames) ) {
 		ri.Printf( PRINT_WARNING, "%s: %s has corrupted header\n", __func__, mod_name );
 		return qfalse;
 	}
-	if ( hdr->ofsSurfaces + ( hdr->numSurfaces ? 1 : 0 ) * sizeof( md3Surface_t ) > fileSize ) {
+	if ( hdr->numSurfaces > (size - hdr->ofsSurfaces) / sizeof( md3Surface_t ) ) {
 		ri.Printf( PRINT_WARNING, "%s: %s has corrupted header\n", __func__, mod_name );
 		return qfalse;
 	}
@@ -485,6 +460,14 @@ static qboolean R_LoadMD3( model_t *mod, int lod, void *buffer, int fileSize, co
 	surf = (md3Surface_t *) ( (byte *)hdr + hdr->ofsSurfaces );
 	for ( i = 0 ; i < hdr->numSurfaces; i++) {
 
+		// how many bytes are remaining before end of file
+		bytesToEnd = size - ((byte*)surf - (byte*)hdr);
+
+		if ( bytesToEnd < sizeof(*surf)) {
+			ri.Printf( PRINT_WARNING, "%s: %s has corrupted surface header\n", __func__, mod_name );
+			return qfalse;
+		}
+
 		LL(surf->ident);
 		LL(surf->flags);
 		LL(surf->numFrames);
@@ -497,27 +480,24 @@ static qboolean R_LoadMD3( model_t *mod, int lod, void *buffer, int fileSize, co
 		LL(surf->ofsXyzNormals);
 		LL(surf->ofsEnd);
 
-		if ( surf->ofsEnd > fileSize || (((byte*)surf - (byte*)hdr) + surf->ofsEnd) > fileSize ) {
+		if ( surf->ofsTriangles > bytesToEnd || surf->ofsShaders > bytesToEnd || surf->ofsSt > bytesToEnd ||
+			 surf->ofsXyzNormals > bytesToEnd || surf->ofsEnd > bytesToEnd ) {
 			ri.Printf( PRINT_WARNING, "%s: %s has corrupted surface header\n", __func__, mod_name );
 			return qfalse;
 		}
-		if ( surf->ofsTriangles > fileSize || surf->ofsShaders > fileSize || surf->ofsSt > fileSize || surf->ofsXyzNormals > fileSize ) {
+		if ( surf->numTriangles > (bytesToEnd - surf->ofsTriangles) / sizeof( md3Triangle_t ) ) {
 			ri.Printf( PRINT_WARNING, "%s: %s has corrupted surface header\n", __func__, mod_name );
 			return qfalse;
 		}
-		if ( surf->ofsTriangles + surf->numTriangles * sizeof( md3Triangle_t ) > fileSize ) {
+		if ( surf->numShaders > (bytesToEnd - surf->ofsShaders) / sizeof( md3Shader_t ) ) {
 			ri.Printf( PRINT_WARNING, "%s: %s has corrupted surface header\n", __func__, mod_name );
 			return qfalse;
 		}
-		if ( surf->ofsShaders + surf->numShaders * sizeof( md3Shader_t ) > fileSize || surf->numShaders > (1<<20) ) {
+		if ( surf->numVerts > (bytesToEnd - surf->ofsSt) / sizeof( md3St_t ) ) {
 			ri.Printf( PRINT_WARNING, "%s: %s has corrupted surface header\n", __func__, mod_name );
 			return qfalse;
 		}
-		if ( surf->ofsSt + surf->numVerts * sizeof( md3St_t ) > fileSize ) {
-			ri.Printf( PRINT_WARNING, "%s: %s has corrupted surface header\n", __func__, mod_name );
-			return qfalse;
-		}
-		if ( surf->ofsXyzNormals + surf->numVerts * sizeof( md3XyzNormal_t ) > fileSize ) {
+		if ( surf->numVerts > (bytesToEnd - surf->ofsXyzNormals) / sizeof( md3XyzNormal_t ) ) {
 			ri.Printf( PRINT_WARNING, "%s: %s has corrupted surface header\n", __func__, mod_name );
 			return qfalse;
 		}
@@ -528,7 +508,7 @@ static qboolean R_LoadMD3( model_t *mod, int lod, void *buffer, int fileSize, co
 				surf->numVerts );
 			return qfalse;
 		}
-		if ( surf->numTriangles*3 >= SHADER_MAX_INDEXES ) {
+		if ( surf->numTriangles >= SHADER_MAX_INDEXES / 3 ) {
 			ri.Printf(PRINT_WARNING, "%s: %s has more than %i triangles on %s (%i).\n", __func__,
 				mod_name, ( SHADER_MAX_INDEXES / 3 ) - 1, surf->name[0] ? surf->name : "a surface",
 				surf->numTriangles );
@@ -573,6 +553,12 @@ static qboolean R_LoadMD3( model_t *mod, int lod, void *buffer, int fileSize, co
 			LL(tri->indexes[0]);
 			LL(tri->indexes[1]);
 			LL(tri->indexes[2]);
+			if (tri->indexes[0] >= surf->numVerts ||
+				tri->indexes[1] >= surf->numVerts ||
+				tri->indexes[2] >= surf->numVerts) {
+				ri.Printf( PRINT_WARNING, "%s: %s has corrupted indexes\n", __func__, mod_name );
+				return qfalse;
+			}
 		}
 
 		// swap all the ST
@@ -987,21 +973,14 @@ R_Modellist_f
 ================
 */
 void R_Modellist_f( void ) {
-	int		i, j;
+	int		i;
 	model_t	*mod;
 	int		total;
-	int		lods;
 
 	total = 0;
 	for ( i = 1 ; i < tr.numModels; i++ ) {
 		mod = tr.models[i];
-		lods = 1;
-		for ( j = 1 ; j < MD3_MAX_LODS ; j++ ) {
-			if ( mod->md3[j] && mod->md3[j] != mod->md3[j-1] ) {
-				lods++;
-			}
-		}
-		ri.Printf( PRINT_ALL, "%8i : (%i) %s\n",mod->dataSize, lods, mod->name );
+		ri.Printf( PRINT_ALL, "%8i : (%i) %s\n",mod->dataSize, mod->numLods, mod->name );
 		total += mod->dataSize;
 	}
 	ri.Printf( PRINT_ALL, "%8i : Total models\n", total );
