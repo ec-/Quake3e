@@ -32,7 +32,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <pwd.h>
 #include <dlfcn.h>
 #include <libgen.h>
-#include <SDL2/SDL_filesystem.h>
 
 #include "../qcommon/q_shared.h"
 #include "../qcommon/qcommon.h"
@@ -403,21 +402,19 @@ const char *Sys_DefaultHomePath( void )
 #else
 		Q_strcat( homePath, sizeof( homePath ), "/.q3a" );
 # ifdef USE_XDG
-        const char app[] = "QuakeIIIe";
         // Check if ~/.q3a exists
         struct stat s;
         if (stat(homePath, &s) == 0 && S_ISDIR(s.st_mode)) {
-            Com_Printf("Found %s, ignoring $XDG_DATA_HOME/%s\n", homePath, app);
+            Com_Printf("Found %s, ignoring $XDG_DATA_HOME/QuakeIIIe\n", homePath);
             return homePath;
         }
 
-        char* prefpath = SDL_GetPrefPath("", app);
-        if (prefpath) {
-            Q_strncpyz(homePath, prefpath, sizeof(prefpath));
+        char* datahome = getenv("XDG_DATA_HOME");
+        if (datahome) {
+            Com_sprintf(homePath, MAX_OSPATH, "%s/QuakeIIIe", datahome);
         } else {
-            Com_Printf("SDL_GetPrefPath failed, using %s\n", homePath);
+            Com_sprintf(homePath, MAX_OSPATH, "%s/.local/share/QuakeIIIe", p);
         }
-        SDL_free(prefpath);
 # endif
 #endif
 		if ( mkdir( homePath, 0750 ) )
