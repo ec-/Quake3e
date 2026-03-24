@@ -1071,6 +1071,19 @@ static void VM_Fixup( instruction_t *buf, int instructionCount )
 				continue;
 			}
 		}
+
+		// OP_LOAD1|OP_LOAD2 + OP_SEX8|OP_SEX16 + OP_CONST(0) + OP_EQ|OP_NE -> ignore OP_SEX8|OP_SEX16
+		if ( (i->op == OP_LOAD1 && (i + 1)->op == OP_SEX8) || (i->op == OP_LOAD2 && (i + 1)->op == OP_SEX16) ) {
+			if ( (i + 2)->op == OP_CONST && (i + 2)->value == 0 ) {
+				if ( (i + 3)->op == OP_EQ || (i + 3)->op == OP_NE )	{
+					(i + 1)->op = OP_IGNORE;
+					i += 3;
+					n += 3;
+					continue;
+				}
+			}
+		}
+
 		i++;
 		n++;
 	}
