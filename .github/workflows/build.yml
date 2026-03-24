@@ -403,7 +403,7 @@ jobs:
 #         7z a -r quake3e-windows-msvc-x86_64.zip  ./windows-msvc-x86_64/*
 
       - name: Create latest build
-        uses: KG7x/action-automatic-releases@latest
+        uses: czietz/action-automatic-releases@latest
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           automatic_release_tag: "latest"
