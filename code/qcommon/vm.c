@@ -35,6 +35,9 @@ and one exported function: Perform
 */
 
 #include "vm_local.h"
+#ifdef USE_WASM
+#include "wa_local.h"
+#endif
 
 opcode_info_t ops[ OP_MAX ] =
 {
@@ -805,6 +808,17 @@ static vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 
 	crc32sum = crc32_buffer( (const byte*) header, length );
 
+#ifdef USE_WASM
+	if ( length > 4 && LittleLong( *(uint32_t *)header ) == WA_MAGIC ) {
+		if ( WA_LoadModule( vm, header, length, alloc ) ) {
+			Com_Printf( "...which is a WASM module\n" );
+			vm->crc32sum = crc32sum;
+			return header;
+		}
+		return NULL;
+	}
+#endif
+
 	// will also swap header
 	errorMsg = VM_ValidateHeader( header, length );
 	if ( errorMsg ) {
@@ -929,6 +943,20 @@ static vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc ) {
 			Com_Memset( vm->jumpTableTargets, 0, length );
 		}
 		Load_JTS( vm, crc32sum, vm->jumpTableTargets, vmPakIndex );
+	}
+
+	if ( alloc ) {
+		// allocate space for the jump targets, which will be filled in by the compile/prep functions
+		vm->instructionCount = header->instructionCount;
+		//vm->instructionPointers = Hunk_Alloc(vm->instructionCount * sizeof(*vm->instructionPointers), h_high);
+		vm->instructionPointers = NULL;
+
+		// copy or compile the instructions
+		vm->codeLength = header->codeLength;
+
+		// the stack is implicitly at the end of the image
+		vm->programStack = vm->dataMask + 1;
+		vm->stackBottom = vm->programStack - PROGRAM_STACK_SIZE - vm->programStackExtra;
 	}
 
 	return header;
@@ -1853,19 +1881,14 @@ vm_t *VM_Create( vmIndex_t index, syscall_t systemCalls, dllSyscall_t dllSyscall
 		return NULL;
 	}
 
-	// allocate space for the jump targets, which will be filled in by the compile/prep functions
-	vm->instructionCount = header->instructionCount;
-	//vm->instructionPointers = Hunk_Alloc(vm->instructionCount * sizeof(*vm->instructionPointers), h_high);
-	vm->instructionPointers = NULL;
-
-	// copy or compile the instructions
-	vm->codeLength = header->codeLength;
-
-	// the stack is implicitly at the end of the image
-	vm->programStack = vm->dataMask + 1;
-	vm->stackBottom = vm->programStack - PROGRAM_STACK_SIZE - vm->programStackExtra;
-
 	vm->compiled = qfalse;
+
+#ifdef USE_WASM
+	if ( vm->wasm && interpret >= VMI_COMPILED ) {
+		Com_Printf( "WASM doesn't have a bytecode compiler, using interpreter\n" );
+		interpret = VMI_BYTECODE;
+	}
+#endif
 
 #ifdef NO_VM_COMPILED
 	if ( interpret >= VMI_COMPILED ) {
@@ -1880,7 +1903,11 @@ vm_t *VM_Create( vmIndex_t index, syscall_t systemCalls, dllSyscall_t dllSyscall
 	}
 #endif
 	// VM_Compile may have reset vm->compiled if compilation failed
+#ifdef USE_WASM
+	if ( !vm->compiled && !vm->wasm ) {
+#else
 	if ( !vm->compiled ) {
+#endif
 		if ( !VM_PrepareInterpreter2( vm, header ) ) {
 			FS_FreeFile( header );	// free the original file
 			VM_Free( vm );
@@ -2026,12 +2053,7 @@ intptr_t QDECL VM_Call( vm_t *vm, int nargs, int callnum, ... )
 		r = vm->entryPoint( callnum, args[0], args[1], args[2] );
 	} else {
 #if id386 && !defined __clang__ // calling convention doesn't need conversion in some cases
-#ifndef NO_VM_COMPILED
-		if ( vm->compiled )
-			r = VM_CallCompiled( vm, nargs+1, (int32_t*)&callnum );
-		else
-#endif
-			r = VM_CallInterpreted2( vm, nargs+1, (int32_t*)&callnum );
+		int32_t *args = &callnum;
 #else
 		int32_t args[MAX_VMMAIN_CALL_ARGS];
 		va_list ap;
@@ -2042,13 +2064,18 @@ intptr_t QDECL VM_Call( vm_t *vm, int nargs, int callnum, ... )
 			args[i+1] = va_arg( ap, int32_t );
 		}
 		va_end(ap);
+#endif
 #ifndef NO_VM_COMPILED
 		if ( vm->compiled )
-			r = VM_CallCompiled( vm, nargs+1, &args[0] );
+			r = VM_CallCompiled( vm, nargs+1, args );
 		else
 #endif
-			r = VM_CallInterpreted2( vm, nargs+1, &args[0] );
+#ifdef USE_WASM
+		if ( vm->wasm )
+			r = WA_CallInterpreted( vm->wasm, nargs+1, args );
+		else
 #endif
+			r = VM_CallInterpreted2( vm, nargs+1, args );
 	}
 	--vm->callLevel;
 
