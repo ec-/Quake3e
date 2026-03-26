@@ -156,7 +156,7 @@ typedef struct {
 	int			numClusters;
 	int			clusterBytes;
 	byte		*visibility;
-	qboolean	vised;			// if false, visibility is just a single cluster of ffs
+	byte		*novis;		// clusterBytes of 0xff
 
 	int			numEntityChars;
 	char		*entityString;

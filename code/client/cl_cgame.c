@@ -562,6 +562,9 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		CM_TransformedBoxTrace( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], VMA(8), VMA(9), /*int capsule*/ qtrue );
 		return 0;
 	case CG_CM_MARKFRAGMENTS:
+		VM_CHECKBOUNDS3( cgvm, args[2], args[1], sizeof( vec3_t ) );
+		VM_CHECKBOUNDS3( cgvm, args[5], args[4], sizeof( vec3_t ) );
+		VM_CHECKBOUNDS3( cgvm, args[7], args[6], sizeof( markFragment_t ) );
 		return re.MarkFragments( args[1], VMA(2), VMA(3), args[4], VMA(5), args[6], VMA(7) );
 	case CG_S_STARTSOUND:
 		S_StartSound( VMA(1), args[2], args[3], args[4] );

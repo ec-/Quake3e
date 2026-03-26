@@ -413,13 +413,16 @@ intptr_t	QDECL VM_Call( vm_t *vm, int nargs, int callNum, ... );
 void	VM_Debug( int level );
 void	VM_CheckBounds( const vm_t *vm, unsigned int address, unsigned int length );
 void	VM_CheckBounds2( const vm_t *vm, unsigned int addr1, unsigned int addr2, unsigned int length );
+void	VM_CheckBounds3( const vm_t *vm, unsigned int address, unsigned int count, unsigned int size );
 
 #if 1
 #define VM_CHECKBOUNDS VM_CheckBounds
 #define VM_CHECKBOUNDS2 VM_CheckBounds2
+#define VM_CHECKBOUNDS3 VM_CheckBounds3
 #else // for performance evaluation purposes
 #define VM_CHECKBOUNDS(vm,a,b)
 #define VM_CHECKBOUNDS2(vm,a,b,c)
+#define VM_CHECKBOUNDS3(vm,a,b,c)
 #endif
 
 void	*GVM_ArgPtr( intptr_t intValue );
@@ -1101,13 +1104,13 @@ temp file loading
 #define Z_TagMalloc(size, tag)			Z_TagMallocDebug(size, tag, #size, __FILE__, __LINE__)
 #define Z_Malloc(size)					Z_MallocDebug(size, #size, __FILE__, __LINE__)
 #define S_Malloc(size)					S_MallocDebug(size, #size, __FILE__, __LINE__)
-void *Z_TagMallocDebug( int size, memtag_t tag, char *label, char *file, int line );	// NOT 0 filled memory
-void *Z_MallocDebug( int size, char *label, char *file, int line );			// returns 0 filled memory
-void *S_MallocDebug( int size, char *label, char *file, int line );			// returns 0 filled memory
+void *Z_TagMallocDebug( size_t size, memtag_t tag, const char *label, const char *file, int line );	// NOT 0 filled memory
+void *Z_MallocDebug( size_t size, const char *label, const char *file, int line );			// returns 0 filled memory
+void *S_MallocDebug( size_t size, const char *label, const char *file, int line );			// returns 0 filled memory
 #else
-void *Z_TagMalloc( int size, memtag_t tag );	// NOT 0 filled memory
-void *Z_Malloc( int size );			// returns 0 filled memory
-void *S_Malloc( int size );			// NOT 0 filled memory only for small allocations
+void *Z_TagMalloc( size_t size, memtag_t tag );	// NOT 0 filled memory
+void *Z_Malloc( size_t size );			// returns 0 filled memory
+void *S_Malloc( size_t size );			// NOT 0 filled memory only for small allocations
 #endif
 void Z_Free( void *ptr );
 int Z_FreeTags( memtag_t tag );
@@ -1119,7 +1122,7 @@ void Hunk_ClearToMark( void );
 void Hunk_SetMark( void );
 qboolean Hunk_CheckMark( void );
 void Hunk_ClearTempMemory( void );
-void *Hunk_AllocateTempMemory( int size );
+void *Hunk_AllocateTempMemory( size_t size );
 void Hunk_FreeTempMemory( void *buf );
 int	Hunk_MemoryRemaining( void );
 void Hunk_Log( void);

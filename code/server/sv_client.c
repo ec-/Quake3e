@@ -254,7 +254,7 @@ static qboolean SV_LoadIP4DB( const char *filename )
 	fileHandle_t fh = FS_INVALID_HANDLE;
 	uint32_t last_ip;
 	void *buf;
-	int len, i;
+	int len, res, i;
 
 	len = FS_SV_FOpenFileRead( filename, &fh );
 
@@ -277,8 +277,13 @@ static qboolean SV_LoadIP4DB( const char *filename )
 
 	buf = Z_Malloc( len );
 
-	FS_Read( buf, len, fh );
+	res = FS_Read( buf, len, fh );
 	FS_FCloseFile( fh );
+
+	if ( res != len ) {
+		Z_Free( buf );
+		return qfalse;
+	}
 
 	// check integrity of loaded database
 	last_ip = 0;
@@ -1444,7 +1449,7 @@ static int SV_WriteDownloadToClient( client_t *cl )
 
 		cl->downloadBlockSize[curindex] = FS_Read( cl->downloadBlocks[curindex], MAX_DOWNLOAD_BLKSIZE, cl->download );
 
-		if (cl->downloadBlockSize[curindex] < 0) {
+		if (cl->downloadBlockSize[curindex] <= 0) {
 			// EOF right now
 			cl->downloadCount = cl->downloadSize;
 			break;

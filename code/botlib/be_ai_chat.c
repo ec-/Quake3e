@@ -244,7 +244,7 @@ static void InitConsoleMessageHeap(void)
 
 	if (consolemessageheap) FreeMemory(consolemessageheap);
 	//
-	max_messages = (int) LibVarValue("max_messages", "1024");
+	max_messages = LibVarInteger("max_messages", "1024", 2, 65536);
 	consolemessageheap = (bot_consolemessage_t *) GetClearedHunkMemory(max_messages *
 												sizeof(bot_consolemessage_t));
 	consolemessageheap[0].prev = NULL;
@@ -621,9 +621,10 @@ static void BotDumpSynonymList(bot_synonymlist_t *synlist)
 //===========================================================================
 static bot_synonymlist_t *BotLoadSynonyms( const char *filename )
 {
-	int pass, size, contextlevel, numsynonyms;
+	int pass, contextlevel, numsynonyms;
 	unsigned long int context, contextstack[32];
 	char *ptr = NULL;
+	size_t size;
 	source_t *source;
 	token_t token;
 	bot_synonymlist_t *synlist, *lastsyn, *syn;
@@ -710,14 +711,14 @@ static bot_synonymlist_t *BotLoadSynonyms( const char *filename )
 							return NULL;
 						} //end if
 						StripDoubleQuotes(token.string);
-						len = (int)strlen(token.string);
+						len = strlen(token.string);
 						if (len==0)
 						{
 							SourceError(source, "empty string");
 							FreeSource(source);
 							return NULL;
 						} //end if
-						len = PAD(len+1, sizeof(long));
+						len = PAD(len+1, sizeof(uintptr_t));
 						size += sizeof(bot_synonym_t) + len;
 						if (pass && ptr)
 						{
@@ -1018,13 +1019,13 @@ static void BotDumpRandomStringList(bot_randomlist_t *randomlist)
 //===========================================================================
 static bot_randomlist_t *BotLoadRandomStrings( const char *filename )
 {
-	int pass, size;
+	int pass;
 	char *ptr = NULL, chatmessagestring[MAX_MESSAGE_SIZE];
 	source_t *source;
 	token_t token;
 	bot_randomlist_t *randomlist, *lastrandom, *random;
 	bot_randomstring_t *randomstring;
-	size_t len;
+	size_t size, len;
 
 #ifdef DEBUG
 	int starttime = Sys_MilliSeconds();
@@ -1059,7 +1060,7 @@ static bot_randomlist_t *BotLoadRandomStrings( const char *filename )
 				return NULL;
 			} //end if
 			len = strlen(token.string) + 1;
-			len = PAD(len, sizeof(long));
+			len = PAD(len, sizeof(uintptr_t));
 			size += sizeof(bot_randomlist_t) + len;
 			if (pass && ptr)
 			{
@@ -1089,7 +1090,7 @@ static bot_randomlist_t *BotLoadRandomStrings( const char *filename )
 					return NULL;
 				} //end if
 				len = strlen(chatmessagestring) + 1;
-				len = PAD(len, sizeof(long));
+				len = PAD(len, sizeof(uintptr_t));
 				size += sizeof(bot_randomstring_t) + len;
 				if (pass && ptr)
 				{
@@ -2097,7 +2098,8 @@ static void BotDumpInitialChat(bot_chat_t *chat)
 //===========================================================================
 static bot_chat_t *BotLoadInitialChat(const char *chatfile, const char *chatname)
 {
-	int pass, foundchat, indent, size;
+	int pass, foundchat, indent;
+	size_t size;
 	char *ptr = NULL;
 	char chatmessagestring[MAX_MESSAGE_SIZE];
 	source_t *source;
@@ -2199,7 +2201,7 @@ static bot_chat_t *BotLoadInitialChat(const char *chatfile, const char *chatname
 								return NULL;
 							} //end if
 							len = strlen(chatmessagestring) + 1;
-							len = PAD(len, sizeof(long));
+							len = PAD(len, sizeof(uintptr_t));
 							if (pass && ptr)
 							{
 								chatmessage = (bot_chatmessage_t *) ptr;

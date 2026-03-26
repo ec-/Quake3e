@@ -643,8 +643,8 @@ static LRESULT WINAPI InputLineWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 			while ( *s == '\\' || *s == '/' ) // skip leading slashes
 				s++;
 
-			strncat( s_wcd.consoleText, s, sizeof( s_wcd.consoleText ) - strlen( s_wcd.consoleText ) - 2 );
-			strcat( s_wcd.consoleText, "\n" );
+			Q_strcat( s_wcd.consoleText, sizeof( s_wcd.consoleText ), s );
+			Q_strcat( s_wcd.consoleText, sizeof( s_wcd.consoleText ), "\n" );
 
 			SetWindowText( s_wcd.hwndInputLine, T("") );
 			Field_Clear( &console );

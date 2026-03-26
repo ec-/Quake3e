@@ -205,20 +205,9 @@ static weaponconfig_t *LoadWeaponConfig(const char *filename)
 	weaponconfig_t *wc;
 	weaponinfo_t weaponinfo;
 
-	max_weaponinfo = (int) LibVarValue("max_weaponinfo", "32");
-	if (max_weaponinfo < 0)
-	{
-		botimport.Print(PRT_ERROR, "max_weaponinfo = %d\n", max_weaponinfo);
-		max_weaponinfo = 32;
-		LibVarSet("max_weaponinfo", "32");
-	} //end if
-	max_projectileinfo = (int) LibVarValue("max_projectileinfo", "32");
-	if (max_projectileinfo < 0)
-	{
-		botimport.Print(PRT_ERROR, "max_projectileinfo = %d\n", max_projectileinfo);
-		max_projectileinfo = 32;
-		LibVarSet("max_projectileinfo", "32");
-	} //end if
+	max_weaponinfo = LibVarInteger("max_weaponinfo", "32", 0, 4096);
+	max_projectileinfo = LibVarInteger("max_projectileinfo", "32", 0, 4096);
+
 	Q_strncpyz( path, filename, sizeof( path ) );
 	PC_SetBaseFolder(BOTFILESBASEFOLDER);
 	source = LoadSourceFile(path);
