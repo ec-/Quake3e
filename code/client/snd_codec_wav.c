@@ -32,7 +32,8 @@ FGetLittleLong
 static int FGetLittleLong( fileHandle_t f ) {
 	int		v;
 
-	FS_Read( &v, sizeof(v), f );
+	if (FS_Read( &v, sizeof(v), f ) != sizeof(v))
+		return -1;
 
 	return LittleLong( v);
 }
@@ -45,7 +46,8 @@ FGetLittleShort
 static short FGetLittleShort( fileHandle_t f ) {
 	short	v;
 
-	FS_Read( &v, sizeof(v), f );
+	if (FS_Read( &v, sizeof(v), f ) != sizeof(v))
+		return -1;
 
 	return LittleShort( v);
 }
@@ -140,7 +142,11 @@ static qboolean S_ReadRIFFHeader(fileHandle_t file, snd_info_t *info)
 	int fmtlen = 0;
 
 	// skip the riff wav header
-	FS_Read(dump, 12, file);
+	if (FS_Read(dump, 12, file) != 12)
+	{
+		Com_Printf( S_COLOR_RED "ERROR: Couldn't read header\n");
+		return qfalse;
+	}
 
 	// Scan for the format chunk
 	if((fmtlen = S_FindRIFFChunk(file, "fmt ")) < 0)
@@ -232,7 +238,14 @@ void *S_WAV_CodecLoad(const char *filename, snd_info_t *info)
 	}
 
 	// Read, byteswap
-	FS_Read(buffer, info->size, file);
+	if (FS_Read(buffer, info->size, file) != info->size)
+	{
+		Hunk_FreeTempMemory(buffer);
+		FS_FCloseFile(file);
+		Com_Printf( S_COLOR_RED "ERROR: Couldn't read \"%s\"\n", filename);
+		return NULL;
+	}
+
 	S_ByteSwapRawSamples(info->samples, info->width, info->channels, (byte *)buffer);
 
 	// Close and return
@@ -288,9 +301,11 @@ int S_WAV_CodecReadStream(snd_stream_t *stream, int bytes, void *buffer)
 		return 0;
 	if(bytes > remaining)
 		bytes = remaining;
+	bytes = FS_Read(buffer, bytes, stream->file);
+	if (bytes <= 0)
+		return 0;
 	stream->pos += bytes;
 	samples = (bytes / stream->info.width) / stream->info.channels;
-	FS_Read(buffer, bytes, stream->file);
 	S_ByteSwapRawSamples(samples, stream->info.width, stream->info.channels, buffer);
 	return bytes;
 }

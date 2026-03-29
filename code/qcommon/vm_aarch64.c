@@ -1987,20 +1987,6 @@ __recompile:
 			case OP_SEX16:
 			case OP_NEGI:
 			case OP_BCOM:
-				if ( ci->op == OP_SEX8 || ci->op == OP_SEX16 ) {
-					// skip sign-extension for `if ( var == 0 )` tests if we already zero-extended
-					reg = rx_on_top();
-					if ( reg && (ci+1)->op == OP_CONST && (ci+1)->value == 0 && ( (ci+2)->op == OP_EQ || (ci+2)->op == OP_NE ) ) {
-						if ( !(ci+1)->jused && !(ci+2)->jused ) {
-							if ( ci->op == OP_SEX8 && reg->ext == Z_EXT8 ) {
-								break;
-							}
-							if ( ci->op == OP_SEX16 && reg->ext == Z_EXT16 ) {
-								break;
-							}
-						}
-					}
-				}
 				rx[1] = rx[0] = load_rx_opstack( R0 ); // r0 = *opstack
 				//load_rx_opstack2( &rx[1], R1, &rx[0], R0 );
 				switch ( ci->op ) {

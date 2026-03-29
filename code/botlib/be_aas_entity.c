@@ -72,6 +72,12 @@ int AAS_UpdateEntity(int entnum, bot_entitystate_t *state)
 		return BLERR_NOAASFILE;
 	} //end if
 
+	if (entnum < 0 || entnum >= aasworld.maxentities)
+	{
+		botimport.Print(PRT_FATAL, "AAS_UpdateEntity: entnum %d out of range\n", entnum);
+		return BLERR_INVALIDENTITYNUMBER;
+	}
+
 	ent = &aasworld.entities[entnum];
 
 	if (!state) {

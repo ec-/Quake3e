@@ -104,9 +104,7 @@ qboolean CL_cURL_Init( void )
 #else
 		char fn[1024];
 
-		Q_strncpyz( fn, Sys_Pwd(), sizeof( fn ) );
-		strncat( fn, "/", sizeof( fn ) - strlen( fn ) - 1 );
-		strncat( fn, cl_cURLLib->string, sizeof( fn ) - strlen( fn ) - 1 );
+		Com_sprintf(fn, sizeof(fn), "%s/%s", Sys_Pwd(), cl_cURLLib->string);
 
 		if((cURLLib = Sys_LoadLibrary(fn)) == 0)
 		{
@@ -552,9 +550,7 @@ qboolean Com_DL_Init( download_t *dl )
 #else
 		char fn[1024];
 
-		Q_strncpyz( fn, Sys_Pwd(), sizeof( fn ) );
-		strncat( fn, "/", sizeof( fn ) - strlen( fn ) - 1 );
-		strncat( fn, cl_cURLLib->string, sizeof( fn ) - strlen( fn ) - 1 );
+		Com_sprintf(fn, sizeof(fn), "%s/%s", Sys_Pwd(), cl_cURLLib->string);
 
 		if ( ( dl->func.lib = Sys_LoadLibrary( fn ) ) == NULL )
 		{

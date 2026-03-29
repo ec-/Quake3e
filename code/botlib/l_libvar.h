@@ -52,6 +52,8 @@ float LibVarGetValue( const char *var_name );
 libvar_t *LibVar( const char *var_name, const char *value );
 //creates the library variable if not existing already and returns the value
 float LibVarValue( const char *var_name, const char *value );
+//creates the library variable if not existing already and returns the integer value
+int LibVarInteger( const char *var_name, const char *value, int min_v, int max_v );
 //creates the library variable if not existing already and returns the value string
 const char *LibVarString( const char *var_name, const char *value );
 //sets the library variable

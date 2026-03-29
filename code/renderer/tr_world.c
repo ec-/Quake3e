@@ -789,8 +789,12 @@ qboolean R_inPVS( const vec3_t p1, const vec3_t p2 ) {
 	const byte	*vis;
 
 	leaf = R_PointInLeaf( p1 );
+	if ( leaf->cluster < 0 )
+		return qfalse;
 	vis = ri.CM_ClusterPVS( leaf->cluster );
 	leaf = R_PointInLeaf( p2 );
+	if ( leaf->cluster < 0 )
+		return qfalse;
 
 	if ( !(vis[leaf->cluster>>3] & (1<<(leaf->cluster&7))) ) {
 		return qfalse;
@@ -864,7 +868,7 @@ static void R_MarkLeaves (void) {
 		}
 
 		// check for door connection
-		if ( (tr.refdef.areamask[leaf->area>>3] & (1<<(leaf->area&7)) ) ) {
+		if ( leaf->area >= 0 && (tr.refdef.areamask[leaf->area>>3] & (1<<(leaf->area&7))) ) {
 			continue;		// not visible
 		}
 

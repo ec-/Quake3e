@@ -186,10 +186,10 @@ typedef struct botlib_import_s
 	//send a bot client command
 	void		(*BotClientCommand)( int client, const char *command );
 	//memory allocation
-	void		*(*GetMemory)(int size);		// allocate from Zone
+	void		*(*GetMemory)(size_t size);		// allocate from Zone
 	void		(*FreeMemory)(void *ptr);		// free memory from Zone
 	int			(*AvailableMemory)(void);		// available Zone memory
-	void		*(*HunkAlloc)(int size);		// allocate from hunk
+	void		*(*HunkAlloc)(size_t size);		// allocate from hunk
 	//file system access
 	int			(*FS_FOpenFile)( const char *qpath, fileHandle_t *file, fsMode_t mode );
 	int			(*FS_Read)( void *buffer, int len, fileHandle_t f );

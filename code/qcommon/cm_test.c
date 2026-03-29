@@ -314,8 +314,8 @@ PVS
 */
 
 byte	*CM_ClusterPVS (int cluster) {
-	if (cluster < 0 || cluster >= cm.numClusters || !cm.vised ) {
-		return cm.visibility;
+	if (cluster < 0 || cluster >= cm.numClusters || !cm.visibility ) {
+		return cm.novis;
 	}
 
 	return cm.visibility + cluster * cm.clusterBytes;

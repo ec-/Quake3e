@@ -30,8 +30,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *****************************************************************************/
 
 #include "../qcommon/q_shared.h"
+#include "botlib.h"
 #include "l_memory.h"
 #include "l_libvar.h"
+#include "be_interface.h"
 
 //list with library variables
 libvar_t *libvarlist = NULL;
@@ -232,6 +234,28 @@ float LibVarValue( const char *var_name, const char *value )
 	v = LibVar( var_name, value );
 	return v->value;
 } //end of the function LibVarValue
+
+int LibVarInteger( const char *var_name, const char *value, int min_v, int max_v )
+{
+	int v = (int) LibVarValue(var_name, value);
+
+	// if less than minimum, reset to default value
+	// if more than maximum, set to maximum
+	if (v < min_v || v > max_v)
+	{
+		botimport.Print(PRT_ERROR, "%s = %d\n", var_name, v);
+		if (v < min_v) {
+			v = atoi(value);
+			LibVarSet(var_name, value);
+		} else {
+			v = max_v;
+			LibVarSet(var_name, va("%d", max_v));
+		}
+	}
+
+	return v;
+}
+
 //===========================================================================
 //
 // Parameter:				-
