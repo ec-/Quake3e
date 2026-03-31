@@ -1314,11 +1314,11 @@ void SV_Frame( int msec ) {
 
 	// if it isn't time for the next frame, do nothing
 
-	frameMsec = 1000 / sv_fps->integer * com_timescale->value;
+	frameMsec = (1000 / sv_fps->integer) * com_timescale->value;
 	// don't let it scale below 1ms
-	if(frameMsec < 1)
+	if (frameMsec < 1)
 	{
-		Cvar_Set( "timescale", va( "%f", sv_fps->value / 1000.0f ) );
+		Cvar_SetValue( "timescale", sv_fps->value / 1000.0f );
 		Com_DPrintf( "timescale adjusted to %f\n", com_timescale->value );
 		frameMsec = 1;
 	}
