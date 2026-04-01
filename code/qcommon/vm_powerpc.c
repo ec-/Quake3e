@@ -1292,41 +1292,21 @@ static void get_branch_cond( int op, int *bo, int *bi )
 }
 
 
-#if 0
-static void emit_branchConditional( vm_t *vm, instruction_t *ci, int op )
-{
-	int32_t target = ci->value;  // target instruction index
-	int32_t targetOfs = vm->instructionPointers[ target ] - compiledOfs;
-	int bo, bi;
-
-	get_branch_cond( op, &bo, &bi );
-
-	// Long form: inverted bc skips over unconditional b
-	// Invert: BO_TRUE(12) <-> BO_FALSE(4)
-	{
-		int inv_bo = ( bo == BO_TRUE ) ? BO_FALSE : BO_TRUE;
-		emit( PPC_BC( inv_bo, bi, +8 ) );  // skip next instruction if NOT condition
-		emit( PPC_B( targetOfs - 4 ) );    // -4 because compiledOfs advanced by 4
-	}
-}
-#endif
-
-
 static void emit_branchConditionalShort( vm_t* vm, instruction_t* ci )
 {
 	int32_t targetOfs = vm->instructionPointers[ ci->value ] - compiledOfs;
 	int bo, bi;
+	int inv_bo;
 
 	get_branch_cond( ci->op, &bo, &bi );
 
-	if ( pass != PASS_INIT ) {
-		if ( (int16_t)targetOfs != targetOfs ) {
-			// TODO: add/switch to expansion pass?
-			DROP( "offset is too large" );
-		}
-	}
-
-	emit( PPC_BC( bo, bi, targetOfs ) );
+	// PPC64 bc instruction only supports 16-bit signed offsets (±32KB).
+	// For large QVM files (e.g. cgame.qvm) branch targets can exceed this.
+	// Always use long form: inverted bc to skip over unconditional b (26-bit offset).
+	// This ensures consistent code size across compilation passes.
+	inv_bo = ( bo == BO_TRUE ) ? BO_FALSE : BO_TRUE;
+	emit( PPC_BC( inv_bo, bi, +8 ) );  // skip next instruction if NOT condition
+	emit( PPC_B( targetOfs - 4 ) );    // -4 because compiledOfs advanced by 4
 }
 
 
