@@ -455,6 +455,7 @@ static void RB_Hyperspace( void ) {
 
 	if ( tess.shader != tr.whiteShader ) {
 		RB_EndSurface();
+		RB_SetGL2D();
 		RB_BeginSurface( tr.whiteShader, 0 );
 	}
 
@@ -1033,6 +1034,11 @@ RB_SetGL2D
 ================
 */
 static void RB_SetGL2D( void ) {
+
+	if ( backEnd.projection2D ) {
+		return;
+	}
+
 	backEnd.projection2D = qtrue;
 
 #ifdef USE_VULKAN
@@ -1180,10 +1186,9 @@ static const void *RB_StretchPic( const void *data ) {
 
 	shader = cmd->shader;
 	if ( shader != tess.shader ) {
-		if ( tess.numIndexes ) {
-			RB_EndSurface();
-		}
+		RB_EndSurface();
 		backEnd.currentEntity = &backEnd.entity2D;
+		RB_SetGL2D(); // set correct shader time before RB_BeginSurface() on 3D->2D transition
 		RB_BeginSurface( shader, 0 );
 	}
 
@@ -1191,9 +1196,7 @@ static const void *RB_StretchPic( const void *data ) {
 	VBO_UnBind();
 #endif
 
-	if ( !backEnd.projection2D ) {
-		RB_SetGL2D();
-	}
+	RB_SetGL2D();
 
 #ifdef USE_VULKAN
 	if ( r_bloom->integer ) {
@@ -1202,7 +1205,6 @@ static const void *RB_StretchPic( const void *data ) {
 #endif
 
 	RB_AddQuadStamp2( cmd->x, cmd->y, cmd->w, cmd->h, cmd->s1, cmd->t1, cmd->s2, cmd->t2, backEnd.color2D );
-
 	return (const void *)(cmd + 1);
 }
 
@@ -1482,9 +1484,7 @@ void RB_ShowImages( void )
 {
 	int i;
 
-	if ( !backEnd.projection2D ) {
-		RB_SetGL2D();
-	}
+	RB_SetGL2D();
 
 	// draw full-screen quad
 	tess.numVertexes = 4;
@@ -1568,9 +1568,7 @@ void RB_ShowImages( void ) {
 	const vec2_t t[4] = { {0,0}, {1,0}, {0,1}, {1,1} };
 	vec3_t v[4];
 
-	if ( !backEnd.projection2D ) {
-		RB_SetGL2D();
-	}
+	RB_SetGL2D();
 
 	qglClear( GL_COLOR_BUFFER_BIT );
 
