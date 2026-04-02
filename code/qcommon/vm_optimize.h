@@ -868,7 +868,7 @@ static uint32_t alloc_sx_const( uint32_t pref, uint32_t imm )
 	return sx;
 }
 
-#ifdef DYN_ALLOC_SX
+#ifdef DYN_ALLOC_RX
 static uint32_t dyn_alloc_rx( void )
 {
 	const uint32_t _rx_mask = build_rx_mask();
