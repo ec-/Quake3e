@@ -49,6 +49,8 @@ USE_OPENGL_API   = 1
 USE_VULKAN_API   = 1
 USE_RENDERER_DLOPEN = 1
 
+USE_WASM = 1
+
 # valid options: opengl, vulkan, opengl2
 RENDERER_DEFAULT = opengl
 
@@ -318,6 +320,10 @@ endif
 
 ifneq ($(HAVE_VM_COMPILED),true)
   BASE_CFLAGS += -DNO_VM_COMPILED
+endif
+
+ifeq ($(USE_WASM),1)
+  BASE_CFLAGS += -DUSE_WASM
 endif
 
 ifneq ($(USE_RENDERER_DLOPEN),0)
@@ -1181,6 +1187,13 @@ Q3OBJ += \
   $(B)/client/qvm/vm.o \
   $(B)/client/qvm/vm_interpreted.o
 
+ifeq ($(USE_WASM),1)
+  Q3OBJ += $(B)/client/qvm/wa_module.o \
+    $(B)/client/qvm/wa_interpreted.o \
+    $(B)/client/qvm/wa_stdlib.o \
+    $(B)/client/qvm/sizebuf.o
+endif
+
 ifeq ($(HAVE_VM_COMPILED),true)
   ifeq ($(ARCH),x86)
     Q3OBJ += $(B)/client/qvm/vm_x86.o
@@ -1381,6 +1394,13 @@ endif
   Q3DOBJ += \
   $(B)/ded/qvm/vm.o \
   $(B)/ded/qvm/vm_interpreted.o
+
+ifeq ($(USE_WASM),1)
+  Q3DOBJ += $(B)/ded/qvm/wa_module.o \
+    $(B)/ded/qvm/wa_interpreted.o \
+    $(B)/ded/qvm/wa_stdlib.o \
+    $(B)/ded/qvm/sizebuf.o
+endif
 
 ifeq ($(HAVE_VM_COMPILED),true)
   ifeq ($(ARCH),x86)
