@@ -579,10 +579,12 @@ else
 
   ifeq ($(ARCH),ppc64le)
     ARCHEXT = .ppc64le
+    OPTIMIZE += -mcpu=power8 -mvsx
   endif
 
   ifeq ($(ARCH),ppc64)
     ARCHEXT = .ppc64
+    OPTIMIZE += -mcpu=power8 -mvsx
   endif
 
   SHLIBEXT = so

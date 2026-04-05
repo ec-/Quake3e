@@ -288,6 +288,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #endif
 #endif // idx64
 
+#if defined(__VSX__)
+#define _GCC_VSX
+#endif // __VSX__
+
 // Modifier for printing size_t values portably
 
 #if (defined _WIN64)
