@@ -48,6 +48,7 @@ USE_OPENGL2      = 0
 USE_OPENGL_API   = 1
 USE_VULKAN_API   = 1
 USE_RENDERER_DLOPEN = 1
+USE_XDG = 1
 
 # valid options: opengl, vulkan, opengl2
 RENDERER_DEFAULT = opengl
@@ -622,6 +623,10 @@ else
       BASE_CFLAGS += -m32
       LDFLAGS += -m32
     endif
+  endif
+
+  ifeq ($(USE_XDG),1)
+  	BASE_CFLAGS += -DUSE_XDG
   endif
 
   DEBUG_CFLAGS = $(BASE_CFLAGS) -DDEBUG -D_DEBUG -g -O0
