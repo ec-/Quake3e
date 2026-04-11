@@ -1854,7 +1854,7 @@ static void EmitJump( instruction_t *i, int op, int addr )
 static void EmitCallAddr( vm_t *vm, int addr )
 {
 	const int v = instructionOffsets[ addr ] - compiledOfs;
-	EmitString( "E8" );
+	Emit1( 0xE8 );
 	Emit4( v - 5 );
 }
 
@@ -1862,7 +1862,7 @@ static void EmitCallAddr( vm_t *vm, int addr )
 static void EmitCallOffset( func_t Func )
 {
 	const int v = funcOffset[ Func ] - compiledOfs;
-	EmitString( "E8" );		// call +funcOffset[ Func ]
+	Emit1( 0xE8 );		// call +funcOffset[ Func ]
 	Emit4( v - 5 );
 }
 
@@ -1887,7 +1887,7 @@ static void emit_CheckReg( vm_t *vm, uint32_t reg, func_t func )
 
 	// error reporting
 	EmitString( "0F 87" );			// ja +errorFunction
-	Emit4( funcOffset[ func ] - compiledOfs - 6 );
+	Emit4( funcOffset[ func ] - compiledOfs - 4 );
 }
 
 
@@ -1906,14 +1906,13 @@ static void emit_CheckJump( vm_t *vm, uint32_t reg, int32_t proc_base, int32_t p
 		emit_lea( rx, reg, -proc_base );			// lea edx, [reg - procBase]
 		emit_op_rx_imm32( X_CMP, rx, proc_len );	// cmp edx, proc_len
 		unmask_rx( rx );
-
 		EmitString( "0F 87" );						// ja +funcOffset[FUNC_BADJ]
-		Emit4( funcOffset[ FUNC_BADJ ] - compiledOfs - 6 );
+		Emit4( funcOffset[ FUNC_BADJ ] - compiledOfs - 4 );
 	} else {
 		// check if reg >= instructionCount
 		emit_op_rx_imm32( X_CMP, reg, vm->instructionCount );	// cmp reg, vm->instructionCount
 		EmitString( "0F 83" );									// jae +funcOffset[ FUNC_ERRJ ]
-		Emit4( funcOffset[ FUNC_ERRJ ] - compiledOfs - 6 );
+		Emit4( funcOffset[ FUNC_ERRJ ] - compiledOfs - 4 );
 	}
 }
 
@@ -1928,7 +1927,7 @@ static void emit_CheckProc( vm_t *vm, instruction_t *ins )
 		emit_op_rx_imm32( X_CMP, R_PSTACK, vm->stackBottom ); // cmp programStack, vm->stackBottom
 #endif
 		EmitString( "0F 8C" );					// jl +funcOffset[ FUNC_PSOF ]
-		Emit4( funcOffset[ FUNC_PSOF ] - compiledOfs - 6 );
+		Emit4( funcOffset[ FUNC_PSOF ] - compiledOfs - 4 );
 	}
 
 	// opStack overflow check
@@ -1946,7 +1945,7 @@ static void emit_CheckProc( vm_t *vm, instruction_t *ins )
 #endif
 
 		EmitString( "0F 87" );			// ja +funcOffset[FUNC_OSOF]
-		Emit4( funcOffset[ FUNC_OSOF ] - compiledOfs - 6 );
+		Emit4( funcOffset[ FUNC_OSOF ] - compiledOfs - 4 );
 
 		unmask_rx( rx );
 	}
@@ -1971,7 +1970,7 @@ static void EmitCallFunc( vm_t *vm )
 	init_opstack(); // to avoid any side-effects on emit_CheckJump()
 
 	emit_test_rx( R_EAX, R_EAX );		// test eax, eax
-	EmitString( "7C" );					// jl +offset (SystemCall)
+	Emit1( 0x7C );					// jl +offset (SystemCall)
 	Emit1( sysCallOffset );				// will be valid after first pass
 	sysCallOffset = compiledOfs;
 
@@ -2278,6 +2277,10 @@ static qboolean NextLoad( const var_addr_t *v, const instruction_t *i, int op )
 static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 {
 	var_addr_t var;
+
+	if ( ni->jused ) {
+		return qfalse;
+	}
 
 	switch ( ni->op ) {
 
@@ -3474,46 +3477,52 @@ __compile:
 		// error functions
 		// ***************
 
-		// bad jump
-		EmitAlign( FUNC_ALIGN );
-		funcOffset[FUNC_BADJ] = compiledOfs;
-		EmitBADJFunc( vm );
+		if ( vm_rtChecks->integer & VM_RTCHECK_JUMP ) {
+			// bad jump
+			EmitAlign( FUNC_ALIGN );
+			funcOffset[FUNC_BADJ] = compiledOfs;
+			EmitBADJFunc( vm );
 
-		// error jump
-		EmitAlign( FUNC_ALIGN );
-		funcOffset[FUNC_ERRJ] = compiledOfs;
-		EmitERRJFunc( vm );
+			// error jump
+			EmitAlign( FUNC_ALIGN );
+			funcOffset[FUNC_ERRJ] = compiledOfs;
+			EmitERRJFunc( vm );
+		}
 
-		// programStack overflow
-		EmitAlign( FUNC_ALIGN );
-		funcOffset[FUNC_PSOF] = compiledOfs;
-		EmitPSOFFunc( vm );
+		if ( vm_rtChecks->integer & VM_RTCHECK_PSTACK ) {
+			// programStack overflow
+			EmitAlign( FUNC_ALIGN );
+			funcOffset[FUNC_PSOF] = compiledOfs;
+			EmitPSOFFunc( vm );
+		}
 
-		// opStack overflow
-		EmitAlign( FUNC_ALIGN );
-		funcOffset[FUNC_OSOF] = compiledOfs;
-		EmitOSOFFunc( vm );
+		if ( vm_rtChecks->integer & VM_RTCHECK_OPSTACK ) {
+			// opStack overflow
+			EmitAlign( FUNC_ALIGN );
+			funcOffset[FUNC_OSOF] = compiledOfs;
+			EmitOSOFFunc( vm );
+		}
 
-		// read access range violation
-		EmitAlign( FUNC_ALIGN );
-		funcOffset[ FUNC_DATR ] = compiledOfs;
-		EmitDATRFunc( vm );
+		if ( vm_rtChecks->integer & VM_RTCHECK_DATA && !vm->forceDataMask ) {
+			// read access range violation
+			EmitAlign( FUNC_ALIGN );
+			funcOffset[FUNC_DATR] = compiledOfs;
+			EmitDATRFunc( vm );
 
-		// write access range violation
-		EmitAlign( FUNC_ALIGN );
-		funcOffset[ FUNC_DATW ] = compiledOfs;
-		EmitDATWFunc( vm );
+			// write access range violation
+			EmitAlign( FUNC_ALIGN );
+			funcOffset[FUNC_DATW] = compiledOfs;
+			EmitDATWFunc( vm );
+		}
 
 		EmitAlign( sizeof( intptr_t ) ); // for instructionPointers
 
 #if JUMP_OPTIMIZE
 		if ( pass == PASS_COMPRESS && ++num_compress < NUM_COMPRESSIONS && jumpSizeChanged ) {
-			pass = PASS_COMPRESS;
 			goto __compile;
 		}
 		if ( jumpSizeChanged ) {
 			if ( pass == PASS_EXPAND_ONLY ) {
-				pass = PASS_EXPAND_ONLY;
 				goto __compile;
 			}
 		}
@@ -3529,7 +3538,7 @@ __compile:
 			return qfalse;
 		}
 		instructionPointers = (intptr_t*)(byte*)(code + PAD( compiledOfs, 8 ) + PAD( numLiterals * 4, 8 ));
-		if ( numLiterals ) {
+		if ( numLiterals != 0 ) {
 			uint32_t* litPtr = (uint32_t*)(code + PAD( compiledOfs, 8 ));
 			for ( i = 0; i < numLiterals; i++ ) {
 				litPtr[i] = litList[i].value;

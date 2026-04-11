@@ -180,12 +180,14 @@ typedef enum
 	FUNC_CALL,
 	FUNC_SYSC,
 	FUNC_SYSF,
-	FUNC_PSOF,
+	FUNC_PSOF, // error function definitions must be sequential from there
 	FUNC_OSOF,
 	FUNC_BADJ,
 	FUNC_OUTJ,
 	FUNC_BADR,
 	FUNC_BADW,
+	FUNC_ERR_BEGIN = FUNC_PSOF,
+	FUNC_ERR_END = FUNC_BADW,
 	OFFSET_T_LAST
 } offset_t;
 
@@ -199,8 +201,10 @@ static uint32_t ip;
 static uint32_t pass;
 static uint32_t jumpSizeChanged;
 
-static uint32_t savedOffset[ OFFSET_T_LAST ];
+static uint32_t funcOffset[ OFFSET_T_LAST ];
 
+static uint32_t branchOffset[ OFFSET_T_LAST ];
+static uint32_t savedBranchOffset[ OFFSET_T_LAST ];
 
 static void VM_FreeBuffers( void )
 {
@@ -695,6 +699,12 @@ static void emitAlign( int align )
 }
 
 
+static int getAlign( int align )
+{
+	return PAD( compiledOfs, align ) - compiledOfs;
+}
+
+
 // =========================================================================
 // 64-bit immediate loading
 // =========================================================================
@@ -936,9 +946,52 @@ static void store4_local( uint32_t value, uint32_t offset )
 
 static void emitFuncOffset( vm_t *vm, offset_t func )
 {
-	int32_t offset = savedOffset[ func ] - compiledOfs;
+	int32_t offset = funcOffset[ func ] - compiledOfs;
 	emit( PPC_BL( offset ) );
 }
+
+
+static void emitFuncBranch( vm_t *vm, offset_t func )
+{
+	branchOffset[ func ] = compiledOfs;
+	emitFuncOffset( vm, func );
+}
+
+
+static void saveBranchOffsets( void )
+{
+	memcpy( savedBranchOffset, branchOffset, sizeof( savedBranchOffset ) );
+}
+
+
+static void restoreBranchOffsets( void )
+{
+	memcpy( branchOffset, savedBranchOffset, sizeof( branchOffset ) );
+}
+
+
+#ifdef FUNC_ALIGN
+// emit most distant branch in a slack space
+static void emitDistantBranchOffsets( vm_t *vm )
+{
+	int i, n = getAlign( FUNC_ALIGN ) / 4;
+	for ( i = 0; i < n; i++ ) {
+		int f, index = -1, m = compiledOfs;
+		for ( f = FUNC_ERR_BEGIN; f <= FUNC_ERR_END; f++ ) {
+			if ( branchOffset[f] == 0 ) {
+				continue; // disabled/inactive checks
+			}
+			if ( branchOffset[f] < m ) {
+				m = branchOffset[f];
+				index = f;
+			}
+		}
+		if ( index >= 0 ) {
+			emitFuncBranch( vm, (offset_t)index );
+		}
+	}
+}
+#endif // FUNC_ALIGN
 
 
 // =========================================================================
@@ -1000,22 +1053,30 @@ static void __attribute__((__noreturn__)) ErrBadDataWrite( void )
 // reg contains the address to check, it will be masked/checked in place
 static void emit_CheckReg( vm_t *vm, int reg, offset_t func )
 {
+	int32_t offset;
 	if ( vm->forceDataMask || !( vm_rtChecks->integer & VM_RTCHECK_DATA ) ) {
 		// just mask it
 		emit( PPC_AND( reg, reg, rDATAMASK ) );
 		return;
 	}
+
 	// compare and branch to error if out of range
 	emit( PPC_CMPLW( 0, reg, rDATAMASK ) );
-	// if reg <= dataMask, skip error (unsigned)
-	emit( PPC_BLE( +8 ) );
-	emitFuncOffset( vm, func );
+
+	offset = branchOffset[ func ] - compiledOfs;
+	if ( (int16_t)offset == offset ) {
+		emit( PPC_BGT( offset ) );		// unsigned >
+	} else {
+		emit( PPC_BLE( +8 ) );			// if reg <= dataMask, skip error (unsigned)
+		emitFuncBranch( vm, func );
+	}
 }
 
 
 // Jump target check
 static void emit_CheckJump( vm_t *vm, int reg, int proc_base, int proc_len )
 {
+	int32_t offset;
 	if ( ( vm_rtChecks->integer & VM_RTCHECK_JUMP ) == 0 ) {
 		return;
 	}
@@ -1031,14 +1092,26 @@ static void emit_CheckJump( vm_t *vm, int reg, int proc_base, int proc_len )
 		// check if r11 > proc_len (unsigned, so negative wraps to large)
 		mov_rx_imm32( R12, proc_len );
 		emit( PPC_CMPLW( 0, R11, R12 ) );
-		emit( PPC_BLE( +8 ) ); // unsigned <=
-		emitFuncOffset( vm, FUNC_OUTJ );
+
+		offset = branchOffset[ FUNC_BADJ ] - compiledOfs;
+		if ( (int16_t)offset == offset ) {
+			emit( PPC_BGT( offset ) );	// unsigned >
+		} else {
+			emit( PPC_BLE( +8 ) );		// unsigned <=
+			emitFuncBranch( vm, FUNC_BADJ );
+		}
 	} else {
 		// generic check: reg >= instructionCount
 		mov_rx_imm32( R11, vm->instructionCount );
 		emit( PPC_CMPLW( 0, reg, R11 ) );
-		emit( PPC_BLT( +8 ) ); // unsigned <
-		emitFuncOffset( vm, FUNC_OUTJ );
+
+		offset = branchOffset[ FUNC_OUTJ ] - compiledOfs;
+		if ( (int16_t)offset == offset ) {
+			emit( PPC_BGE( offset ) );	// unsigned >=
+		} else {
+			emit( PPC_BLT( +8 ) );		// unsigned <
+			emitFuncBranch( vm, FUNC_OUTJ );
+		}
 	}
 }
 
@@ -1048,19 +1121,33 @@ static void emit_CheckProc( vm_t *vm, instruction_t *ins )
 {
 	// programStack overflow check
 	if ( vm_rtChecks->integer & VM_RTCHECK_PSTACK ) {
+		int32_t offset;
 		emit( PPC_CMPW( 0, rPSTACK, rPSTACKBOTTOM ) );
-		emit( PPC_BGE( +8 ) ); // signed >=
-		emitFuncOffset( vm, FUNC_PSOF );
+
+		offset = branchOffset[FUNC_PSOF] - compiledOfs;
+		if ( (int16_t)offset == offset ) {
+			emit( PPC_BLT( offset ) );	// signed <
+		} else {
+			emit( PPC_BGE( +8 ) );		// signed >=
+			emitFuncBranch( vm, FUNC_PSOF );
+		}
 	}
 
 	// opStack overflow check
 	if ( vm_rtChecks->integer & VM_RTCHECK_OPSTACK ) {
+		int32_t offset;
 		uint32_t n = ins->opStack;
 		mov_rx_imm32( R11, n );
 		emit( PPC_ADD( R11, rOPSTACK, R11 ) );
-		emit( PPC_CMPLD( 0, R11, rOPSTACKTOP ) );
-		emit( PPC_BLE( +8 ) ); // unsigned <=
-		emitFuncOffset( vm, FUNC_OSOF );
+		emit( PPC_CMPLD( 0, R11, rOPSTACKTOP ) ); // 
+
+		offset = branchOffset[FUNC_PSOF] - compiledOfs;
+		if ( (int16_t)offset == offset ) {
+			emit( PPC_BGT( offset ) );	// unsigned >
+		} else {
+			emit( PPC_BLE( +8 ) );		// unsigned <=
+			emitFuncBranch( vm, FUNC_OSOF );
+		}
 	}
 }
 
@@ -1075,12 +1162,12 @@ static void emitCallFunc( vm_t *vm )
 
 	init_opstack();
 
-savedOffset[ FUNC_CALL ] = compiledOfs;
+funcOffset[ FUNC_CALL ] = compiledOfs;
 
 	// R3 holds the call number (loaded by OP_CALL)
 	// if callnum < 0 => syscall
 	emit( PPC_CMPWI( 0, R3, 0 ) );
-	emit( PPC_BLT( savedOffset[ FUNC_SYSC ] - compiledOfs ) );
+	emit( PPC_BLT( funcOffset[ FUNC_SYSC ] - compiledOfs ) );
 
 	// check if R3 >= instructionCount
 	emit_CheckJump( vm, R3, -1, 0 );
@@ -1092,13 +1179,13 @@ savedOffset[ FUNC_CALL ] = compiledOfs;
 	emit( PPC_MTCTR( R11 ) );
 	emit( PPC_BCTR() );
 
-savedOffset[ FUNC_SYSC ] = compiledOfs;
+funcOffset[ FUNC_SYSC ] = compiledOfs;
 
 	// syscall: negate callnum
 	// R3 = ~R3 (not R3, R3)
 	emit( PPC_NOT( R3, R3 ) );
 
-savedOffset[ FUNC_SYSF ] = compiledOfs;
+funcOffset[ FUNC_SYSF ] = compiledOfs;
 
 	// Stack frame layout for syscall handler:
 	//
@@ -1376,7 +1463,7 @@ static qboolean ConstOptimize( vm_t* vm, instruction_t* ci, instruction_t* ni )
 		case OP_BXOR:
 			if ( (int16_t)ci->value != ci->value )
 				return qfalse;
-			load_rx_opstack2( &rx[1], R1, &rx[0], R0 ); // r1 = r0 = *opStack
+			load_rx_opstack2( &rx[1], R4, &rx[0], R3 ); // r4 = r3 = *opStack
 			switch ( ni->op ) {
 				case OP_ADD: emit( PPC_ADDI( rx[1], rx[0], ci->value ) ); break;
 				case OP_SUB: emit( PPC_ADDI( rx[1], rx[0], -ci->value ) ); break;
@@ -1389,21 +1476,39 @@ static qboolean ConstOptimize( vm_t* vm, instruction_t* ci, instruction_t* ni )
 			if ( rx[0] != rx[1] ) {
 				unmask_rx( rx[0] );
 			}
-			store_rx_opstack( rx[1] );				// *opStack = r1
+			store_rx_opstack( rx[1] );				// *opStack = r4
 			ip += 1; // OP_ADD | OP_SUB | OP_MULI | OP_MULU
 			return qtrue;
 
 		case OP_RSHI:
 			if ( ci->value < 1 || ci->value > 31 )
 				return qfalse;
-			load_rx_opstack2( &rx[1], R1, &rx[0], R0 ); // r1 = r0 = *opStack
+			load_rx_opstack2( &rx[1], R4, &rx[0], R3 ); // r4 = r3 = *opStack
 			emit( PPC_SRAWI( rx[1], rx[0], ci->value ) );
 			if ( rx[0] != rx[1] ) {
 				unmask_rx( rx[0] );
 			}
-			store_rx_opstack( rx[1] );				// *opstack = r1
+			store_rx_opstack( rx[1] );				// *opstack = r4
 			ip += 1; // OP_RSHI
 			return qtrue;
+
+		case OP_LSH:
+		case OP_RSHU:
+			if ( ci->value < 1 || ci->value > 31 )
+				return qfalse;
+			load_rx_opstack2( &rx[1], R4, &rx[0], R3 ); // r4 = r3 = *opStack
+			if ( ni->op == OP_LSH ) {
+				emit( PPC_RLWINM( rx[1], rx[0], ci->value, 0, 31 - ci->value ) );
+			} else {
+				emit( PPC_RLWINM( rx[1], rx[0], 32 - ci->value, ci->value, 31 ) );
+			}
+			if ( rx[0] != rx[1] ) {
+				unmask_rx( rx[0] );
+			}
+			store_rx_opstack( rx[1] );				// *opStack = r4
+			ip += 1; // OP_LSH/OP_RSHU
+			return qtrue;
+
 
 		case OP_JUMP:
 			flush_volatile();
@@ -1521,7 +1626,7 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header )
 		inst[i].njump = 1;
 	}
 
-	memset( savedOffset, 0, sizeof( savedOffset ) );
+	memset( funcOffset, 0, sizeof( funcOffset ) );
 
 	code = NULL;
 	vm->codeBase.ptr = NULL;
@@ -1533,6 +1638,8 @@ __recompile:
 	ip = 0;
 	compiledOfs = 0;
 	jumpSizeChanged = 0;
+
+	memset( branchOffset, 0, sizeof( branchOffset ) );
 
 	proc_base = -1;
 	proc_len = 0;
@@ -1632,11 +1739,29 @@ __recompile:
 	// Return
 	emit( PPC_BLR() );
 
+	// emit initial branch offsets
+	if ( vm_rtChecks->integer & VM_RTCHECK_PSTACK ) {
+		emitFuncBranch( vm, FUNC_PSOF );
+	}
+	if ( vm_rtChecks->integer & VM_RTCHECK_OPSTACK ) {
+		emitFuncBranch( vm, FUNC_OSOF );
+	}
+	if ( vm_rtChecks->integer & VM_RTCHECK_JUMP ) {
+		emitFuncBranch( vm, FUNC_OUTJ );
+		emitFuncBranch( vm, FUNC_BADJ );
+	}
+	if ( vm_rtChecks->integer & VM_RTCHECK_DATA && !vm->forceDataMask ) {
+		emitFuncBranch( vm, FUNC_BADR );
+		emitFuncBranch( vm, FUNC_BADW );
+	}
+
+	saveBranchOffsets();
+
 #ifdef FUNC_ALIGN
 	emitAlign( FUNC_ALIGN );
 #endif
 
-	savedOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
+	funcOffset[ FUNC_ENTR ] = compiledOfs; // offset to vmMain() entry point
 
 	// ===== MAIN COMPILATION LOOP =====
 	while ( ip < header->instructionCount ) {
@@ -1670,6 +1795,9 @@ __recompile:
 
 			case OP_ENTER:
 #ifdef FUNC_ALIGN
+				if ( ip != 0 )
+					emitDistantBranchOffsets( vm );
+
 				emitAlign( FUNC_ALIGN );
 #endif
 				vm->instructionPointers[ ip - 1 ] = compiledOfs;
@@ -1726,6 +1854,8 @@ __recompile:
 				}
 
 				emit_CheckProc( vm, ci );
+
+				saveBranchOffsets();
 
 				// procBase = dataBase + programStack
 				emit( PPC_ADD( rPROCBASE, rPSTACK, rDATABASE ) ); // procBase = pStack + dataBase
@@ -1789,6 +1919,7 @@ __recompile:
 							init_opstack();
 							jumpSizeChanged = 0;
 							pass = PASS_EXPAND;
+							restoreBranchOffsets();
 							break;
 						}
 					}
@@ -2281,25 +2412,25 @@ __recompile:
 	emitAlign( FUNC_ALIGN );
 #endif
 
-	savedOffset[ FUNC_BCPY ] = compiledOfs;
+	funcOffset[ FUNC_BCPY ] = compiledOfs;
 	emitBlockCopyFunc( vm );
 
-	savedOffset[ FUNC_BADJ ] = compiledOfs;
+	funcOffset[ FUNC_BADJ ] = compiledOfs;
 	emitFuncEntry( BadJump );
 
-	savedOffset[ FUNC_OUTJ ] = compiledOfs;
+	funcOffset[ FUNC_OUTJ ] = compiledOfs;
 	emitFuncEntry( OutJump );
 
-	savedOffset[ FUNC_OSOF ] = compiledOfs;
+	funcOffset[ FUNC_OSOF ] = compiledOfs;
 	emitFuncEntry( ErrBadOpStack );
 
-	savedOffset[ FUNC_PSOF ] = compiledOfs;
+	funcOffset[ FUNC_PSOF ] = compiledOfs;
 	emitFuncEntry( ErrBadProgramStack );
 
-	savedOffset[ FUNC_BADR ] = compiledOfs;
+	funcOffset[ FUNC_BADR ] = compiledOfs;
 	emitFuncEntry( ErrBadDataRead );
 
-	savedOffset[ FUNC_BADW ] = compiledOfs;
+	funcOffset[ FUNC_BADW ] = compiledOfs;
 	emitFuncEntry( ErrBadDataWrite );
 
 	} // pass

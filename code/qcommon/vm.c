@@ -1317,7 +1317,8 @@ const char *VM_CheckInstructions( instruction_t *buf,
 			// locate endproc
 			for ( endp = 0, n = i+1 ; n < instructionCount; n++ ) {
 				if ( buf[n].op == OP_PUSH && buf[n+1].op == OP_LEAVE ) {
-					buf[n+1].endp = 1;
+					buf[n+0].endp = 1; // OP_PUSH
+					buf[n+1].endp = 1; // OP_LEAVE
 					endp = n;
 					break;
 				}
@@ -1610,12 +1611,14 @@ __noJTS:
 			}
 			// if there is a switch statement in function -
 			// mark all potential jump labels
-			if ( ci->swtch )
+			if ( ci->swtch ) {
 				v = ci->swtch;
-			if ( ci->opStack > 0 )
-				ci->jused = 0;
-			else if ( v )
+			}
+			if ( ci->opStack > 0 ) {
+				// ci->jused = 0; // do not reset already marked targets
+			} else if ( v ) {
 				ci->jused = 1;
+			}
 		}
 	}
 
