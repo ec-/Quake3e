@@ -206,6 +206,8 @@ static uint32_t funcOffset[ OFFSET_T_LAST ];
 static uint32_t branchOffset[ OFFSET_T_LAST ];
 static uint32_t savedBranchOffset[ OFFSET_T_LAST ];
 
+static qboolean forceDataMask;
+
 static void VM_FreeBuffers( void )
 {
 	if ( inst ) {
@@ -1054,7 +1056,7 @@ static void __attribute__((__noreturn__)) ErrBadDataWrite( void )
 static void emit_CheckReg( vm_t *vm, int reg, offset_t func )
 {
 	int32_t offset;
-	if ( vm->forceDataMask || !( vm_rtChecks->integer & VM_RTCHECK_DATA ) ) {
+	if ( forceDataMask ) {
 		// just mask it
 		emit( PPC_AND( reg, reg, rDATAMASK ) );
 		return;
@@ -2101,8 +2103,11 @@ __recompile:
 					}
 				} else {
 					// address specified by a register
-					// rx[0] = rx[1] = load_rx_opstack( R3 );	// target, address = *opStack
-					load_rx_opstack2( &rx[0], R3, &rx[1], R4 );
+					if ( forceDataMask ) {
+						rx[0] = rx[1] = load_rx_opstack( R3 );		// target = address = *opStack
+					} else {
+						load_rx_opstack2( &rx[0], R3, &rx[1], R4 ); // target, address (const) = *opStack
+					}
 					emit_CheckReg( vm, rx[1], FUNC_BADR );
 					switch ( ci->op ) {
 						case OP_LOAD1: emit( PPC_LBZX( rx[0], rx[1], rDATABASE ) ); set_rx_ext( rx[0], Z_EXT8 ); break;		// R3 = dataBase[R4] (byte)
@@ -2140,8 +2145,9 @@ __recompile:
 						set_sx_var( sx[0], &var );	// update metadata
 					} else {
 						// address specified by register
-						rx[0] = load_rx_opstack( R4 | RCONST ); dec_opstack();	// R4 = *opStack; opStack -= 4
-						emit_CheckReg( vm, rx[0], FUNC_BADW );					// check for (R4 < dataMask)
+						rx[0] = load_rx_opstack( forceDataMask ? R4 : R4 | RCONST );
+						dec_opstack();											// R4 = *opStack; opStack -= 4
+						emit_CheckReg( vm, rx[0], FUNC_BADW );					// check for (R4 < dataMask) or R4 = R4 & dataMask
 						emit( PPC_STFSX( sx[0], rx[0], rDATABASE ) );			// dataBase[R4] = F0
 						unmask_rx( rx[0] );
 						wipe_vars(); // unknown/dynamic address, wipe all register mappings
@@ -2175,7 +2181,8 @@ __recompile:
 					set_rx_var( rx[0], &var );	// update metadata for memory
 				} else {
 					// address specified by register
-					rx[1] = load_rx_opstack( R4 | RCONST ); dec_opstack(); // R4 = *opStack; opStack -= 4
+					rx[1] = load_rx_opstack( forceDataMask ? R4 : R4 | RCONST );
+					dec_opstack(); // R4 = *opStack; opStack -= 4
 					emit_CheckReg( vm, rx[1], FUNC_BADW );
 					switch ( ci->op ) {
 						case OP_STORE1: emit( PPC_STBX( rx[0], rx[1], rDATABASE ) ); break; // (byte) dataBase[R4] = R3

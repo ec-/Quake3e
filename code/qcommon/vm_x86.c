@@ -211,6 +211,7 @@ static	int jumpSizeChanged;
 #endif
 
 static	int	funcOffset[ FUNC_LAST ];
+static	qboolean forceDataMask;
 
 // literal pool
 #ifdef USE_LITERAL_POOL
@@ -1869,7 +1870,7 @@ static void EmitCallOffset( func_t Func )
 
 static void emit_CheckReg( vm_t *vm, uint32_t reg, func_t func )
 {
-	if ( vm->forceDataMask || !( vm_rtChecks->integer & VM_RTCHECK_DATA ) )
+	if ( forceDataMask )
 	{
 #if idx64
 		emit_and_rx( reg, R_DATAMASK );					// reg = reg & dataMask
@@ -2298,7 +2299,8 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 				var.size = 4;
 				wipe_var_range( &var );
 			} else {
-				int rx = load_rx_opstack( R_EAX | RCONST ); dec_opstack(); // eax = *opstack; opstack -= 4
+				int rx = load_rx_opstack( forceDataMask ? R_EAX : R_EAX | RCONST );
+				dec_opstack(); // eax = *opStack; opStack -= 4
 				emit_CheckReg( vm, rx, FUNC_DATW );
 				emit_store_imm32_index( ci->value, R_DATABASE, rx ); // (dword*)dataBase[ eax ] = 0x12345678
 				unmask_rx( rx );
@@ -2318,7 +2320,8 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 				var.size = 2;
 				wipe_var_range( &var );
 			} else {
-				int rx = load_rx_opstack( R_EAX | RCONST ); dec_opstack(); // eax = *opstack; opstack -= 4
+				int rx = load_rx_opstack( forceDataMask ? R_EAX : R_EAX | RCONST );
+				dec_opstack(); // eax = *opStack; opStack -= 4
 				emit_CheckReg( vm, rx, FUNC_DATW );
 				emit_store2_imm16_index( ci->value, R_DATABASE, rx ); // (word*)dataBase[ eax ] = 0x12345678
 				unmask_rx( rx );
@@ -2338,7 +2341,8 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 				var.size = 1;
 				wipe_var_range( &var );
 			} else {
-				int rx = load_rx_opstack( R_EAX | RCONST ); dec_opstack(); // eax = *opstack; opstack -= 4
+				int rx = load_rx_opstack( forceDataMask ? R_EAX : R_EAX | RCONST );
+				dec_opstack(); // eax = *opStack; opStack -= 4
 				emit_CheckReg( vm, rx, FUNC_DATW );
 				emit_store1_imm8_index( ci->value, R_DATABASE, rx ); // (char*)dataBase[ eax ] = 0x12345678
 				unmask_rx( rx );
@@ -2754,6 +2758,12 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
 	code = NULL; // we will allocate memory later, after last defined pass
 	instructionPointers = NULL;
 
+	if ( vm->forceDataMask || ( vm_rtChecks->integer & VM_RTCHECK_DATA ) == 0 ) {
+		forceDataMask = qtrue;
+	} else {
+		forceDataMask = qfalse;
+	}
+
 	memset( funcOffset, 0, sizeof( funcOffset ) );
 
 	instructionCount = header->instructionCount;
@@ -3091,7 +3101,7 @@ __compile:
 						}
 					} else {
 						// address stored in register
-						rx[0] = load_rx_opstack( R_EAX | RCONST );		// eax = *opstack
+						rx[0] = load_rx_opstack( forceDataMask ? R_EAX : R_EAX | RCONST );		// eax = *opstack
 						emit_CheckReg( vm, rx[0], FUNC_DATR );
 						sx[0] = alloc_sx( R_XMM0 );
 						emit_load_sx_index( sx[0], R_DATABASE, rx[0] ); // xmmm0 = dataBase[eax]
@@ -3160,8 +3170,11 @@ __compile:
 					} // not cached, perform load
 				} else {
 					// address stored in register
-					// rx[0] = rx[1] = load_rx_opstack( R_EAX );		// target, address = *opstack
-					load_rx_opstack2( &rx[0], R_EDX, &rx[1], R_EAX ); // target, address = *opstack
+					if ( forceDataMask ) {
+						rx[0] = rx[1] = load_rx_opstack( R_EAX );			// target = address = *opStack
+					} else {
+						load_rx_opstack2( &rx[0], R_EDX, &rx[1], R_EAX );	// target, address (const) = *opStack
+					}
 
 					emit_CheckReg( vm, rx[1], FUNC_DATR );			// check address bounds
 					if ( (ci+1)->op == sign_extend && sign_extend != OP_UNDEF ) {
@@ -3199,7 +3212,8 @@ __compile:
 						wipe_var_range( &var );
 						set_sx_var( sx[0], &var );									// update metadata
 					} else {
-						rx[1] = load_rx_opstack( R_EDX | RCONST ); dec_opstack();	// edx = *opstack; opstack -= 4
+						rx[1] = load_rx_opstack( forceDataMask ? R_EDX : R_EDX | RCONST );
+						dec_opstack();												// edx = *opStack; opStack -= 4
 						emit_CheckReg( vm, rx[1], FUNC_DATW );
 						emit_store_sx_index( sx[0], R_DATABASE, rx[1] );			// dataBase[edx] = xmm0
 						unmask_rx( rx[1] );
@@ -3221,7 +3235,8 @@ __compile:
 						set_rx_var( rx[0], &var ); // update metadata
 					} else {
 						// address specified by register
-						rx[1] = load_rx_opstack( R_EDX | RCONST ); dec_opstack();	// edx = *opstack; opstack -= 4
+						rx[1] = load_rx_opstack( forceDataMask ? R_EDX : R_EDX | RCONST );
+						dec_opstack();	// edx = *opStack; opStack -= 4
 						emit_CheckReg( vm, rx[1], FUNC_DATW );
 						switch ( ci->op ) {
 							case OP_STORE1: emit_store1_index( rx[0], R_DATABASE, rx[1] ); break;	// (byte*)dataBase[edx] = al
