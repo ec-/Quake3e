@@ -1056,9 +1056,9 @@ static void __attribute__((__noreturn__)) ErrBadDataWrite( void )
 static void emit_CheckReg( vm_t *vm, int reg, offset_t func )
 {
 	int32_t offset;
+
 	if ( forceDataMask ) {
-		// just mask it
-		emit( PPC_AND( reg, reg, rDATAMASK ) );
+		emit( PPC_AND( reg, reg, rDATAMASK ) ); // reg = reg & rDATAMASK
 		return;
 	}
 
@@ -1740,6 +1740,10 @@ __recompile:
 
 	// Return
 	emit( PPC_BLR() );
+
+#ifdef FUNC_ALIGN
+	emitAlign( FUNC_ALIGN );
+#endif
 
 	// emit initial branch offsets
 	if ( vm_rtChecks->integer & VM_RTCHECK_PSTACK ) {
