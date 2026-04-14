@@ -17,7 +17,6 @@ It is based on ioquake3-r1160 (latest non-SDL revision) with upstream patches an
 <b>Client-specific changes/additions:</b>
 <ul>
 <li>raw mouse input support, enabled automatically instead of DirectInput(<b>\in_mouse 1</b>) on Windows XP and newer windows operating systems</li>
-<li>unlagged mouse processing, can be reverted by setting <b>\in_lagged 1</b></li>
 <li>MOUSE4 and MOUSE5 works in <b>\in_mouse -1</b> mode</li>
 <li><b>\minimize</b> in-game command to minimize main window, can be used with binds/scripting</li>
 <li><a href="#in_minimize"><b>\in_minimize</b><a> - hotkey for minimize/restore main window (direct replacement for Q3Minimizer)</li>

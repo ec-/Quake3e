@@ -88,7 +88,6 @@ cvar_t	*in_mididevice;
 
 cvar_t	*in_minimize;
 cvar_t	*in_nograb;
-cvar_t	*in_lagged;
 
 cvar_t	*in_mouse;
 cvar_t  *in_logitechbug;
@@ -266,7 +265,7 @@ static void IN_DeactivateWin32Mouse( void )
 IN_Win32Mouse
 ================
 */
-static void IN_Win32Mouse( int *mx, int *my ) 
+static void IN_Win32Mouse( int *mx, int *my )
 {
 	POINT		current_pos;
 
@@ -335,8 +334,8 @@ static BOOL IN_InitRawMouse( void ) {
 	//CloseHandle( dll );
 
 	if ( !GRRID || !RRID || !GRID ) {
-        return FALSE;
-    }
+		return FALSE;
+	}
 
 	raw_inited = TRUE;
 
@@ -392,18 +391,6 @@ static void IN_ActivateRawMouse( void )
 	IN_CaptureMouse( &window_rect );
 
 	raw_activated = TRUE;
-}
-
-
-/*
-================
-IN_RawMouse
-================
-*/
-static void IN_RawMouse( int *mx, int *my ) {
-
-	*mx = g_wv.raw_mx;
-	*my = g_wv.raw_my;
 }
 
 
@@ -632,7 +619,7 @@ static void IN_ActivateDIMouse( void ) {
 		}
 	}
 	while (ShowCursor (FALSE) >= 0)
-        ;
+		;
 }
 
 
@@ -777,7 +764,7 @@ static void IN_ActivateMouse( void )
 	} else {
 		if ( raw_inited )
 			IN_ActivateRawMouse();
-        else
+		else
 			IN_ActivateDIMouse();
 	}
 }
@@ -851,21 +838,8 @@ static void IN_StartupMouse( void )
 IN_Win32MouseEvent
 ===========
 */
-void IN_Win32MouseEvent( int x, int y, int mstate )
+void IN_Win32MouseEvent( int mstate )
 {
-	int dx, dy;
-
-	if ( in_lagged->integer ) {
-		
-	} else {
-		dx = x - g_wv.mouse.x;
-		dy = y - g_wv.mouse.y;
-		g_wv.mouse.x = x;
-		g_wv.mouse.y = y;
-		if ( dx || dy ) {
-			Sys_QueEvent( g_wv.sysMsgTime, SE_MOUSE, dx, dy, 0, NULL );
-		}
-	}
 
 #define CHECK_BUTTON(button) \
 	if ( mstate & (1<<(button-1)) ) { \
@@ -912,13 +886,7 @@ void IN_RawMouseEvent( LPARAM lParam )
 		return;
 
 	if ( u.raw.data.mouse.lLastX || u.raw.data.mouse.lLastY ) {
-		if ( in_lagged->integer ) {
-			g_wv.raw_mx += u.raw.data.mouse.lLastX;
-			g_wv.raw_my += u.raw.data.mouse.lLastY;
-		} else {
-			Sys_QueEvent( g_wv.sysMsgTime, SE_MOUSE, u.raw.data.mouse.lLastX,
-				u.raw.data.mouse.lLastY, 0, NULL );
-		}
+		Sys_QueEvent( g_wv.sysMsgTime, SE_MOUSE, u.raw.data.mouse.lLastX, u.raw.data.mouse.lLastY, 0, NULL );
 	}
 
 	if ( !u.raw.data.mouse.usButtonFlags )
@@ -974,22 +942,13 @@ static void IN_MouseMove( void ) {
 	if ( g_pMouse ) {
 		IN_DIMouse( &mx, &my );
 	} else {
-		if ( in_lagged->integer ) {
-			if ( raw_activated ) {
-				IN_RawMouse( &mx, &my );
-			} else {
-				IN_Win32Mouse( &mx, &my );
+		if ( !raw_activated ) {
+			IN_Win32Mouse( &mx, &my );
+			// force the mouse to the center, so there's room to move
+			if ( in_mouse->integer == -1 ) {
+				SetCursorPos( window_center.x, window_center.y );
 			}
 		}
-		g_wv.raw_mx = 0;
-		g_wv.raw_my = 0;
-
-		// force the mouse to the center, so there's room to move
-		if ( in_mouse->integer == -1 )
-			SetCursorPos( window_center.x, window_center.y );
-
-		// reset delta base
-		g_wv.mouse = client_center;
 	}
 
 	if ( !mx && !my ) {
@@ -1189,11 +1148,6 @@ void IN_Init( void ) {
 		
 	in_nograb = Cvar_Get( "in_nograb", "0", 0 );
 	Cvar_SetDescription( in_nograb, "Do not capture mouse in game, may be useful during online streaming." );
-	in_lagged = Cvar_Get( "in_lagged", "0", 0 );
-	Cvar_SetDescription( in_lagged, 
-		"Mouse movement processing order:\n" \
-		" 0 - before rendering\n" \
-		" 1 - before framerate limiter" );
 
 	in_logitechbug = Cvar_Get( "in_logitechbug", "0", CVAR_ARCHIVE_ND );
 	Cvar_SetDescription( in_logitechbug, "Toggle the use of special code in the game that addresses a bug in the logitech mouse driver software." );

@@ -5,9 +5,6 @@ A: dedicated cvar \r_modeFullscreen now is used for fullscreen,
 Q: what mouse mode is used for raw input?
 A: \in_mouse 1
 
-Q: cnq3' raw input feels different
-A: try \in_lagged 1
-
 Q: how to minimize/restore game window by ALT+X key, for example?
 A: set \in_minimize "alt+x" ; in_restart
 
