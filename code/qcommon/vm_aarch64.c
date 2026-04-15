@@ -1665,6 +1665,7 @@ __recompile:
 				break;
 
 			case OP_IGNORE:
+				ip += ci->value;
 				break;
 
 			case OP_BREAK:
