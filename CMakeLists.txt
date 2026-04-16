@@ -19,7 +19,7 @@ SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules)
 
 AUX_SOURCE_DIRECTORY(code/qcommon QCOMMON_SRCS)
 # exclude platform-dependent QVM bytecode compilers
-list(FILTER QCOMMON_SRCS EXCLUDE REGEX ".*vm_[alx].*.c")
+list(FILTER QCOMMON_SRCS EXCLUDE REGEX ".*vm_[alpx].*.c")
 # add platform-dependent QVM bytecode compilers
 IF(CMAKE_SYSTEM_PROCESSOR MATCHES AMD64|x86|i*86)
 	IF(CMAKE_SYSTEM_PROCESSOR MATCHES AMD64)
