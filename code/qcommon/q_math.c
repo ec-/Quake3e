@@ -547,6 +547,12 @@ void VectorRotate( const vec3_t in, const vec3_t matrix[3], vec3_t out )
 #include <intrin.h>
 #endif
 
+#ifdef _GCC_VSX
+#include <altivec.h>
+#undef bool
+#undef pixel
+#endif
+
 /*
 ** float Q_rsqrt( float number )
 */
@@ -559,6 +565,17 @@ float Q_rsqrt( float number )
 #elif defined(_GCC_SSE2)
 	/* writing it this way allows gcc to recognize that rsqrt can be used with -ffast-math */
 	return 1.0f / sqrtf( number );
+#elif defined(_GCC_VSX)
+	__vector float v, estimate, half, three;
+	float result;
+	v = vec_splats( number );
+	estimate = vec_rsqrte( v );
+	half = vec_splats( 0.5f );
+	three = vec_splats( 3.0f );
+	/* Newton-Raphson: estimate = estimate * (3 - number * estimate^2) * 0.5 */
+	estimate = vec_mul( vec_mul( estimate, vec_sub( three, vec_mul( v, vec_mul( estimate, estimate ) ) ) ), half );
+	vec_xst( estimate, 0, &result );
+	return result;
 #else
 	floatint_t t;
 	float x2, y;
