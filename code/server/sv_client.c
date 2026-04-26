@@ -1256,6 +1256,11 @@ static void SV_DoneDownload_f( client_t *cl ) {
 
 	Com_DPrintf( "clientDownload: %s Done\n", cl->name );
 
+	// reset acknowledge in case of skipped "download" command e.g. client using cURL and stays CS_PRIMED
+	if ( cl->gamestateAck == GSA_ACKED ) {
+		cl->gamestateAck = GSA_SENT_ONCE;
+	}
+
 	// resend the game state to update any clients that entered during the download
 	SV_SendClientGameState( cl );
 }
