@@ -39,7 +39,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define QKEY_FILE "qkey"
 #define QKEY_SIZE 2048
 
-#define	RETRANSMIT_TIMEOUT	3000	// time between connection packet retransmits
+#define	RECONNECT_TIMEOUT	3000	// time between packet retransmits at CA_CONNECTING / CA_CHALLENGING
+#define	RETRANSMIT_TIMEOUT	1000	// time between packet retransmits at CA_CONNECTED / CA_LOADING
 
 // snapshots are a view of the server at a given time
 typedef struct {

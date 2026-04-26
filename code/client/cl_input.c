@@ -695,12 +695,10 @@ static qboolean CL_ReadyToSendPacket( void ) {
 		return qfalse;
 	}
 
-	// if we don't have a valid gamestate yet, only send
-	// one packet a second
-	if ( cls.state != CA_ACTIVE &&
-		cls.state != CA_PRIMED &&
+	// if we don't have a valid gamestate yet, only send one packet a second
+	if ( cls.state != CA_ACTIVE && cls.state != CA_PRIMED &&
 		!*clc.downloadTempName &&
-		cls.realtime - clc.lastPacketSentTime < 1000 ) {
+		cls.realtime - clc.lastPacketSentTime < RETRANSMIT_TIMEOUT ) {
 		return qfalse;
 	}
 
