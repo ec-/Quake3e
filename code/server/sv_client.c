@@ -1104,8 +1104,9 @@ static void SV_SendClientGameState( client_t *client ) {
 			// can handle cs updates later without potential overflow
 			csUpdated = 0;
 		}
-		if ( client->gamestateAck == GSA_SENT_ONCE && csUpdated == 0 ) {
+		if ( ( client->gamestateAck == GSA_SENT_ONCE || client->gamestateAck == GSA_ACKED ) && csUpdated == 0 ) {
 			// if no configstrings being updated since last submission then assume that we're (re)sending identical gamestate
+			client->gamestateAck = GSA_SENT_ONCE;
 		} else {
 			// expect exact messageAcknowledge
 			client->gamestateAck = GSA_SENT_MANY;
@@ -1255,11 +1256,6 @@ static void SV_DoneDownload_f( client_t *cl ) {
 		return;
 
 	Com_DPrintf( "clientDownload: %s Done\n", cl->name );
-
-	// reset acknowledge in case of skipped "download" command e.g. client using cURL and stays CS_PRIMED
-	if ( cl->gamestateAck == GSA_ACKED ) {
-		cl->gamestateAck = GSA_SENT_ONCE;
-	}
 
 	// resend the game state to update any clients that entered during the download
 	SV_SendClientGameState( cl );
