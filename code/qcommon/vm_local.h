@@ -222,6 +222,10 @@ struct vm_s {
 	qboolean	forceDataMask;
 
 	int			privateFlag;
+
+#ifdef USE_WASM
+	struct wa_s	*wasm;
+#endif
 };
 
 qboolean VM_Compile( vm_t *vm, vmHeader_t *header );
