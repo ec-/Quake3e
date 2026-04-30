@@ -61,12 +61,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define USE_ISA_2_07 0
 #endif
 
-// ISA 3.0 (POWER9): modsw, moduw instructions
-// These replace the 3-instruction divw+mullw+sub sequence for modulo.
+// ISA 3.0 (POWER9): modsw, moduw instructions, plus mtvsrws (splat) which
+// enables a memory-free GPR -> single-precision FPR move (mov_sx_rx).
 #if defined(_ARCH_PWR9) || defined(__POWER9_VECTOR__)
 #define USE_ISA_3_0 1
 #else
 #define USE_ISA_3_0 0
+#endif
+
+// ISA 3.1 (POWER10): prefixed instructions (paddi/pli, plxx/pstxx).
+// 34-bit signed displacement/immediate in one logical instruction (8 bytes).
+// Hardware constraint: prefix+suffix must not cross a 64-byte boundary.
+// We emit each prefixed instruction as a stable 12-byte block (always three
+// 4-byte words) so per-pass code size is deterministic regardless of local
+// alignment — see emit_prefixed() for the layout.
+#if defined(_ARCH_PWR10) || defined(__POWER10_VECTOR__)
+#define USE_ISA_3_1 1
+#else
+#define USE_ISA_3_1 0
 #endif
 
 #define NUM_PASSES		3 // INIT, EXPAND, FINAL + alloc + FINAL
@@ -675,6 +687,39 @@ static void VM_FreeBuffers( void )
 
 #endif
 
+// -- ISA 3.1 (POWER10) prefixed instructions --
+//
+// A prefixed instruction is a 4-byte prefix word followed by a 4-byte suffix
+// instruction (8 bytes total, one logical instruction). The prefix carries the
+// upper 18 bits of a 34-bit signed displacement/immediate; the suffix carries
+// the lower 16 bits and the GPR/FPR selectors.
+//
+// Two prefix forms are used here:
+//   MLS  (Modified Load/Store): suffix is an existing D-form instruction
+//        (lwz/stw/lbz/lhz/lha/stb/sth/lfs/lfd/stfs/stfd) or addi (paddi/pli).
+//   8LS  (8-byte Load/Store): suffix uses dedicated opcodes (57 for pld,
+//        61 for pstd) with a 16-bit d field — distinct from the standalone
+//        DS-form ld/std which use opcodes 58/62.
+//
+// Hardware constraint: a prefix+suffix pair must NOT cross a 64-byte boundary.
+// emit_prefixed() enforces this with a 12-byte stable layout (see below).
+#if USE_ISA_3_1
+// MLS-form prefix word. R=0 selects (RA|0)+d addressing; R=1 selects PC-relative.
+#define PPC_PREFIX_MLS(R, d34) \
+	( 0x06000000u | (((R)&1u)<<20) | \
+	  ((((uint32_t)((int64_t)(d34) >> 16))) & 0x3FFFFu) )
+
+// 8LS-form prefix word.
+#define PPC_PREFIX_8LS(R, d34) \
+	( 0x04000000u | (((R)&1u)<<20) | \
+	  ((((uint32_t)((int64_t)(d34) >> 16))) & 0x3FFFFu) )
+
+// Suffix for pld rt, d(ra)  (8LS form, opcode 57).
+#define PPC_PLD_SUFFIX(rt, ra, d34)	PPC_D(57, rt, ra, (uint16_t)(d34))
+// Suffix for pstd rs, d(ra)  (8LS form, opcode 61).
+#define PPC_PSTD_SUFFIX(rs, ra, d34)	PPC_D(61, rs, ra, (uint16_t)(d34))
+#endif
+
 // -- Trap --
 // trap  (tw 31, 0, 0)
 #define PPC_TRAP()			PPC_X(31, 31, 0, 0, 4, 0)
@@ -707,6 +752,38 @@ static void emitAlign( int align )
 }
 
 
+#if USE_ISA_3_1
+// Emit a prefixed instruction (POWER10).
+//
+// Hardware requires the 8-byte prefix+suffix pair not to cross a 64-byte
+// boundary. We always emit a 12-byte block (three 4-byte words) so that
+// instruction sizes stay deterministic across the multi-pass compile — a
+// per-site alignment-dependent NOP would let alignment cascade between
+// passes and break the existing jumpSizeChanged convergence logic.
+//
+// The 8-byte prefix+suffix lives at an 8-byte-aligned offset within the
+// block, so it can never start at offset 60 mod 64 (the only problematic
+// position for a 4-byte-aligned 8-byte instruction):
+//   compiledOfs & 4 == 0  =>  prefix, suffix, NOP
+//   compiledOfs & 4 == 4  =>  NOP, prefix, suffix
+// Either way the prefix sits at an 8-byte-aligned offset and the block is
+// 12 bytes. POWER10 elides leading/trailing NOPs in dispatch, so the pad
+// has near-zero runtime cost.
+static void emit_prefixed( uint32_t prefix, uint32_t suffix )
+{
+	if ( ( compiledOfs & 4 ) == 0 ) {
+		emit( prefix );
+		emit( suffix );
+		emit( PPC_NOP() );
+	} else {
+		emit( PPC_NOP() );
+		emit( prefix );
+		emit( suffix );
+	}
+}
+#endif
+
+
 static int getAlign( int align )
 {
 	return PAD( compiledOfs, align ) - compiledOfs;
@@ -737,6 +814,19 @@ static void emit_MOVi64( int rt, uint64_t imm )
 			emit( PPC_ORI( rt, rt, lo ) );
 		return;
 	}
+
+#if USE_ISA_3_1
+	// fits in signed 34-bit: one pli (12 bytes incl. alignment pad) instead of
+	// the 5-instruction lis+ori+sldi+oris+ori sequence (20 bytes).
+	{
+		int64_t simm = (int64_t)imm;
+		if ( simm >= -(((int64_t)1) << 33) && simm < (((int64_t)1) << 33) ) {
+			emit_prefixed( PPC_PREFIX_MLS( 0, simm ),
+			               PPC_ADDI( rt, R0, (uint16_t)simm ) );
+			return;
+		}
+	}
+#endif
 
 	// full 64-bit
 	uint16_t w3 = (imm >> 48) & 0xFFFF;
@@ -898,6 +988,12 @@ static void mov_rx_local( uint32_t reg, const uint32_t addr )
 	if ( (int16_t)addr == addr ) {
 		emit( PPC_ADDI( reg, rPSTACK, addr) );
 	} else {
+#if USE_ISA_3_1
+		// addr (uint32_t) always fits in signed 34-bit; one paddi avoids the
+		// temp register and replaces the lis+ori+add sequence.
+		emit_prefixed( PPC_PREFIX_MLS( 0, (int32_t)addr ),
+		               PPC_ADDI( reg, rPSTACK, (uint16_t)addr ) );
+#else
 		if ( find_rx_const( addr ) ) {
 			uint32_t rx = alloc_rx_const( R6, addr );	// R6 = const addr
 			emit( PPC_ADD( reg, rPSTACK, rx ) );		// reg = pstack + R6
@@ -906,6 +1002,7 @@ static void mov_rx_local( uint32_t reg, const uint32_t addr )
 			mov_rx_imm32( reg, addr );				// reg = addr
 			emit( PPC_ADD( reg, rPSTACK, reg ) );	// reg = pStack + reg
 		}
+#endif
 	}
 }
 
@@ -1104,8 +1201,14 @@ static void emit_CheckJump( vm_t *vm, int reg, int proc_base, int proc_len )
 		if ( (int16_t)proc_base == proc_base ) {
 			emit( PPC_ADDI( R11, reg, -proc_base ) ); // r11 = reg - proc_base
 		} else {
+#if USE_ISA_3_1
+			// One paddi handles the full int32 range without a temp register.
+			emit_prefixed( PPC_PREFIX_MLS( 0, -(int64_t)proc_base ),
+			               PPC_ADDI( R11, reg, (uint16_t)(-proc_base) ) );
+#else
 			mov_rx_imm32( R11, proc_base );
 			emit( PPC_SUB( R11, reg, R11 ) );
+#endif
 		}
 		// check if r11 > proc_len (unsigned, so negative wraps to large)
 		mov_rx_imm32( R12, proc_len );
@@ -2053,10 +2156,16 @@ __recompile:
 								// short offset
 								emit( PPC_LFS( sx[0], var.addr, var.base ) );	// F0 = varBase[var.addr]
 							} else {
+#if USE_ISA_3_1
+								// long offset via plfs (no temp register).
+								emit_prefixed( PPC_PREFIX_MLS( 0, var.addr ),
+								               PPC_LFS( sx[0], (uint16_t)var.addr, var.base ) );
+#else
 								// long offset
 								rx[0] = alloc_rx_const( R4, var.addr );			// R4 = var.addr
 								emit( PPC_LFSX( sx[0], rx[0], var.base ) );		// F0 = var.base[R4]
 								unmask_rx( rx[0] );
+#endif
 							}
 							set_sx_var( sx[0], &var );				// update metadata
 						}
@@ -2111,6 +2220,23 @@ __recompile:
 								case OP_LOAD4: emit( PPC_LWZ( rx[0], var.addr, var.base ) ); var.size = 4; set_rx_ext( rx[0], Z_NONE ); break;  // R3 = (dword)var.base[var.addr]
 							}
 						} else {
+#if USE_ISA_3_1
+							// long offset via plbz/plhz/plwz (no temp register).
+							switch ( ci->op ) {
+								case OP_LOAD1:
+									emit_prefixed( PPC_PREFIX_MLS( 0, var.addr ),
+									               PPC_LBZ( rx[0], (uint16_t)var.addr, var.base ) );
+									var.size = 1; set_rx_ext( rx[0], Z_EXT8 ); break;
+								case OP_LOAD2:
+									emit_prefixed( PPC_PREFIX_MLS( 0, var.addr ),
+									               PPC_LHZ( rx[0], (uint16_t)var.addr, var.base ) );
+									var.size = 2; set_rx_ext( rx[0], Z_EXT16 ); break;
+								case OP_LOAD4:
+									emit_prefixed( PPC_PREFIX_MLS( 0, var.addr ),
+									               PPC_LWZ( rx[0], (uint16_t)var.addr, var.base ) );
+									var.size = 4; set_rx_ext( rx[0], Z_NONE ); break;
+							}
+#else
 							// long offset, use indexed form
 							rx[1] = alloc_rx_const( R4, var.addr ); // R4 = var.addr
 							switch ( ci->op ) {
@@ -2119,6 +2245,7 @@ __recompile:
 								case OP_LOAD4: emit( PPC_LWZX( rx[0], rx[1], var.base ) ); var.size = 4; set_rx_ext( rx[0], Z_NONE ); break;	// R3 = var.base[R4] (word)
 							}
 							unmask_rx( rx[1] );
+#endif
 						}
 						set_rx_var( rx[0], &var ); // update metadata for destination register
 					}
@@ -2157,10 +2284,16 @@ __recompile:
 							// short offset
 							emit( PPC_STFS( sx[0], var.addr, var.base ) );	// var.base[var.addr] = F0
 						} else {
+#if USE_ISA_3_1
+							// long offset via pstfs (no temp register).
+							emit_prefixed( PPC_PREFIX_MLS( 0, var.addr ),
+							               PPC_STFS( sx[0], (uint16_t)var.addr, var.base ) );
+#else
 							// long offset
 							rx[0] = alloc_rx_const( R4, var.addr );			// R4 = var.addr
 							emit( PPC_STFSX( sx[0], rx[0], var.base ) );	// var.base[R4] = F0
 							unmask_rx( rx[0] );
+#endif
 						}
 						wipe_var_range( &var );		// clear mappings for affected area
 						set_sx_var( sx[0], &var );	// update metadata
@@ -2189,6 +2322,23 @@ __recompile:
 							default:        emit( PPC_STW( rx[0], var.addr, var.base ) ); var.size = 4; break; // (word) var.base[var.addr] = R3
 						}
 					} else {
+#if USE_ISA_3_1
+						// long offset via pstb/psth/pstw (no temp register).
+						switch ( ci->op ) {
+							case OP_STORE1:
+								emit_prefixed( PPC_PREFIX_MLS( 0, var.addr ),
+								               PPC_STB( rx[0], (uint16_t)var.addr, var.base ) );
+								var.size = 1; break;
+							case OP_STORE2:
+								emit_prefixed( PPC_PREFIX_MLS( 0, var.addr ),
+								               PPC_STH( rx[0], (uint16_t)var.addr, var.base ) );
+								var.size = 2; break;
+							default:
+								emit_prefixed( PPC_PREFIX_MLS( 0, var.addr ),
+								               PPC_STW( rx[0], (uint16_t)var.addr, var.base ) );
+								var.size = 4; break;
+						}
+#else
 						// long offset
 						rx[1] = alloc_rx_const( R4, var.addr );	// R4 = var.addr
 						switch ( ci->op ) {
@@ -2197,6 +2347,7 @@ __recompile:
 							default:        emit( PPC_STWX( rx[0], rx[1], var.base ) ); var.size = 4; break; // (word) var.base[R4] = R3
 						}
 						unmask_rx( rx[1] );
+#endif
 					}
 					wipe_var_range( &var );		// erase mappings for written memory area
 					set_rx_var( rx[0], &var );	// update metadata for memory
