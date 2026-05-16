@@ -1078,6 +1078,15 @@ static void emit_CheckReg( vm_t *vm, int reg, offset_t func )
 		return;
 	}
 
+	// QVM addresses are 32-bit. A preceding 64-bit ADD on PPC64 can leave
+	// non-zero high bits in `reg` (e.g. lwzx-loaded 0xFFFFFFFF + positive
+	// constant carries into bit 32). cmplw below only inspects the low 32
+	// bits, but the indexed lbzx/lhzx/lwzx/stbx/sthx/stwx that follows
+	// uses the full 64-bit register as index, so the bounds check would
+	// pass while the load/store would address far outside the data
+	// segment. Clear the high 32 bits so the check and the access agree.
+	emit( PPC_CLRLDI( reg, reg, 32 ) );
+
 	// compare and branch to error if out of range
 	emit( PPC_CMPLW( 0, reg, rDATAMASK ) );
 
