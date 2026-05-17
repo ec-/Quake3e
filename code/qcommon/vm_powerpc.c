@@ -184,10 +184,8 @@ typedef enum
 	FUNC_OSOF,
 	FUNC_BADJ,
 	FUNC_OUTJ,
-	FUNC_BADR,
-	FUNC_BADW,
 	FUNC_ERR_BEGIN = FUNC_PSOF,
-	FUNC_ERR_END = FUNC_BADW,
+	FUNC_ERR_END = FUNC_OUTJ,
 	OFFSET_T_LAST
 } offset_t;
 
@@ -206,7 +204,6 @@ static uint32_t funcOffset[ OFFSET_T_LAST ];
 static uint32_t branchOffset[ OFFSET_T_LAST ];
 static uint32_t savedBranchOffset[ OFFSET_T_LAST ];
 
-static qboolean forceDataMask;
 
 static void VM_FreeBuffers( void )
 {
@@ -1051,52 +1048,18 @@ static void __attribute__((__noreturn__)) ErrBadOpStack( void )
 }
 
 
-static void __attribute__((__noreturn__)) ErrBadDataRead( void )
-{
-	Com_Error( ERR_DROP, "program tried to read out of data segment" );
-}
-
-
-static void __attribute__((__noreturn__)) ErrBadDataWrite( void )
-{
-	Com_Error( ERR_DROP, "program tried to write out of data segment" );
-}
-
-
 // =========================================================================
 // Runtime check emission
 // =========================================================================
 
-// Data access check: either mask the address or check bounds and call error
-// reg contains the address to check, it will be masked/checked in place
-static void emit_CheckReg( vm_t *vm, int reg, offset_t func )
+// Data access check: mask the address to fit within the data segment.
+// reg holds the address; it is modified in place. This matches the
+// interpreter's 32-bit wrap semantics and side-effect-clears any high
+// bits left by a 64-bit ADD overflow (e.g. lwzx-loaded 0xFFFFFFFF +
+// positive constant), which the prior cmplw/bgt check could not detect.
+static void emit_CheckReg( int reg )
 {
-	int32_t offset;
-
-	if ( forceDataMask ) {
-		emit( PPC_AND( reg, reg, rDATAMASK ) ); // reg = reg & rDATAMASK
-		return;
-	}
-
-	// QVM addresses are 32-bit. A preceding 64-bit ADD on PPC64 can leave
-	// non-zero high bits in `reg` (e.g. lwzx-loaded 0xFFFFFFFF + positive
-	// constant carries into bit 32). cmplw below only inspects the low 32
-	// bits, but the indexed lbzx/lhzx/lwzx/stbx/sthx/stwx that follows
-	// uses the full 64-bit register as index, so the bounds check would
-	// pass while the load/store would address far outside the data
-	// segment. Clear the high 32 bits so the check and the access agree.
-	emit( PPC_CLRLDI( reg, reg, 32 ) );
-
-	// compare and branch to error if out of range
-	emit( PPC_CMPLW( 0, reg, rDATAMASK ) );
-
-	offset = branchOffset[ func ] - compiledOfs;
-	if ( (int16_t)offset == offset ) {
-		emit( PPC_BGT( offset ) );		// unsigned >
-	} else {
-		emit( PPC_BLE( +8 ) );			// if reg <= dataMask, skip error (unsigned)
-		emitFuncBranch( vm, func );
-	}
+	emit( PPC_AND( reg, reg, rDATAMASK ) );
 }
 
 
@@ -1781,10 +1744,6 @@ __recompile:
 		emitFuncBranch( vm, FUNC_OUTJ );
 		emitFuncBranch( vm, FUNC_BADJ );
 	}
-	if ( vm_rtChecks->integer & VM_RTCHECK_DATA && !vm->forceDataMask ) {
-		emitFuncBranch( vm, FUNC_BADR );
-		emitFuncBranch( vm, FUNC_BADW );
-	}
 
 	saveBranchOffsets();
 
@@ -2073,7 +2032,7 @@ __recompile:
 					} else {
 						// address specified by a register
 						rx[0] = load_rx_opstack( R4 );					// R4 = *opStack
-						emit_CheckReg( vm, rx[0], FUNC_BADR );			// check for (R4 < dataMask)
+						emit_CheckReg( rx[0] );							// R4 &= dataMask
 						sx[0] = alloc_sx( F0 );
 						emit( PPC_LFSX( sx[0], rx[0], rDATABASE ) );	// F0 = dataBase[R4]
 						store_sx_opstack( sx[0] );						// *opStack = F0
@@ -2133,12 +2092,11 @@ __recompile:
 					}
 				} else {
 					// address specified by a register
-					if ( forceDataMask ) {
-						rx[0] = rx[1] = load_rx_opstack( R3 );		// target = address = *opStack
-					} else {
-						load_rx_opstack2( &rx[0], R3, &rx[1], R4 ); // target, address (const) = *opStack
-					}
-					emit_CheckReg( vm, rx[1], FUNC_BADR );
+					// emit_CheckReg masks the address in place, so allocate
+					// the address into a writable register (no RCONST) and
+					// reuse it as the load destination.
+					rx[0] = rx[1] = load_rx_opstack( R3 );		// target = address = *opStack
+					emit_CheckReg( rx[1] );						// R3 &= dataMask
 					switch ( ci->op ) {
 						case OP_LOAD1: emit( PPC_LBZX( rx[0], rx[1], rDATABASE ) ); set_rx_ext( rx[0], Z_EXT8 ); break;		// R3 = dataBase[R4] (byte)
 						case OP_LOAD2: emit( PPC_LHZX( rx[0], rx[1], rDATABASE ) ); set_rx_ext( rx[0], Z_EXT16 ); break;	// R3 = dataBase[R4] (halfword)
@@ -2175,9 +2133,9 @@ __recompile:
 						set_sx_var( sx[0], &var );	// update metadata
 					} else {
 						// address specified by register
-						rx[0] = load_rx_opstack( forceDataMask ? R4 : R4 | RCONST );
-						dec_opstack();											// R4 = *opStack; opStack -= 4
-						emit_CheckReg( vm, rx[0], FUNC_BADW );					// check for (R4 < dataMask) or R4 = R4 & dataMask
+						rx[0] = load_rx_opstack( R4 );							// R4 = *opStack
+						dec_opstack();											// opStack -= 4
+						emit_CheckReg( rx[0] );									// R4 &= dataMask
 						emit( PPC_STFSX( sx[0], rx[0], rDATABASE ) );			// dataBase[R4] = F0
 						unmask_rx( rx[0] );
 						wipe_vars(); // unknown/dynamic address, wipe all register mappings
@@ -2211,9 +2169,9 @@ __recompile:
 					set_rx_var( rx[0], &var );	// update metadata for memory
 				} else {
 					// address specified by register
-					rx[1] = load_rx_opstack( forceDataMask ? R4 : R4 | RCONST );
-					dec_opstack(); // R4 = *opStack; opStack -= 4
-					emit_CheckReg( vm, rx[1], FUNC_BADW );
+					rx[1] = load_rx_opstack( R4 );							// R4 = *opStack
+					dec_opstack();											// opStack -= 4
+					emit_CheckReg( rx[1] );									// R4 &= dataMask
 					switch ( ci->op ) {
 						case OP_STORE1: emit( PPC_STBX( rx[0], rx[1], rDATABASE ) ); break; // (byte) dataBase[R4] = R3
 						case OP_STORE2: emit( PPC_STHX( rx[0], rx[1], rDATABASE ) ); break; // (short) dataBase[R4] = R3
@@ -2463,12 +2421,6 @@ __recompile:
 
 	funcOffset[ FUNC_PSOF ] = compiledOfs;
 	emitFuncEntry( ErrBadProgramStack );
-
-	funcOffset[ FUNC_BADR ] = compiledOfs;
-	emitFuncEntry( ErrBadDataRead );
-
-	funcOffset[ FUNC_BADW ] = compiledOfs;
-	emitFuncEntry( ErrBadDataWrite );
 
 	} // pass
 
