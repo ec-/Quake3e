@@ -1448,10 +1448,11 @@ static qboolean ConstOptimize( vm_t* vm, instruction_t* ci, instruction_t* ni )
 		case OP_SUB:
 		case OP_MULI:
 		case OP_MULU:
-		case OP_BAND:
-		case OP_BOR:
-		case OP_BXOR:
+			// PPC ADDI/MULLI take a signed 16-bit immediate
 			if ( (int16_t)ci->value != ci->value )
+				return qfalse;
+			// SUB folds via ADDI(-imm); guard against the -INT16_MIN overflow
+			if ( ni->op == OP_SUB && ci->value == INT16_MIN )
 				return qfalse;
 			load_rx_opstack2( &rx[1], R4, &rx[0], R3 ); // r4 = r3 = *opStack
 			switch ( ni->op ) {
@@ -1459,9 +1460,29 @@ static qboolean ConstOptimize( vm_t* vm, instruction_t* ci, instruction_t* ni )
 				case OP_SUB: emit( PPC_ADDI( rx[1], rx[0], -ci->value ) ); break;
 				case OP_MULI:
 				case OP_MULU: emit( PPC_MULLI( rx[1], rx[0], ci->value ) ); break;
-				case OP_BAND: emit( PPC_ANDI( rx[1], rx[0], ci->value ) );  break;
-				case OP_BOR:  emit( PPC_ORI( rx[1], rx[0], ci->value ) );  break;
-				case OP_BXOR: emit( PPC_XORI( rx[1], rx[0], ci->value ) );  break;
+			};
+			if ( rx[0] != rx[1] ) {
+				unmask_rx( rx[0] );
+			}
+			store_rx_opstack( rx[1] );				// *opStack = r4
+			ip += 1;
+			return qtrue;
+
+		case OP_BAND:
+		case OP_BOR:
+		case OP_BXOR:
+			// PPC ANDI/ORI/XORI take an UNSIGNED 16-bit immediate that is
+			// zero-extended to 32 bits. Folding a CONST whose upper 16 bits
+			// are non-zero (e.g. negative values like -4 for pointer
+			// alignment) would silently clobber the upper half of the
+			// operand. Fall back to the non-folded path in that case.
+			if ( ( (uint32_t)ci->value & 0xFFFF0000u ) != 0 )
+				return qfalse;
+			load_rx_opstack2( &rx[1], R4, &rx[0], R3 ); // r4 = r3 = *opStack
+			switch ( ni->op ) {
+				case OP_BAND: emit( PPC_ANDI( rx[1], rx[0], ci->value ) ); break;
+				case OP_BOR:  emit( PPC_ORI( rx[1], rx[0], ci->value ) ); break;
+				case OP_BXOR: emit( PPC_XORI( rx[1], rx[0], ci->value ) ); break;
 			};
 			if ( rx[0] != rx[1] ) {
 				unmask_rx( rx[0] );
