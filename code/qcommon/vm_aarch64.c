@@ -731,6 +731,21 @@ static void emit_MOVXi( uint32_t reg, uint64_t imm )
 	emit( MOVK64_48( reg, (imm >> 48)&0xFFFF ) );
 }
 
+// Fixed-size variant: always emits 4 instructions regardless of value.
+// Required when the same call site sees different magnitudes across
+// VM_Compile's two passes -- notably the prologue's rLITBASE load, where
+// pass 0 passes litBase=NULL (1 instr) and pass 1 passes a real 48-bit
+// address (3 instr).  Variable-length there shifts every subsequent
+// offset, leaving pass-0's funcOffset[FUNC_ENTR] stale and pass-1's
+// BL FUNC_ENTR landing in the dispatch trampoline table.
+static void emit_MOVXi64( uint32_t reg, uint64_t imm )
+{
+	emit( MOVZ64( reg, imm & 0xFFFF ) );
+	emit( MOVK64_16( reg, (imm >> 16) & 0xFFFF ) );
+	emit( MOVK64_32( reg, (imm >> 32) & 0xFFFF ) );
+	emit( MOVK64_48( reg, (imm >> 48) & 0xFFFF ) );
+}
+
 // array sizes for cached/meta registers
 #define NUM_RX_REGS 18 // max[R0..R17] + 1
 #define NUM_SX_REGS 32 // max[S0..S31] + 1
@@ -1606,7 +1621,7 @@ __recompile:
 	emit(STP64(R28, R29, SP, 64));
 	emit(STP64(R19, LR,  SP, 80));
 
-	emit_MOVXi(rLITBASE, (intptr_t)litBase );
+	emit_MOVXi64(rLITBASE, (intptr_t)litBase );
 	emit_MOVXi(rVMBASE, (intptr_t)vm );
 	emit_MOVXi(rINSPOINTERS, (intptr_t)vm->instructionPointers );
 	emit_MOVXi(rDATABASE, (intptr_t)vm->dataBase );
