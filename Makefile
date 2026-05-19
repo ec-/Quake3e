@@ -125,6 +125,12 @@ else
 endif
 export CROSS_COMPILING
 
+ifneq ($(CROSS_COMPILING),1)
+  BASE_CFLAGS ?= -march=native
+else
+  BASE_CFLAGS ?=
+endif
+
 ifndef DESTDIR
 DESTDIR=/usr/local/games/quake3
 endif
@@ -310,8 +316,6 @@ ifeq ($(ARCH),ppc64)
   HAVE_VM_COMPILED = true
 endif
 
-BASE_CFLAGS =
-
 ifeq ($(USE_SYSTEM_JPEG),1)
   BASE_CFLAGS += -DUSE_SYSTEM_JPEG
 endif
@@ -428,7 +432,7 @@ ifdef MINGW
   ifeq ($(ARCH),x86_64)
     ARCHEXT = .x64
     BASE_CFLAGS += -m64
-    OPTIMIZE = -O2 -ffast-math
+    OPTIMIZE = -mfpmath=sse -O3 -ffast-math
   endif
   ifeq ($(ARCH),x86)
     BASE_CFLAGS += -m32
@@ -494,7 +498,7 @@ ifeq ($(COMPILE_PLATFORM),darwin)
 
   BASE_CFLAGS += -DMACOS_X
 
-  OPTIMIZE = -O2 -fvisibility=hidden
+  OPTIMIZE = -O3 -ftree-vectorize -fopenmp -fopenmp-simd -fvisibility=hidden
 
   SHLIBEXT = dylib
   SHLIBCFLAGS = -fPIC -fvisibility=hidden
@@ -554,10 +558,11 @@ else
 
   BASE_CFLAGS += -I/usr/include -I/usr/local/include
 
-  OPTIMIZE = -O2 -fvisibility=hidden
+  OPTIMIZE = -O3 -ftree-vectorize -fopenmp -fopenmp-simd -fvisibility=hidden
 
   ifeq ($(ARCH),x86_64)
     ARCHEXT = .x64
+    OPTIMIZE += -mfpmath=sse
   else
   ifeq ($(ARCH),x86)
     OPTIMIZE += -march=i586 -mtune=i686
@@ -627,7 +632,7 @@ else
   endif
 
   DEBUG_CFLAGS = $(BASE_CFLAGS) -DDEBUG -D_DEBUG -g -O0
-  RELEASE_CFLAGS = $(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE)
+  RELEASE_CFLAGS = $(BASE_CFLAGS) -DNDEBUG $(OPTIMIZE) -fdata-sections -ffunction-sections
 
   DEBUG_LDFLAGS = -rdynamic
 
