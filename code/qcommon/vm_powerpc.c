@@ -184,8 +184,15 @@ typedef enum
 	FUNC_OSOF,
 	FUNC_BADJ,
 	FUNC_OUTJ,
+#ifndef NDEBUG
+	FUNC_HIBITSET,
+#endif
 	FUNC_ERR_BEGIN = FUNC_PSOF,
+#ifndef NDEBUG
+	FUNC_ERR_END = FUNC_HIBITSET,
+#else
 	FUNC_ERR_END = FUNC_OUTJ,
+#endif
 	OFFSET_T_LAST
 } offset_t;
 
@@ -239,6 +246,44 @@ static void VM_FreeBuffers( void )
 #define PPC_D(op, rt, ra, d) \
 	( (((unsigned)(op)&0x3F)<<26) | (((unsigned)(rt)&0x1F)<<21) | \
 	  (((unsigned)(ra)&0x1F)<<16) | ((unsigned)(d)&0xFFFF) )
+
+// Debug-only range checks for D-form immediate fields.  The encoding
+// silently truncates to 16 bits; these helpers turn out-of-range
+// immediates into a loud Com_Error rather than a wrong instruction
+// at JIT-compile time.  Useful as defence against the
+// signed/unsigned-16-bit immediate confusion class of bug.
+#ifndef NDEBUG
+// Signed 16-bit immediate: accept either the signed view
+// (INT16_MIN..INT16_MAX) or the unsigned bit-pattern (0..UINT16_MAX),
+// since callers sometimes pre-extract a uint16 half (e.g. emit_MOVi64).
+// The CPU's sign-extension means both views encode the same 16 bits.
+static inline uint32_t _ppc_chk_si16( int32_t v, const char *opname )
+{
+	if ( v < INT16_MIN || v > UINT16_MAX ) {
+		Com_Error( ERR_DROP,
+			"JIT: %s signed-16 immediate out of range: 0x%x",
+			opname, (uint32_t)v );
+	}
+	return (uint32_t)v;
+}
+// Unsigned 16-bit immediate (ANDI/ORI/XORI/CMPLWI etc.): the
+// instruction zero-extends to 32 bits, so anything with the upper
+// 16 bits non-zero is a sign-vs-unsigned bug in waiting.
+static inline uint32_t _ppc_chk_ui16( int32_t v, const char *opname )
+{
+	if ( ( (uint32_t)v & 0xFFFF0000u ) != 0 ) {
+		Com_Error( ERR_DROP,
+			"JIT: %s unsigned-16 immediate out of range: 0x%x",
+			opname, (uint32_t)v );
+	}
+	return (uint32_t)v;
+}
+#define PPC_IMM_S16(v, op)  _ppc_chk_si16((v), (op))
+#define PPC_IMM_U16(v, op)  _ppc_chk_ui16((v), (op))
+#else
+#define PPC_IMM_S16(v, op)  ((uint32_t)(v))
+#define PPC_IMM_U16(v, op)  ((uint32_t)(v))
+#endif
 
 // ---- DS-form ----
 // ld, std, lwa
@@ -332,17 +377,17 @@ static void VM_FreeBuffers( void )
 
 // -- Arithmetic (D-form) --
 // addi rt, ra, si  (li rt, si when ra=0)
-#define PPC_ADDI(rt, ra, si)	PPC_D(14, rt, ra, si)
+#define PPC_ADDI(rt, ra, si)	PPC_D(14, rt, ra, PPC_IMM_S16(si, "ADDI"))
 // addis rt, ra, si  (lis rt, si when ra=0)
-#define PPC_ADDIS(rt, ra, si)	PPC_D(15, rt, ra, si)
+#define PPC_ADDIS(rt, ra, si)	PPC_D(15, rt, ra, PPC_IMM_S16(si, "ADDIS"))
 // li rt, si  (pseudo for addi rt, 0, si)
 #define PPC_LI(rt, si)			PPC_ADDI(rt, R0, si)
 // lis rt, si  (pseudo for addis rt, 0, si)
 #define PPC_LIS(rt, si)			PPC_ADDIS(rt, R0, si)
 // subfic rt, ra, si
-#define PPC_SUBFIC(rt, ra, si)	PPC_D(8, rt, ra, si)
+#define PPC_SUBFIC(rt, ra, si)	PPC_D(8, rt, ra, PPC_IMM_S16(si, "SUBFIC"))
 // mulli rt, ra, si
-#define PPC_MULLI(rt, ra, si)	PPC_D(7, rt, ra, si)
+#define PPC_MULLI(rt, ra, si)	PPC_D(7, rt, ra, PPC_IMM_S16(si, "MULLI"))
 
 // -- Arithmetic (XO-form) --
 // add rt, ra, rb
@@ -380,15 +425,15 @@ static void VM_FreeBuffers( void )
 #define PPC_MR(ra, rs)			PPC_OR(ra, rs, rs)
 
 // andi. ra, rs, ui  (always sets CR0)
-#define PPC_ANDI(ra, rs, ui)	PPC_D(28, rs, ra, ui)
+#define PPC_ANDI(ra, rs, ui)	PPC_D(28, rs, ra, PPC_IMM_U16(ui, "ANDI"))
 // ori ra, rs, ui
-#define PPC_ORI(ra, rs, ui)		PPC_D(24, rs, ra, ui)
+#define PPC_ORI(ra, rs, ui)		PPC_D(24, rs, ra, PPC_IMM_U16(ui, "ORI"))
 // oris ra, rs, ui
-#define PPC_ORIS(ra, rs, ui)	PPC_D(25, rs, ra, ui)
+#define PPC_ORIS(ra, rs, ui)	PPC_D(25, rs, ra, PPC_IMM_U16(ui, "ORIS"))
 // xori ra, rs, ui
-#define PPC_XORI(ra, rs, ui)	PPC_D(26, rs, ra, ui)
+#define PPC_XORI(ra, rs, ui)	PPC_D(26, rs, ra, PPC_IMM_U16(ui, "XORI"))
 // xoris ra, rs, ui
-#define PPC_XORIS(ra, rs, ui)	PPC_D(27, rs, ra, ui)
+#define PPC_XORIS(ra, rs, ui)	PPC_D(27, rs, ra, PPC_IMM_U16(ui, "XORIS"))
 // nop (ori 0, 0, 0)
 #define PPC_NOP()				PPC_ORI(R0, R0, 0)
 
@@ -418,9 +463,9 @@ static void VM_FreeBuffers( void )
 // -- Compare (D-form and X-form) --
 // cmpwi cr, ra, si  (signed word compare immediate)
 // L=0 for 32-bit compare, cr field in bits 21-23
-#define PPC_CMPWI(cr, ra, si)	PPC_D(11, ((cr)<<2), ra, si)
+#define PPC_CMPWI(cr, ra, si)	PPC_D(11, ((cr)<<2), ra, PPC_IMM_S16(si, "CMPWI"))
 // cmplwi cr, ra, ui  (unsigned word compare immediate)
-#define PPC_CMPLWI(cr, ra, ui)	PPC_D(10, ((cr)<<2), ra, ui)
+#define PPC_CMPLWI(cr, ra, ui)	PPC_D(10, ((cr)<<2), ra, PPC_IMM_U16(ui, "CMPLWI"))
 // cmpw cr, ra, rb  (signed word compare)
 #define PPC_CMPW(cr, ra, rb)	PPC_X(31, ((cr)<<2), ra, rb, 0, 0)
 // cmplw cr, ra, rb  (unsigned word compare)
@@ -1048,6 +1093,20 @@ static void __attribute__((__noreturn__)) ErrBadOpStack( void )
 }
 
 
+#ifndef NDEBUG
+// Diagnostic: fired when emit_CheckReg sees a data-segment address whose
+// 64-bit value exceeds dataMask. The JIT loads the offending QVM ip into
+// R3 and the unmasked address into R4 before calling this stub, so we
+// can identify the buggy op directly from the error message.
+static void __attribute__((__noreturn__)) ErrHighBitsSet( int qvm_ip, uint64_t bad_addr )
+{
+	Com_Error( ERR_DROP,
+		"JIT: data address overflowed dataMask: ip=%d (0x%x) bad_addr=0x%llx",
+		qvm_ip, qvm_ip, (unsigned long long)bad_addr );
+}
+#endif
+
+
 // =========================================================================
 // Runtime check emission
 // =========================================================================
@@ -1057,8 +1116,22 @@ static void __attribute__((__noreturn__)) ErrBadOpStack( void )
 // interpreter's 32-bit wrap semantics and side-effect-clears any high
 // bits left by a 64-bit ADD overflow (e.g. lwzx-loaded 0xFFFFFFFF +
 // positive constant), which the prior cmplw/bgt check could not detect.
-static void emit_CheckReg( int reg )
+static void emit_CheckReg( vm_t *vm, int reg, int qvm_ip )
 {
+#ifndef NDEBUG
+	// Diagnostic trap: 64-bit unsigned compare reg against dataMask.
+	// On fail, hand ErrHighBitsSet(qvm_ip, bad_addr) via R3,R4 so the
+	// error message names the offending QVM op directly.
+	emit( PPC_CMPLD( 0, reg, rDATAMASK ) );
+	emit( PPC_BLE( +20 ) );                                  // skip 4 insns
+	emit( PPC_MR( R4, reg ) );                               // R4 = bad addr (full 64-bit)
+	emit( PPC_LIS( R3, ( qvm_ip >> 16 ) & 0xFFFF ) );        // R3 = ip hi
+	emit( PPC_ORI( R3, R3, qvm_ip & 0xFFFF ) );              // R3 |= ip lo
+	emitFuncBranch( vm, FUNC_HIBITSET );
+#else
+	(void)vm;
+	(void)qvm_ip;
+#endif
 	emit( PPC_AND( reg, reg, rDATAMASK ) );
 }
 
@@ -1129,7 +1202,7 @@ static void emit_CheckProc( vm_t *vm, instruction_t *ins )
 		uint32_t n = ins->opStack;
 		mov_rx_imm32( R11, n );
 		emit( PPC_ADD( R11, rOPSTACK, R11 ) );
-		emit( PPC_CMPLD( 0, R11, rOPSTACKTOP ) ); // 
+		emit( PPC_CMPLD( 0, R11, rOPSTACKTOP ) ); //
 
 		offset = branchOffset[FUNC_PSOF] - compiledOfs;
 		if ( (int16_t)offset == offset ) {
@@ -1572,8 +1645,24 @@ static qboolean ConstOptimize( vm_t* vm, instruction_t* ci, instruction_t* ni )
 		case OP_LEU:
 		case OP_GTU:
 		case OP_GEU:
-			if ( (int16_t)ci->value != ci->value )
-				return qfalse;
+			// PPC CMPWI takes signed 16-bit (sign-extended); CMPLWI takes
+			// UNSIGNED 16-bit (zero-extended).  For unsigned comparisons
+			// we must reject negative ci->value (= upper 16 bits set in
+			// the 32-bit form) to avoid silently comparing against the
+			// 16-bit truncated value.
+			switch ( ni->op ) {
+				case OP_LTU:
+				case OP_LEU:
+				case OP_GTU:
+				case OP_GEU:
+					if ( ( (uint32_t)ci->value & 0xFFFF0000u ) != 0 )
+						return qfalse;
+					break;
+				default:
+					if ( (int16_t)ci->value != ci->value )
+						return qfalse;
+					break;
+			}
 			rx[0] = load_rx_opstack( R3 | RCONST ); dec_opstack(); // r3 = *opstack; opstack -= 4
 			switch ( ni->op ) {
 				case OP_LTU:
@@ -1765,6 +1854,11 @@ __recompile:
 		emitFuncBranch( vm, FUNC_OUTJ );
 		emitFuncBranch( vm, FUNC_BADJ );
 	}
+#ifndef NDEBUG
+	// FUNC_HIBITSET is emitted unconditionally in debug builds so that
+	// emit_CheckReg's diagnostic trap can reach it via a short bl.
+	emitFuncBranch( vm, FUNC_HIBITSET );
+#endif
 
 	saveBranchOffsets();
 
@@ -2053,7 +2147,7 @@ __recompile:
 					} else {
 						// address specified by a register
 						rx[0] = load_rx_opstack( R4 );					// R4 = *opStack
-						emit_CheckReg( rx[0] );							// R4 &= dataMask
+						emit_CheckReg( vm, rx[0], ip );					// R4 &= dataMask
 						sx[0] = alloc_sx( F0 );
 						emit( PPC_LFSX( sx[0], rx[0], rDATABASE ) );	// F0 = dataBase[R4]
 						store_sx_opstack( sx[0] );						// *opStack = F0
@@ -2117,7 +2211,7 @@ __recompile:
 					// the address into a writable register (no RCONST) and
 					// reuse it as the load destination.
 					rx[0] = rx[1] = load_rx_opstack( R3 );		// target = address = *opStack
-					emit_CheckReg( rx[1] );						// R3 &= dataMask
+					emit_CheckReg( vm, rx[1], ip );				// R3 &= dataMask
 					switch ( ci->op ) {
 						case OP_LOAD1: emit( PPC_LBZX( rx[0], rx[1], rDATABASE ) ); set_rx_ext( rx[0], Z_EXT8 ); break;		// R3 = dataBase[R4] (byte)
 						case OP_LOAD2: emit( PPC_LHZX( rx[0], rx[1], rDATABASE ) ); set_rx_ext( rx[0], Z_EXT16 ); break;	// R3 = dataBase[R4] (halfword)
@@ -2156,7 +2250,7 @@ __recompile:
 						// address specified by register
 						rx[0] = load_rx_opstack( R4 );							// R4 = *opStack
 						dec_opstack();											// opStack -= 4
-						emit_CheckReg( rx[0] );									// R4 &= dataMask
+						emit_CheckReg( vm, rx[0], ip );							// R4 &= dataMask
 						emit( PPC_STFSX( sx[0], rx[0], rDATABASE ) );			// dataBase[R4] = F0
 						unmask_rx( rx[0] );
 						wipe_vars(); // unknown/dynamic address, wipe all register mappings
@@ -2192,7 +2286,7 @@ __recompile:
 					// address specified by register
 					rx[1] = load_rx_opstack( R4 );							// R4 = *opStack
 					dec_opstack();											// opStack -= 4
-					emit_CheckReg( rx[1] );									// R4 &= dataMask
+					emit_CheckReg( vm, rx[1], ip );							// R4 &= dataMask
 					switch ( ci->op ) {
 						case OP_STORE1: emit( PPC_STBX( rx[0], rx[1], rDATABASE ) ); break; // (byte) dataBase[R4] = R3
 						case OP_STORE2: emit( PPC_STHX( rx[0], rx[1], rDATABASE ) ); break; // (short) dataBase[R4] = R3
@@ -2442,6 +2536,11 @@ __recompile:
 
 	funcOffset[ FUNC_PSOF ] = compiledOfs;
 	emitFuncEntry( ErrBadProgramStack );
+
+#ifndef NDEBUG
+	funcOffset[ FUNC_HIBITSET ] = compiledOfs;
+	emitFuncEntry( ErrHighBitsSet );
+#endif
 
 	} // pass
 
