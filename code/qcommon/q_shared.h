@@ -213,36 +213,37 @@ int Q_longjmp_c(void *, int);
 #define Q_longjmp longjmp
 #endif
 
-typedef unsigned char byte;
-
-typedef enum { qfalse = 0, qtrue } qboolean;
-
-typedef union floatint_u
-{
-	int32_t i;
-	uint32_t u;
-	float f;
-	byte b[4];
-}
-floatint_t;
-
-typedef union {
-	byte rgba[4];
-	uint32_t u32;
-} color4ub_t;
-
-
-typedef int		qhandle_t;
-typedef int		sfxHandle_t;
-typedef int		fileHandle_t;
-typedef int		clipHandle_t;
-
 #define PAD(base, alignment)	(((base)+(alignment)-1) & ~((alignment)-1))
 #define PADLEN(base, alignment)	(PAD((base), (alignment)) - (base))
 
 #define PADP(base, alignment)	((void *) PAD((intptr_t) (base), (alignment)))
 
-#ifdef __GNUC__
+#ifndef MAX
+#define MAX(x,y) ((x)>(y)?(x):(y))
+#endif
+
+#ifndef MIN
+#define MIN(x,y) ((x)<(y)?(x):(y))
+#endif
+
+#if __STDC_VERSION__ < 202311L
+#include <stdalign.h>
+#if !__alignas_is_defined
+#define alignas _Alignas
+#define __alignas_is_defined 1
+#endif
+#if !__alignof_is_defined
+#define alignof _Alignof
+#define __alignof_is_defined 1
+#endif
+#if ( __GNUC__ >= 2 || defined( __IBM__TYPEOF__ ) || ( __SUNPRO_C >= 0x5110 && !__STDC__ ) || defined(_MSC_VER) ) 
+#define typeof(type)  (__typeof__ (type))
+#endif
+#endif
+
+#ifdef _MSC_VER
+#define QALIGN(x) __declspec(align(x))
+#elif defined(__GNUC__) || defined(__clang__)
 #define QALIGN(x) __attribute__((aligned(x)))
 #else
 #define QALIGN(x)
@@ -394,19 +395,68 @@ MATHLIB
 
 ==============================================================
 */
+#define BITOP_RUP01__(x) (             (x) | (             (x) >>  1))
+#define BITOP_RUP02__(x) (BITOP_RUP01__(x) | (BITOP_RUP01__(x) >>  2))
+#define BITOP_RUP04__(x) (BITOP_RUP02__(x) | (BITOP_RUP02__(x) >>  4))
+#define BITOP_RUP08__(x) (BITOP_RUP04__(x) | (BITOP_RUP04__(x) >>  8))
+#define BITOP_RUP16__(x) (BITOP_RUP08__(x) | (BITOP_RUP08__(x) >> 16))
 
+#define bitceil(x) (const uint32_t)(BITOP_RUP16__(((uint32_t)(x)) - 1) + 1)
+
+#define isarray(a) __builtin_choose_expr(__builtin_types_compatible_p(typeof((a)[0]) [], typeof((a))), true, false)
+
+#define  vec(N,T) QALIGN((N == bitceil(N) ? N : 1) * alignof(N)) typeof(typeof(T)[N])
+#define avec(N,T) QALIGN(bitceil(N)) typeof(typeof(T)[N])
+
+#ifdef __clang__
+#define evec(N,T) __attribute__((ext_vector_type(N))) typeof(T)
+#elif defined(__GNUC__)
+#define evec(N,T) __attribute__((vector_size(bitceil(N) * alignof(T)))) typeof(T)
+#else
+#warning "Your compiler doesn't support SIMD vector type extensions! evec(N,T) operators are not supported!"
+#define evec(N,T) avec(N,T)
+#endif
 
 typedef float vec_t;
-typedef vec_t vec2_t[2];
-typedef vec_t vec3_t[3];
-typedef vec_t vec4_t[4];
-typedef vec_t vec5_t[5];
+typedef  vec(2,vec_t)   vec2_t;
+typedef  vec(3,vec_t)   vec3_t;
+typedef avec(3,vec_t)  avec3_t;
+typedef  vec(4,vec_t)   vec4_t;
+typedef  vec(5,vec_t)   vec5_t;
+typedef avec(5,vec_t)  avec5_t;
 
-typedef vec_t quat_t[4];
+typedef  vec(4,vec_t)   quat_t;
 
 typedef	int	fixed4_t;
 typedef	int	fixed8_t;
 typedef	int	fixed16_t;
+
+typedef unsigned char byte;
+typedef  vec(4,byte)  vec4ub_t;
+
+typedef enum { qfalse = 0, qtrue } qboolean;
+
+#pragma pack(push,1)
+typedef union QALIGN(4) floatint_u
+{
+	int32_t i;
+	uint32_t u;
+	float f;
+	vec4ub_t b;
+} floatint_t;
+#pragma pack(pop)
+
+#pragma pack(push,1)
+typedef union QALIGN(4) {
+	vec4ub_t rgba;
+	uint32_t u32;
+} color4ub_t;
+#pragma pack(pop)
+
+typedef int		qhandle_t;
+typedef int		sfxHandle_t;
+typedef int		fileHandle_t;
+typedef int		clipHandle_t;
 
 #ifndef M_PI
 #define M_PI		3.14159265358979323846f	// matches value in gcc v2 math.h
@@ -526,15 +576,14 @@ void ByteToDir( int b, vec3_t dir );
 
 #if	1
 
-#define DotProduct(x,y)			((x)[0]*(y)[0]+(x)[1]*(y)[1]+(x)[2]*(y)[2])
-#define VectorSubtract(a,b,c)	((c)[0]=(a)[0]-(b)[0],(c)[1]=(a)[1]-(b)[1],(c)[2]=(a)[2]-(b)[2])
-#define VectorAdd(a,b,c)		((c)[0]=(a)[0]+(b)[0],(c)[1]=(a)[1]+(b)[1],(c)[2]=(a)[2]+(b)[2])
-#define VectorCopy(a,b)			((b)[0]=(a)[0],(b)[1]=(a)[1],(b)[2]=(a)[2])
-#define	VectorScale(v, s, o)	((o)[0]=(v)[0]*(s),(o)[1]=(v)[1]*(s),(o)[2]=(v)[2]*(s))
-#define	VectorMA(v, s, b, o)	((o)[0]=(v)[0]+(b)[0]*(s),(o)[1]=(v)[1]+(b)[1]*(s),(o)[2]=(v)[2]+(b)[2]*(s))
-
-#define DotProduct4(a,b)		((a)[0]*(b)[0] + (a)[1]*(b)[1] + (a)[2]*(b)[2] + (a)[3]*(b)[3])
-#define VectorScale4(a,b,c)		((c)[0]=(a)[0]*(b),(c)[1]=(a)[1]*(b),(c)[2]=(a)[2]*(b),(c)[3]=(a)[3]*(b))
+#define DotProduct(x,y)         ((x)[0]*(y)[0]+(x)[1]*(y)[1]+(x)[2]*(y)[2])
+#define DotProduct4(x,y)        ((x)[0]*(y)[0]+(x)[1]*(y)[1]+(x)[2]*(y)[2]+(x)[3]*(y)[3])
+#define VectorSubtract(a,b,c)   ((c)[0]=(a)[0]-(b)[0],(c)[1]=(a)[1]-(b)[1],(c)[2]=(a)[2]-(b)[2])
+#define VectorAdd(a,b,c)        ((c)[0]=(a)[0]+(b)[0],(c)[1]=(a)[1]+(b)[1],(c)[2]=(a)[2]+(b)[2])
+#define VectorCopy(a,b)         ((b)[0]=(a)[0],(b)[1]=(a)[1],(b)[2]=(a)[2])
+#define VectorScale(v, s, o)    ((o)[0]=(v)[0]*(s),(o)[1]=(v)[1]*(s),(o)[2]=(v)[2]*(s))
+#define VectorScale4(a,b,c)     ((c)[0]=(a)[0]*(b),(c)[1]=(a)[1]*(b),(c)[2]=(a)[2]*(b),(c)[3]=(a)[3]*(b))
+#define VectorMA(v, s, b, o)    ((o)[0]=(v)[0]+(b)[0]*(s),(o)[1]=(v)[1]+(b)[1]*(s),(o)[2]=(v)[2]+(b)[2]*(s))
 
 #else
 
@@ -554,21 +603,21 @@ void ByteToDir( int b, vec3_t dir );
 typedef struct {
 	float	v[3];
 } vec3struct_t;
-#define VectorCopy(a,b)	(*(vec3struct_t *)b=*(vec3struct_t *)a)
+#define VectorCopy(a,b)         (*(vec3struct_t *)b=*(vec3struct_t *)a)
 #endif
 #endif
 
-#define VectorClear(a)			((a)[0]=(a)[1]=(a)[2]=0)
-#define VectorNegate(a,b)		((b)[0]=-(a)[0],(b)[1]=-(a)[1],(b)[2]=-(a)[2])
-#define VectorSet(v, x, y, z)	((v)[0]=(x), (v)[1]=(y), (v)[2]=(z))
-#define Vector4Set(v,x,y,z,w)	((v)[0]=(x), (v)[1]=(y), (v)[2]=(z), v[3]=(w))
-#define Vector4Copy(a,b)		((b)[0]=(a)[0],(b)[1]=(a)[1],(b)[2]=(a)[2],(b)[3]=(a)[3])
+#define VectorClear(a)          ((a)[0]=(a)[1]=(a)[2]=0)
+#define VectorNegate(a,b)       ((b)[0]=-(a)[0],(b)[1]=-(a)[1],(b)[2]=-(a)[2])
+#define VectorSet(v, x, y, z)   ((v)[0]=(x), (v)[1]=(y), (v)[2]=(z))
+#define Vector4Set(v,x,y,z,w)   ((v)[0]=(x), (v)[1]=(y), (v)[2]=(z), v[3]=(w))
+#define Vector4Copy(a,b)        ((b)[0]=(a)[0],(b)[1]=(a)[1],(b)[2]=(a)[2],(b)[3]=(a)[3])
 
-#define Byte4Copy(a,b)			((b)[0]=(a)[0],(b)[1]=(a)[1],(b)[2]=(a)[2],(b)[3]=(a)[3])
+#define Byte4Copy(a,b)          ((b)[0]=(a)[0],(b)[1]=(a)[1],(b)[2]=(a)[2],(b)[3]=(a)[3])
 
-#define QuatCopy(a,b)			((b)[0]=(a)[0],(b)[1]=(a)[1],(b)[2]=(a)[2],(b)[3]=(a)[3])
+#define QuatCopy(a,b)           ((b)[0]=(a)[0],(b)[1]=(a)[1],(b)[2]=(a)[2],(b)[3]=(a)[3])
 
-#define	SnapVector(v) {v[0]=((int)(v[0]));v[1]=((int)(v[1]));v[2]=((int)(v[2]));}
+#define SnapVector(v)           {v[0]=((int)(v[0]));v[1]=((int)(v[1]));v[2]=((int)(v[2]));}
 // just in case you don't want to use the macros
 vec_t _DotProduct( const vec3_t v1, const vec3_t v2 );
 void _VectorSubtract( const vec3_t veca, const vec3_t vecb, vec3_t out );
@@ -577,8 +626,15 @@ void _VectorCopy( const vec3_t in, vec3_t out );
 void _VectorScale( const vec3_t in, float scale, vec3_t out );
 void _VectorMA( const vec3_t veca, float scale, const vec3_t vecb, vec3_t vecc );
 
-unsigned ColorBytes3 (float r, float g, float b);
-unsigned ColorBytes4 (float r, float g, float b, float a);
+ID_INLINE uint32_t ColorBytes3 (float r, float g, float b)
+{
+	return *(uint32_t*)(byte[4]){ (byte)(r * 255), (byte)(g * 255), (byte)(b * 255) };
+}
+
+ID_INLINE uint32_t ColorBytes4 (float r, float g, float b, float a)
+{
+	return *(uint32_t*)(byte[4]){ (byte)(r * 255), (byte)(g * 255), (byte)(b * 255), (byte)(a * 255) };
+}
 
 float NormalizeColor( const vec3_t in, vec3_t out );
 
@@ -716,14 +772,6 @@ void AngleVectors( const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up)
 void PerpendicularVector( vec3_t dst, const vec3_t src );
 int Q_isnan( float x );
 float Q_atof( const char *str );
-
-#ifndef MAX
-#define MAX(x,y) ((x)>(y)?(x):(y))
-#endif
-
-#ifndef MIN
-#define MIN(x,y) ((x)<(y)?(x):(y))
-#endif
 
 //=============================================
 
