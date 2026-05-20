@@ -408,6 +408,15 @@ MATHLIB
 #define  vec(N,T) QALIGN((N == bitceil(N) ? N : 1) * alignof(N)) typeof(typeof(T)[N])
 #define avec(N,T) QALIGN(bitceil(N)) typeof(typeof(T)[N])
 
+#ifdef __clang__
+#define evec(N,T) __attribute__((ext_vector_type(N))) typeof(T)
+#elif defined(__GNUC__)
+#define evec(N,T) __attribute__((vector_size(bitceil(N) * alignof(T)))) typeof(T)
+#else
+#warning "Your compiler doesn't support SIMD vector type extensions! evec(N,T) operators are not supported!"
+#define evec(N,T) avec(N,T)
+#endif
+
 typedef float vec_t;
 typedef  vec(2,vec_t)   vec2_t;
 typedef  vec(3,vec_t)   vec3_t;
