@@ -433,6 +433,16 @@ MATHLIB
 })
 
 typedef float vec_t;
+#ifdef _MSC_VER
+#define  vec2_t  vec(2,vec_t)
+#define  vec3_t  vec(3,vec_t)
+#define avec3_t avec(3,vec_t)
+#define  vec4_t  vec(4,vec_t)
+#define  vec5_t  vec(5,vec_t)
+#define avec5_t avec(5,vec_t)
+
+#define  quat_t  vec(4,vec_t)
+#else
 typedef  vec(2,vec_t)   vec2_t;
 typedef  vec(3,vec_t)   vec3_t;
 typedef avec(3,vec_t)  avec3_t;
@@ -441,13 +451,19 @@ typedef  vec(5,vec_t)   vec5_t;
 typedef avec(5,vec_t)  avec5_t;
 
 typedef  vec(4,vec_t)   quat_t;
+#endif
 
 typedef	int	fixed4_t;
 typedef	int	fixed8_t;
 typedef	int	fixed16_t;
 
 typedef unsigned char byte;
+
+#ifdef _MSC_VER
+#define  vec4ub_t vec(4,byte)
+#else
 typedef  vec(4,byte)  vec4ub_t;
+#endif
 
 typedef enum { qfalse = 0, qtrue } qboolean;
 
