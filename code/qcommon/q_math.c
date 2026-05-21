@@ -275,28 +275,6 @@ void ByteToDir( int b, vec3_t dir ) {
 	VectorCopy (bytedirs[b], dir);
 }
 
-
-unsigned ColorBytes3 (float r, float g, float b) {
-	unsigned	i;
-
-	( (byte *)&i )[0] = r * 255;
-	( (byte *)&i )[1] = g * 255;
-	( (byte *)&i )[2] = b * 255;
-
-	return i;
-}
-
-unsigned ColorBytes4 (float r, float g, float b, float a) {
-	unsigned	i;
-
-	( (byte *)&i )[0] = r * 255;
-	( (byte *)&i )[1] = g * 255;
-	( (byte *)&i )[2] = b * 255;
-	( (byte *)&i )[3] = a * 255;
-
-	return i;
-}
-
 float NormalizeColor( const vec3_t in, vec3_t out ) {
 	float	max;
 	

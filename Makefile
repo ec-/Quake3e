@@ -424,6 +424,12 @@ ifdef MINGW
     $(error Cannot find a suitable cross compiler for $(PLATFORM))
   endif
 
+  # Detect if CC is clang
+  COMPILER_VERSION := $(shell $(CC) --version)
+  ifneq '' '$(findstring clang,$(COMPILER_VERSION))'
+    BASE_CFLAGS += std=gnu2x -Wno-gnu-alignof-expression
+  endif
+
   BASE_CFLAGS += -Wall -Wimplicit -Wstrict-prototypes -DUSE_ICON -DMINGW=1
 
   BASE_CFLAGS += -Wno-unused-result -fvisibility=hidden
@@ -491,6 +497,11 @@ ifeq ($(COMPILE_PLATFORM),darwin)
 #############################################################################
 # SETUP AND BUILD -- MACOS
 #############################################################################
+  # Detect if CC is clang
+  COMPILER_VERSION := $(shell $(CC) --version)
+  ifneq '' '$(findstring clang,$(COMPILER_VERSION))'
+    BASE_CFLAGS += -std=gnu2x -Wno-gnu-alignof-expression
+  endif
 
   BASE_CFLAGS += -Wall -Wimplicit -Wstrict-prototypes -pipe
 
@@ -498,7 +509,7 @@ ifeq ($(COMPILE_PLATFORM),darwin)
 
   BASE_CFLAGS += -DMACOS_X
 
-  OPTIMIZE = -O3 -ftree-vectorize -fopenmp -fopenmp-simd -fvisibility=hidden
+  OPTIMIZE = -O3 -ftree-vectorize -fopenmp-simd -fvisibility=hidden
 
   SHLIBEXT = dylib
   SHLIBCFLAGS = -fPIC -fvisibility=hidden
@@ -559,6 +570,12 @@ else
   BASE_CFLAGS += -I/usr/include -I/usr/local/include
 
   OPTIMIZE = -O3 -ftree-vectorize -fopenmp -fopenmp-simd -fvisibility=hidden
+
+  # Detect if CC is clang
+  COMPILER_VERSION := $(shell $(CC) --version)
+  ifneq '' '$(findstring clang,$(COMPILER_VERSION))'
+    BASE_CFLAGS += -std=gnu2x -Wno-gnu-alignof-expression
+  endif
 
   ifeq ($(ARCH),x86_64)
     ARCHEXT = .x64

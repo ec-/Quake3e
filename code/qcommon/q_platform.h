@@ -49,15 +49,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #if defined( _MSC_VER ) && _MSC_VER >= 1400 // MSVC++ 8.0 at least
 #define OS_STRING "win_msvc"
+#define ID_INLINE __inline
 #elif defined __MINGW32__
 #define OS_STRING "win_mingw"
+#define ID_INLINE __attribute__((always_inline,flatten)) inline
 #elif defined __MINGW64__
 #define OS_STRING "win_mingw64"
+#define ID_INLINE __attribute__((always_inline,flatten)) inline
 #else
 #error "Compiler not supported"
 #endif
 
-#define ID_INLINE __inline
 #define PATH_SEP '\\'
 #define PATH_SEP_FOREIGN '/'
 #define DLL_EXT ".dll"
@@ -156,7 +158,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <endian.h>
 
 #define OS_STRING "linux"
-#define ID_INLINE inline
+#define ID_INLINE __attribute__((always_inline,flatten)) inline
 
 #endif // __linux___
 
@@ -176,7 +178,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define OS_STRING "openbsd"
 #endif
 
-#define ID_INLINE inline
+#define ID_INLINE __attribute__((always_inline,flatten)) inline
 #if BYTE_ORDER == BIG_ENDIAN
 #define Q3_BIG_ENDIAN
 #else
@@ -190,7 +192,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #ifdef __APPLE__
 
 #define OS_STRING "macos"
-#define ID_INLINE inline
+#define ID_INLINE __attribute__((always_inline,flatten)) inline
 #undef DLL_EXT
 #define DLL_EXT ".dylib"
 
