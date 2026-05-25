@@ -1551,6 +1551,22 @@ static int FS_OpenFileInPak( fileHandle_t *file, pack_t *pak, fileInPack_t *pakF
 
 
 /*
+============
+FS_BannedPakFile
+
+Check if file should NOT be loaded from pk3 or pk3dir archives
+============
+*/
+static qboolean FS_BannedPakFile( const char *filename )
+{
+	if ( !strcmp( filename, "autoexec.cfg" ) || !strcmp( filename, Q3CONFIG_CFG ) )
+		return qtrue;
+	else
+		return qfalse;
+}
+
+
+/*
 ===========
 FS_FOpenFileRead
 
@@ -1621,6 +1637,9 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 					pakFile = pakFile->next;
 				} while ( pakFile != NULL );
 			} else if ( search->dir && search->policy != DIR_DENY ) {
+				if ( search->policy != DIR_STATIC && FS_BannedPakFile( filename ) ) {
+					continue;
+				}
 				dir = search->dir;
 				netpath = FS_BuildOSPath( dir->path, dir->gamedir, filename );
 				temp = Sys_FOpen( netpath, "rb" );
@@ -1663,6 +1682,9 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 				pakFile = pakFile->next;
 			} while ( pakFile != NULL );
 		} else if ( search->dir && search->policy != DIR_DENY ) {
+			if ( search->policy != DIR_STATIC && FS_BannedPakFile( filename ) ) {
+				continue;
+			}
 			// check a file in the directory tree
 			dir = search->dir;
 
@@ -2283,22 +2305,6 @@ static int FS_PakHashSize( const int filecount )
 	}
 
 	return hashSize;
-}
-
-
-/*
-============
-FS_BannedPakFile
-
-Check if file should NOT be added to hash search table
-============
-*/
-static qboolean FS_BannedPakFile( const char *filename )
-{
-	if ( !strcmp( filename, "autoexec.cfg" ) || !strcmp( filename, Q3CONFIG_CFG ) )
-		return qtrue;
-	else
-		return qfalse;
 }
 
 
@@ -3466,6 +3472,9 @@ static char **FS_ListFilteredFiles( const char *path, const char *extension, con
 				// unique the match
 				name = sysFiles[ i ];
 				length = strlen( name );
+				if ( search->policy != DIR_STATIC && FS_BannedPakFile( name ) ) {
+					continue;
+				}
 				if ( fnamecallback ) {
 					// use custom filter
 					if ( !fnamecallback( name, length ) )
