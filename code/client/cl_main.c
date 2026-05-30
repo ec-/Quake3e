@@ -1,6 +1,7 @@
 /*
 ===========================================================================
 Copyright (C) 1999-2005 Id Software, Inc.
+Copyright (C) 2026 WofWca
 
 This file is part of Quake III Arena source code.
 
@@ -235,16 +236,19 @@ static void CL_WriteDemoMessage( msg_t *msg, int headerBytes ) {
 
 /*
 ====================
-CL_StopRecording_f
+CL_StopRecord2
 
 stop recording a demo
 ====================
 */
-void CL_StopRecord_f( void ) {
+static void CL_StopRecord2( const char* prefix ) {
 
 	if ( clc.recordfile != FS_INVALID_HANDLE ) {
 		char tempPath[MAX_OSPATH];
 		char finalPath[MAX_OSPATH];
+		// Slice of `finalPath`, so writing to this will write to `finalPath`.
+		char *finalFilename;
+		int finalFilenameSize;
 		int protocol;
 		int	len, sequence;
 
@@ -268,7 +272,15 @@ void CL_StopRecord_f( void ) {
 
 		Com_sprintf( tempPath, sizeof( tempPath ), "%s.tmp", clc.recordName );
 
-		Com_sprintf( finalPath, sizeof( finalPath ), "%s.%s%d", clc.recordName, DEMOEXT, protocol );
+		// e.g. `demos/2026123123123`
+		Q_strncpyz( finalPath, clc.recordName, sizeof( finalPath ) );
+		// From now on leave the `demos/` part as is,
+		// and override the `2026123123123` part
+		finalFilename = COM_SkipPath( finalPath );
+		finalFilenameSize = sizeof( finalPath ) - ( finalFilename - finalPath );
+
+		Com_sprintf( finalFilename, finalFilenameSize, "%s%s.%s%d",
+			prefix, COM_SkipPath( clc.recordName ), DEMOEXT, protocol );
 
 		if ( clc.explicitRecordName ) {
 			FS_Remove( finalPath );
@@ -276,22 +288,45 @@ void CL_StopRecord_f( void ) {
 			// add sequence suffix to avoid overwrite
 			sequence = 0;
 			while ( FS_FileExists( finalPath ) && ++sequence < 1000 ) {
-				Com_sprintf( finalPath, sizeof( finalPath ), "%s-%02d.%s%d",
-					clc.recordName, sequence, DEMOEXT, protocol );
+				Com_sprintf( finalFilename, finalFilenameSize, "%s%s-%02d.%s%d",
+					prefix, COM_SkipPath( clc.recordName ), sequence, DEMOEXT, protocol );
 			}
 		}
 
+		// Note that this might fail if the provided `prefix`
+		// made the path invalid.
 		FS_Rename( tempPath, finalPath );
+
+		Com_Printf( "Stopped demo recording %s.\n", finalPath );
 	}
 
 	if ( !clc.demorecording ) {
 		Com_Printf( "Not recording a demo.\n" );
-	} else {
-		Com_Printf( "Stopped demo recording.\n" );
 	}
 
 	clc.demorecording = qfalse;
 	clc.spDemoRecording = qfalse;
+}
+static void CL_StopRecord_f( void ) {
+	if ( Cmd_Argc() > 2 ) {
+		Com_Printf( "usage: stoprecord [filenamePrefix]\n" );
+		return;
+	}
+
+	// Prefix is especially convenient in combination with `cl_autoRecordDemo`,
+	// so that the user can easily tell apart manually clipped demos
+	// (e.g. created after a highlight) from auto-recorded ones.
+	CL_StopRecord2( Cmd_Argv( 1 ) );
+}
+/*
+====================
+CL_StopRecord
+
+For stopping the demo automatically, e.g. on game quit.
+====================
+*/
+void CL_StopRecord( void ) {
+	CL_StopRecord2( "" );
 }
 
 
@@ -1213,7 +1248,7 @@ qboolean CL_Disconnect( qboolean showMainMenu ) {
 
 	// Stop demo recording
 	if ( clc.demorecording ) {
-		CL_StopRecord_f();
+		CL_StopRecord();
 	}
 
 	// Stop demo playback
@@ -1788,7 +1823,7 @@ static void CL_Vid_Restart( refShutdownCode_t shutdownCode ) {
 		CL_CloseAVI( qfalse );
 
 	if ( clc.demorecording )
-		CL_StopRecord_f();
+		CL_StopRecord();
 
 	// clear and mute all sounds until next registration
 	S_DisableSounds();
@@ -3080,7 +3115,7 @@ void CL_Frame( int msec, int realMsec ) {
 		}
 		else if ( cls.state != CA_ACTIVE && clc.demorecording ) {
 			// Recording, but not CA_ACTIVE, so stop recording
-			CL_StopRecord_f();
+			CL_StopRecord();
 		}
 	}
 
