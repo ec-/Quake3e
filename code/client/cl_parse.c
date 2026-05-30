@@ -597,7 +597,7 @@ static void CL_ParseGamestate( msg_t *msg ) {
 	// stop recording now so the demo won't have an unnecessary level load at the end.
 	if ( cl_autoRecordDemo->integer && clc.demorecording ) {
 		if ( !clc.demoplaying ) {
-			CL_StopRecord_f();
+			CL_StopRecord();
 		}
 	}
 
@@ -685,7 +685,7 @@ static void CL_ParseDownload( msg_t *msg ) {
 	}
 
 	if ( clc.recordfile != FS_INVALID_HANDLE ) {
-		CL_StopRecord_f();
+		CL_StopRecord();
 	}
 
 	// read the data
