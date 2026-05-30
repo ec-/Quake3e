@@ -243,8 +243,8 @@ stop recording a demo
 void CL_StopRecord_f( void ) {
 
 	if ( clc.recordfile != FS_INVALID_HANDLE ) {
-		char tempName[MAX_OSPATH];
-		char finalName[MAX_OSPATH];
+		char tempPath[MAX_OSPATH];
+		char finalPath[MAX_OSPATH];
 		int protocol;
 		int	len, sequence;
 
@@ -266,22 +266,22 @@ void CL_StopRecord_f( void ) {
 			protocol = com_protocol->integer;
 		}
 
-		Com_sprintf( tempName, sizeof( tempName ), "%s.tmp", clc.recordName );
+		Com_sprintf( tempPath, sizeof( tempPath ), "%s.tmp", clc.recordName );
 
-		Com_sprintf( finalName, sizeof( finalName ), "%s.%s%d", clc.recordName, DEMOEXT, protocol );
+		Com_sprintf( finalPath, sizeof( finalPath ), "%s.%s%d", clc.recordName, DEMOEXT, protocol );
 
 		if ( clc.explicitRecordName ) {
-			FS_Remove( finalName );
+			FS_Remove( finalPath );
 		} else {
 			// add sequence suffix to avoid overwrite
 			sequence = 0;
-			while ( FS_FileExists( finalName ) && ++sequence < 1000 ) {
-				Com_sprintf( finalName, sizeof( finalName ), "%s-%02d.%s%d",
+			while ( FS_FileExists( finalPath ) && ++sequence < 1000 ) {
+				Com_sprintf( finalPath, sizeof( finalPath ), "%s-%02d.%s%d",
 					clc.recordName, sequence, DEMOEXT, protocol );
 			}
 		}
 
-		FS_Rename( tempName, finalName );
+		FS_Rename( tempPath, finalPath );
 	}
 
 	if ( !clc.demorecording ) {
