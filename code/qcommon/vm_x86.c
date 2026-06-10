@@ -2571,6 +2571,7 @@ VM_FindMOps
 Search for known macro-op sequences
 =================
 */
+#ifdef MACRO_OPTIMIZE
 static void VM_FindMOps( instruction_t *buf, int instructionCount )
 {
 	instruction_t *i;
@@ -2581,7 +2582,6 @@ static void VM_FindMOps( instruction_t *buf, int instructionCount )
 
 	while ( n < instructionCount )
 	{
-#ifdef MACRO_OPTIMIZE
 		if ( i->op == OP_LOCAL || i->op == OP_CONST ) {
 			// OP_LOCAL|OP_CONST + OP_LOCAL|OP_CONST + OP_LOAD4 + OP_CONST + OP_XXX + OP_STORE4
 			if ( (i + 1)->op == i->op && i->value == (i + 1)->value && (i + 2)->op == OP_LOAD4 && (i + 3)->op == OP_CONST && (i + 4)->op != OP_UNDEF && (i + 5)->op == OP_STORE4 
@@ -2615,12 +2615,12 @@ static void VM_FindMOps( instruction_t *buf, int instructionCount )
 				}
 			}
 		}
-#endif
 
 		i++;
 		n++;
 	}
 }
+#endif // MACRO_OPTIMIZE
 
 
 #ifdef MACRO_OPTIMIZE
@@ -2760,7 +2760,9 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
 
 	VM_ReplaceInstructions( vm, inst );
 
+#ifdef MACRO_OPTIMIZE
 	VM_FindMOps( inst, vm->instructionCount );
+#endif
 
 #if JUMP_OPTIMIZE
 	for ( i = 0; i < header->instructionCount; i++ ) {

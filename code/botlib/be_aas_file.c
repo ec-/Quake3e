@@ -177,7 +177,7 @@ static void AAS_SwapAASData(void)
 #define CHECK_RANGE(first, count, limit) \
 	((uint64_t)(unsigned)(first) + (unsigned)(count) > (limit))
 
-#define UABS(c)	(((c) & 0x80000000) ? -(unsigned)c : (unsigned)c)
+#define UABS(c)	(((c) & 0x80000000) ? (unsigned)-(c) : (unsigned)(c))
 
 static const char *AAS_ValidateAASData(void)
 {
