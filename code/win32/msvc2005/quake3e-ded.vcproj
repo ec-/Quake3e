@@ -629,6 +629,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\qcommon\vm_optimize.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\win32\win_local.h"
 				>
 			</File>

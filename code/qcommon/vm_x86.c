@@ -2507,7 +2507,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 		}	
 
 		case OP_JUMP:
-			flush_volatile();
+			flush_opstack();
 			EmitJump( ni, ni->op, ci->value );
 			ip += 1; // OP_JUMP
 			return qtrue;
@@ -2523,6 +2523,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 		case OP_LEI:
 		case OP_LTI: {
 			int rx = load_rx_opstack( R_EAX | RCONST ); dec_opstack(); // eax = *opstack; opstack -= 4
+			flush_nonvolatile();
 			if ( ci->value == 0 && ( ni->op == OP_EQ || ni->op == OP_NE ) ) {
 				emit_test_rx( rx, rx );						// test eax, eax
 			} else{
@@ -2904,7 +2905,7 @@ __compile:
 		{
 			// we can safely perform register optimizations only in case if
 			// we are 100% sure that current instruction is not a jump label
-			flush_volatile();
+			flush_opstack();
 		}
 
 		instructionOffsets[ ip++ ] = compiledOfs;
@@ -3039,8 +3040,8 @@ __compile:
 
 			case OP_JUMP:
 				rx[0] = load_rx_opstack( R_EAX | RCONST ); dec_opstack(); // eax = *opstack; opstack -= 4
-				flush_volatile();
 				emit_CheckJump( vm, rx[0], proc_base, proc_len );		// check if eax is within current proc
+				flush_opstack();
 #if idx64
 				emit_jump_index( R_INSPOINTERS, rx[0] );				// jmp qword ptr [instructionPointers + rax*8]
 #else
@@ -3061,6 +3062,7 @@ __compile:
 			case OP_GEU: {
 				rx[0] = load_rx_opstack( R_EAX | RCONST ); dec_opstack(); // eax = *opstack; opstack -= 4
 				rx[1] = load_rx_opstack( R_EDX | RCONST ); dec_opstack(); // edx = *opstack; opstack -= 4
+				flush_nonvolatile();
 				emit_cmp_rx( rx[1], rx[0] ); // cmp edx, eax
 				unmask_rx( rx[0] );
 				unmask_rx( rx[1] );
@@ -3077,6 +3079,7 @@ __compile:
 				if ( HasSSEFP() ) {
 					sx[0] = load_sx_opstack( R_XMM0 | RCONST ); dec_opstack(); // xmm0 = *opstack; opstack -= 4
 					sx[1] = load_sx_opstack( R_XMM1 | RCONST ); dec_opstack(); // xmm1 = *opstack; opstack -= 4
+					flush_nonvolatile();
 					if ( ci->op == OP_EQF || ci->op == OP_NEF ) {
 						emit_ucomiss( sx[1], sx[0] );	// ucomiss xmm1, xmm0
 					} else {
@@ -3090,6 +3093,7 @@ __compile:
 					// legacy x87 path
 					flush_opstack_top(); dec_opstack();
 					flush_opstack_top(); dec_opstack();
+					flush_nonvolatile();
 					if ( HasFCOM() ) {
 						emit_fld( R_OPSTACK, 8 );		// fld dword ptr [opStack+8]
 						emit_fld( R_OPSTACK, 4 );		// fld dword ptr [opStack+4]

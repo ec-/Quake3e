@@ -1052,8 +1052,8 @@ static uint32_t alloc_sx( uint32_t pref )
 ==============
 flush_volatile
 
-flush any cached register/address/constant to opstack and reset meta (constants mapping)
-this MUST be called before any unconditional jump, return or function call
+flush cached GP/FP registers to opStack memory locations
+this must be called before function calls
 ==============
 */
 static void flush_volatile( void )
@@ -1073,6 +1073,35 @@ static void flush_volatile( void )
 }
 
 
+/*
+==============
+flush_nonvolatile
+
+flush constants/addresses to opStack memory locations
+this must be called before conditional jumps
+==============
+*/
+static void flush_nonvolatile(void)
+{
+	int i;
+
+	for (i = 0; i <= opstack; i++) {
+		opstack_t* it = opstackv + i;
+		if ( it->type == TYPE_CONST || it->type == TYPE_LOCAL ) {
+			flush_item( it );
+		}
+	}
+}
+
+
+/*
+==============
+flush_opstack
+
+materialize opStack values on memory locations
+this must be called for jump targets, before leave/return, uconditional jumps
+==============
+*/
 static void flush_opstack( void )
 {
 	int i;

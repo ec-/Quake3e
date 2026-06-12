@@ -297,6 +297,9 @@
     <ClInclude Include="..\glw_win.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\qcommon\vm_optimize.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">

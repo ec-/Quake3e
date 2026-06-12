@@ -390,6 +390,7 @@
     <ClInclude Include="..\..\qcommon\surfaceflags.h" />
     <ClInclude Include="..\..\qcommon\unzip.h" />
     <ClInclude Include="..\..\qcommon\vm_local.h" />
+    <ClInclude Include="..\..\qcommon\vm_optimize.h" />
     <ClInclude Include="..\..\renderer\qgl.h" />
     <ClInclude Include="..\..\renderercommon\tr_public.h" />
     <ClInclude Include="..\..\renderercommon\tr_types.h" />

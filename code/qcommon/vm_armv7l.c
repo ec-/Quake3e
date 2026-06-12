@@ -1016,6 +1016,10 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 	uint32_t rx[2];
 	uint32_t sx[2];
 
+	if ( ni->jused ) {
+		return qfalse;
+	}
+
 	switch ( ni->op ) {
 
 	case OP_ADD:
@@ -1062,7 +1066,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 		return qtrue;
 
 	case OP_JUMP:
-		flush_volatile();
+		flush_opstack();
 		emit(Bi(encode_offset(vm->instructionPointers[ ci->value ] - compiledOfs)));
 		ip += 1; // OP_JUMP
 		return qtrue;
@@ -1146,6 +1150,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 		if ( can_encode( ci->value ) ) {
 			uint32_t comp = get_comp( ni->op );
 			rx[0] = load_rx_opstack( R0 | RCONST ); dec_opstack(); // r0 = *opstack; opstack -= 4
+			flush_nonvolatile();
 			emit( CMPi( rx[0], ci->value ) );
 			emit( cond( comp, Bi( encode_offset( vm->instructionPointers[ni->value] - compiledOfs ) ) ) );
 			unmask_rx( rx[0] );
@@ -1283,7 +1288,7 @@ __recompile:
 		{
 			// we can safely perform register optimizations only in case if
 			// we are 100% sure that current instruction is not a jump label
-			flush_volatile();
+			flush_opstack();
 		}
 
 		vm->instructionPointers[ ip++ ] = compiledOfs;
@@ -1390,7 +1395,7 @@ __recompile:
 
 			case OP_JUMP:
 				rx[0] = load_rx_opstack( R0 | RCONST ); dec_opstack(); // r0 = *opstack; opstack -= 4
-				flush_volatile();
+				flush_opstack();
 				emit_CheckJump( vm, rx[0], proc_base, proc_len ); // check if r0 is within current proc
 				rx[1] = alloc_rx( R12 );
 				emit(LDRa(rx[1], rINSPOINTERS, rLSL(2, rx[0]))); // r12 = instructionPointers[ r0 ]
@@ -1413,6 +1418,7 @@ __recompile:
 				uint32_t comp = get_comp( ci->op );
 				rx[0] = load_rx_opstack( R0 | RCONST ); dec_opstack(); // r0 = *opstack; opstack -= 4
 				rx[1] = load_rx_opstack( R1 | RCONST ); dec_opstack(); // r1 = *opstack; opstack -= 4
+				flush_nonvolatile();
 				unmask_rx( rx[0] );
 				unmask_rx( rx[1] );
 				emit(CMP(rx[1], rx[0]));
@@ -1429,6 +1435,7 @@ __recompile:
 				uint32_t comp = get_comp( ci->op );
 				sx[0] = load_sx_opstack( S0 | RCONST ); dec_opstack(); // s0 = *opstack; opstack -= 4
 				sx[1] = load_sx_opstack( S1 | RCONST ); dec_opstack(); // s1 = *opstack; opstack -= 4
+				flush_nonvolatile();
 				unmask_sx( sx[0] );
 				unmask_sx( sx[1] );
 				emit(VCMP_F32(sx[1], sx[0]));
@@ -1742,8 +1749,8 @@ __recompile:
 #else
 					rx[1] = load_rx_opstack( R1 | FORCED ); dec_opstack(); // r1 = *opstack
 					rx[0] = load_rx_opstack( R0 | FORCED ); // opstack-=4; r0 = *opstack
-					rx[2] = alloc_rx( R12 );
 					flush_volatile();
+					rx[2] = alloc_rx( R12 );
 					if ( ci->op == OP_DIVI )
 						mov_rx_imm32( rx[2], (intptr_t)__aeabi_idiv );
 					else
