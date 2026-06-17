@@ -455,8 +455,12 @@ static void CMod_LoadLeafSurfaces( const lump_t *l )
 
 	for ( i = 0; i < count; i++, in++, out++ ) {
 		unsigned j = LittleLong( *in );
-		if ( j >= cm.numSurfaces )
-			Com_Error( ERR_DROP, "%s: bad surface", __func__ );
+		if ( j >= cm.numSurfaces ) {
+			if ( j == 0xFFFFFFFF )
+				j = 0; // fix for ut43_azurea_b1 map
+			else
+				Com_Error(ERR_DROP, "%s: bad surface", __func__);
+		}
 		*out = j;
 	}
 }

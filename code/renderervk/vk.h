@@ -363,6 +363,7 @@ typedef struct {
 	VkSwapchainKHR swapchain;
 	uint32_t swapchain_image_count;
 	VkImage swapchain_images[MAX_SWAPCHAIN_IMAGES];
+	qboolean swapchain_images_inited[MAX_SWAPCHAIN_IMAGES];
 	VkImageView swapchain_image_views[MAX_SWAPCHAIN_IMAGES];
 	VkSemaphore swapchain_rendering_finished[MAX_SWAPCHAIN_IMAGES];
 	//uint32_t swapchain_image_index;
