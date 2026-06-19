@@ -1064,3 +1064,14 @@ void Sys_SetClipboardBitmap( const byte *bitmap, int length )
 	}
 	CloseClipboard();
 }
+
+
+/*
+===================
+Key_CapsLockOn
+===================
+*/
+qboolean Key_CapsLockOn( void )
+{
+	return ( GetKeyState( VK_CAPITAL ) & 1 ) ? qtrue : qfalse;
+}
