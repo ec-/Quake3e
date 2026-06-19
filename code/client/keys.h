@@ -45,6 +45,7 @@ const char *Key_KeynumToString( int keynum );
 int Key_StringToKeynum( const char *str );
 
 qboolean Key_IsDown( int keynum );
+qboolean Key_CapsLockOn( void );
 void Key_ClearStates( void );
 
 qboolean Key_GetOverstrikeMode( void );

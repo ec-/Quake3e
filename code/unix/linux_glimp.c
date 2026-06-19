@@ -2164,6 +2164,24 @@ void Sys_SetClipboardBitmap( const byte *bitmap, int length )
 }
 
 
+/*
+===================
+Key_CapsLockOn
+===================
+*/
+qboolean Key_CapsLockOn( void )
+{
+	XKeyboardState state;
+
+	if ( !dpy ) {
+		return qfalse;
+	}
+
+	XGetKeyboardControl( dpy, &state );
+	return ( state.led_mask & 1 ) ? qtrue : qfalse;
+}
+
+
 #ifdef USE_JOYSTICK
 // bk010216 - added stubs for non-Linux UNIXes here
 // FIXME - use NO_JOYSTICK or something else generic
