@@ -947,6 +947,42 @@ void CL_CGameRendering( stereoFrame_t stereo ) {
 }
 
 
+#define DELTA_COUNT 16
+
+static int deltaValue[DELTA_COUNT];
+static int deltaBase;
+static int deltaIndex;
+static int deltaDeviance;
+static int deltaAverage;
+
+
+static void CL_InitDelta( int newDelta )
+{
+	int i;
+	for ( i = 0; i < DELTA_COUNT; i++ ) {
+		deltaValue[i] = newDelta;
+	}
+	deltaDeviance = 0;
+	deltaBase = newDelta;
+	deltaAverage = newDelta;
+}
+
+
+static void CL_PushDelta( int newDelta )
+{
+	deltaDeviance += newDelta - deltaValue[deltaIndex];
+	deltaValue[deltaIndex++] = newDelta;
+	deltaIndex &= (DELTA_COUNT - 1);
+	deltaAverage = deltaBase + (deltaDeviance / DELTA_COUNT);
+}
+
+
+static int CL_GetDelta( void )
+{
+	return deltaAverage;
+}
+
+
 /*
 =================
 CL_AdjustTimeDelta
@@ -967,7 +1003,8 @@ or bursted delayed packets.
 =================
 */
 
-#define	RESET_TIME	500
+#define	RESET_TIME	500 /* reset */
+#define	FAST_TIME	125 /* fast adjust */
 
 static void CL_AdjustTimeDelta( void ) {
 	int		newDelta;
@@ -983,19 +1020,25 @@ static void CL_AdjustTimeDelta( void ) {
 	newDelta = cl.snap.serverTime - cls.realtime;
 	deltaDelta = abs( newDelta - cl.serverTimeDelta );
 
+	if ( cl_showTimeDelta->integer ) {
+		Com_Printf( "snap.svTime=%6i cls.rtime=%6i nDelta=%5i dDetla=%3i", cl.snap.serverTime, cls.realtime, newDelta, deltaDelta );
+	}
+
 	if ( deltaDelta > RESET_TIME ) {
 		cl.serverTimeDelta = newDelta;
+		CL_InitDelta( cl.serverTimeDelta );
 		cl.oldServerTime = cl.snap.serverTime;	// FIXME: is this a problem for cgame?
 		cl.serverTime = cl.snap.serverTime;
 		if ( cl_showTimeDelta->integer ) {
-			Com_Printf( "<RESET> " );
+			Com_Printf( " <RESET>" );
 		}
-	} else if ( deltaDelta > 100 ) {
+	} else if ( deltaDelta > FAST_TIME ) {
 		// fast adjust, cut the difference in half
 		if ( cl_showTimeDelta->integer ) {
-			Com_Printf( "<FAST> " );
+			Com_Printf( " <FAST>" );
 		}
-		cl.serverTimeDelta = ( cl.serverTimeDelta + newDelta ) >> 1;
+		cl.serverTimeDelta = ( cl.serverTimeDelta + newDelta ) / 2;
+		CL_InitDelta( cl.serverTimeDelta );
 	} else {
 		// slow drift adjust, only move 1 or 2 msec
 
@@ -1006,15 +1049,25 @@ static void CL_AdjustTimeDelta( void ) {
 			if ( cl.extrapolatedSnapshot ) {
 				cl.extrapolatedSnapshot = qfalse;
 				cl.serverTimeDelta -= 2;
+				if ( cl_showTimeDelta->integer ) {
+					Com_Printf( " -2" );
+				}
 			} else {
 				// otherwise, move our sense of time forward to minimize total latency
 				cl.serverTimeDelta++;
+				if ( cl_showTimeDelta->integer ) {
+					Com_Printf( " +1" );
+				}
 			}
+			CL_PushDelta( cl.serverTimeDelta );
+		}
+		if ( cl_showTimeDelta->integer ) {
+			Com_Printf( " avgDelta=%5i", CL_GetDelta() );
 		}
 	}
 
 	if ( cl_showTimeDelta->integer ) {
-		Com_Printf( "%i ", cl.serverTimeDelta );
+		Com_Printf( " svTimeDelta=%5i\n", cl.serverTimeDelta );
 	}
 }
 
@@ -1036,6 +1089,7 @@ static void CL_FirstSnapshot( void ) {
 
 	// set the timedelta so we are exactly on this first frame
 	cl.serverTimeDelta = cl.snap.serverTime - cls.realtime;
+	CL_InitDelta( cl.serverTimeDelta );
 	cl.oldServerTime = cl.snap.serverTime;
 
 	clc.timeDemoBaseTime = cl.snap.serverTime;
@@ -1167,11 +1221,12 @@ void CL_SetCGameTime( void ) {
 	if ( demoFreezed ) {
 		// \timescale 0 is used to lock a demo in place for single frame advances
 		cl.serverTimeDelta -= cls.frametime;
+		CL_InitDelta( cl.serverTimeDelta );
 	} else {
 		// cl_timeNudge is a user adjustable cvar that allows more
 		// or less latency to be added in the interest of better
 		// smoothness or better responsiveness.
-		cl.serverTime = cls.realtime + cl.serverTimeDelta - CL_TimeNudge();
+		cl.serverTime = cls.realtime + CL_GetDelta() - CL_TimeNudge();
 
 		// guarantee that time will never flow backwards, even if
 		// serverTimeDelta made an adjustment or cl_timeNudge was changed
@@ -1182,8 +1237,7 @@ void CL_SetCGameTime( void ) {
 
 		// note if we are almost past the latest frame (without timeNudge),
 		// so we will try and adjust back a bit when the next snapshot arrives
-		//if ( cls.realtime + cl.serverTimeDelta >= cl.snap.serverTime - 5 ) {
-		if ( cls.realtime + cl.serverTimeDelta - cl.snap.serverTime >= -5 ) {
+		if ( cl.snap.serverTime - cls.realtime - cl.serverTimeDelta <= 5 ) {
 			cl.extrapolatedSnapshot = qtrue;
 		}
 	}
