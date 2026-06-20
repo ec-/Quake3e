@@ -2913,9 +2913,6 @@ __compile:
 		switch ( ci->op ) {
 
 			case OP_UNDEF:
-				emit_brk();			// int 3
-				break;
-
 			case OP_IGNORE:
 				ip += ci->value;
 				break;

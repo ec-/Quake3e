@@ -1296,9 +1296,6 @@ __recompile:
 		switch ( ci->op )
 		{
 			case OP_UNDEF:
-				emit(BKPT(1));
-				break;
-
 			case OP_IGNORE:
 				ip += ci->value;
 				break;

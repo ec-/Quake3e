@@ -1893,9 +1893,6 @@ __recompile:
 		switch ( ci->op )
 		{
 			case OP_UNDEF:
-				emit( PPC_TRAP() );
-				break;
-
 			case OP_IGNORE:
 				ip += ci->value;
 				break;
