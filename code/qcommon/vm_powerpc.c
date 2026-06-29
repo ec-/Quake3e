@@ -2177,12 +2177,12 @@ __recompile:
 						switch ( ci->op ) {
 							case OP_LOAD1:
 								if ( reg->ext != Z_EXT8 ) {
-									emit( PPC_EXTSB( rx[0], rx[0] ) ); // RX = (unsigned byte) RX
+									emit( PPC_CLRLDI( rx[0], rx[0], 56 ) ); // RX = (unsigned byte) RX (zero-extend)
 									reduce_map_size( reg, 1 );
 								} break;
 							case OP_LOAD2:
 								if ( reg->ext != Z_EXT16 ) {
-									emit( PPC_EXTSH( rx[0], rx[0] ) ); // RX = (unsigned short) RX
+									emit( PPC_CLRLDI( rx[0], rx[0], 48 ) ); // RX = (unsigned short) RX (zero-extend)
 									reduce_map_size( reg, 2 );
 								} break;
 							case OP_LOAD4:
