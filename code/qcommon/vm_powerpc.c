@@ -2173,23 +2173,33 @@ __recompile:
 						default:       var.size = 4; break;
 					}
 					if ( (reg = find_rx_var( &rx[0], &var )) != NULL ) {
-						// already cached in some register, do zero extension if needed
-						switch ( ci->op ) {
-							case OP_LOAD1:
-								if ( reg->ext != Z_EXT8 ) {
-									emit( PPC_CLRLDI( rx[0], rx[0], 56 ) ); // RX = (unsigned byte) RX (zero-extend)
-									reduce_map_size( reg, 1 );
-								} break;
-							case OP_LOAD2:
-								if ( reg->ext != Z_EXT16 ) {
-									emit( PPC_CLRLDI( rx[0], rx[0], 48 ) ); // RX = (unsigned short) RX (zero-extend)
-									reduce_map_size( reg, 2 );
-								} break;
-							case OP_LOAD4:
-								reg->ext = Z_NONE;
-								break;
+						// already cached in some register
+						if ( ci->op == OP_LOAD4 ) {
+							reg->ext = Z_NONE;
+							mask_rx( rx[0] );
+						} else {
+							const ext_t need = ( ci->op == OP_LOAD1 ) ? Z_EXT8 : Z_EXT16;
+							const int   bits = ( ci->op == OP_LOAD1 ) ? 56 : 48;
+							if ( reg->ext == need ) {
+								// already zero-extended to the requested width
+								mask_rx( rx[0] );
+							} else if ( search_opstack( TYPE_RX, rx[0] ) ) {
+								// the cached register is still a live value elsewhere
+								// on the opStack (e.g. a wider constant reused across
+								// stores of different sizes). Zero-extend a *copy* so
+								// the in-place reduction can't clobber that value -
+								// mirrors the clone-on-alias guard in finish_rx().
+								mask_rx( rx[0] );            // clone_rx unmasks the source
+								rx[0] = clone_rx( rx[0] );   // new masked reg = copy
+								emit( PPC_CLRLDI( rx[0], rx[0], bits ) ); // (unsigned) zero-extend copy
+								set_rx_ext( rx[0], need );
+							} else {
+								// sole owner: zero-extend in place and update the cache
+								emit( PPC_CLRLDI( rx[0], rx[0], bits ) ); // RX = (unsigned) RX
+								reduce_map_size( reg, ( ci->op == OP_LOAD1 ) ? 1 : 2 );
+								mask_rx( rx[0] );
+							}
 						}
-						mask_rx( rx[0] );
 					} else {
 						// not found in vars, perform load
 						rx[0] = alloc_rx( R3 );	// allocate target register
