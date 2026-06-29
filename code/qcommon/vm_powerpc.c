@@ -580,6 +580,11 @@ static inline uint32_t _ppc_chk_ui16( int32_t v, const char *opname )
 // bns target (not SO)
 #define PPC_BNS(off)		PPC_BC(BO_FALSE, BI_SO, off)
 
+// cror bt, ba, bb  (CR[bt] = CR[ba] | CR[bb])  XL-form, xo=449
+#define PPC_CROR(bt, ba, bb) \
+	( (19u<<26) | (((unsigned)(bt)&0x1F)<<21) | (((unsigned)(ba)&0x1F)<<16) | \
+	  (((unsigned)(bb)&0x1F)<<11) | (449u<<1) )
+
 // -- Branch to LR/CTR (XL-form) --
 // blr  (branch to LR)
 #define PPC_BLR()			PPC_XL(19, BO_ALWAYS, 0, 16, 0)
@@ -2116,7 +2121,16 @@ __recompile:
 				sx[0] = load_sx_opstack( F0 | RCONST ); dec_opstack(); // F0 = *opstack; opstack -= 4
 				flush_nonvolatile();
 				emit( PPC_FCMPU( 0, sx[0], sx[1] ) );
-				// emit_branchConditional( vm, ci, ci->op );
+				// IEEE unordered (NaN) handling: FCMPU sets only CR0[SO] when an
+				// operand is NaN, leaving LT/GT/EQ clear. For <= / >= the single-bit
+				// condition from get_branch_cond would then wrongly take the branch,
+				// so fold the unordered bit into the tested bit: a NaN operand must
+				// NOT branch (matching the interpreter and aarch64). The other float
+				// compares (eq,ne,lt,gt) are already correct under NaN.
+				if ( ci->op == OP_LEF )
+					emit( PPC_CROR( BI_GT, BI_GT, BI_SO ) ); // GT |= unordered
+				else if ( ci->op == OP_GEF )
+					emit( PPC_CROR( BI_LT, BI_LT, BI_SO ) ); // LT |= unordered
 				emit_branchConditionalShort( vm, ci );
 				unmask_sx( sx[1] );
 				unmask_sx( sx[0] );
