@@ -210,7 +210,7 @@ nextInstruction2:
 		ci++;
 
 		switch ( opcode ) {
-
+		case OP_UNDEF:
 		case OP_IGNORE:
 			ci += v0;
 			goto nextInstruction2;
