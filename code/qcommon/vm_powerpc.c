@@ -580,6 +580,11 @@ static inline uint32_t _ppc_chk_ui16( int32_t v, const char *opname )
 // bns target (not SO)
 #define PPC_BNS(off)		PPC_BC(BO_FALSE, BI_SO, off)
 
+// cror bt, ba, bb  (CR[bt] = CR[ba] | CR[bb])  XL-form, xo=449
+#define PPC_CROR(bt, ba, bb) \
+	( (19u<<26) | (((unsigned)(bt)&0x1F)<<21) | (((unsigned)(ba)&0x1F)<<16) | \
+	  (((unsigned)(bb)&0x1F)<<11) | (449u<<1) )
+
 // -- Branch to LR/CTR (XL-form) --
 // blr  (branch to LR)
 #define PPC_BLR()			PPC_XL(19, BO_ALWAYS, 0, 16, 0)
@@ -2116,7 +2121,16 @@ __recompile:
 				sx[0] = load_sx_opstack( F0 | RCONST ); dec_opstack(); // F0 = *opstack; opstack -= 4
 				flush_nonvolatile();
 				emit( PPC_FCMPU( 0, sx[0], sx[1] ) );
-				// emit_branchConditional( vm, ci, ci->op );
+				// IEEE unordered (NaN) handling: FCMPU sets only CR0[SO] when an
+				// operand is NaN, leaving LT/GT/EQ clear. For <= / >= the single-bit
+				// condition from get_branch_cond would then wrongly take the branch,
+				// so fold the unordered bit into the tested bit: a NaN operand must
+				// NOT branch (matching the interpreter and aarch64). The other float
+				// compares (eq,ne,lt,gt) are already correct under NaN.
+				if ( ci->op == OP_LEF )
+					emit( PPC_CROR( BI_GT, BI_GT, BI_SO ) ); // GT |= unordered
+				else if ( ci->op == OP_GEF )
+					emit( PPC_CROR( BI_LT, BI_LT, BI_SO ) ); // LT |= unordered
 				emit_branchConditionalShort( vm, ci );
 				unmask_sx( sx[1] );
 				unmask_sx( sx[0] );
@@ -2173,23 +2187,33 @@ __recompile:
 						default:       var.size = 4; break;
 					}
 					if ( (reg = find_rx_var( &rx[0], &var )) != NULL ) {
-						// already cached in some register, do zero extension if needed
-						switch ( ci->op ) {
-							case OP_LOAD1:
-								if ( reg->ext != Z_EXT8 ) {
-									emit( PPC_EXTSB( rx[0], rx[0] ) ); // RX = (unsigned byte) RX
-									reduce_map_size( reg, 1 );
-								} break;
-							case OP_LOAD2:
-								if ( reg->ext != Z_EXT16 ) {
-									emit( PPC_EXTSH( rx[0], rx[0] ) ); // RX = (unsigned short) RX
-									reduce_map_size( reg, 2 );
-								} break;
-							case OP_LOAD4:
-								reg->ext = Z_NONE;
-								break;
+						// already cached in some register
+						if ( ci->op == OP_LOAD4 ) {
+							reg->ext = Z_NONE;
+							mask_rx( rx[0] );
+						} else {
+							const ext_t need = ( ci->op == OP_LOAD1 ) ? Z_EXT8 : Z_EXT16;
+							const int   bits = ( ci->op == OP_LOAD1 ) ? 56 : 48;
+							if ( reg->ext == need ) {
+								// already zero-extended to the requested width
+								mask_rx( rx[0] );
+							} else if ( search_opstack( TYPE_RX, rx[0] ) ) {
+								// the cached register is still a live value elsewhere
+								// on the opStack (e.g. a wider constant reused across
+								// stores of different sizes). Zero-extend a *copy* so
+								// the in-place reduction can't clobber that value -
+								// mirrors the clone-on-alias guard in finish_rx().
+								mask_rx( rx[0] );            // clone_rx unmasks the source
+								rx[0] = clone_rx( rx[0] );   // new masked reg = copy
+								emit( PPC_CLRLDI( rx[0], rx[0], bits ) ); // (unsigned) zero-extend copy
+								set_rx_ext( rx[0], need );
+							} else {
+								// sole owner: zero-extend in place and update the cache
+								emit( PPC_CLRLDI( rx[0], rx[0], bits ) ); // RX = (unsigned) RX
+								reduce_map_size( reg, ( ci->op == OP_LOAD1 ) ? 1 : 2 );
+								mask_rx( rx[0] );
+							}
 						}
-						mask_rx( rx[0] );
 					} else {
 						// not found in vars, perform load
 						rx[0] = alloc_rx( R3 );	// allocate target register
