@@ -89,7 +89,7 @@ typedef struct {
 	int				restartTime;
 	int				time;
 
-	byte			baselineUsed[ MAX_GENTITIES ];
+	qboolean		baselineUsed[ MAX_GENTITIES ];
 } server_t;
 
 typedef struct {

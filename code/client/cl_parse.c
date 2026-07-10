@@ -573,7 +573,7 @@ static void CL_ParseGamestate( msg_t *msg ) {
 
 			es = &cl.entityBaselines[ newnum ];
 			MSG_ReadDeltaEntity( msg, &nullstate, es, newnum );
-			cl.baselineUsed[ newnum ] = 1;
+ 			cl.baselineUsed[ newnum ] = qtrue;
 		} else {
 			Com_Error( ERR_DROP, "%s: bad command byte", __func__ );
 		}

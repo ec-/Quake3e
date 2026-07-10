@@ -231,7 +231,7 @@ static void SV_CreateBaseline( void ) {
 		// take current state as baseline
 		//
 		sv.svEntities[ entnum ].baseline = ent->s;
-		sv.baselineUsed[ entnum ] = 1;
+		sv.baselineUsed[ entnum ] = qtrue;
 	}
 }
 
