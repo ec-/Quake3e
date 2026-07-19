@@ -16,6 +16,9 @@
     <ClCompile Include="..\..\client\cl_curl.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\client\cl_fonts.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\client\cl_input.c">
       <Filter>Source Files</Filter>
     </ClCompile>

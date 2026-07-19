@@ -446,6 +446,15 @@ static qboolean CL_GetValue( char* value, int valueSize, const char* key ) {
 		return qtrue;
 	}
 
+	if ( !Q_stricmp( key, "trap_R_RegisterFontAtlas_Q3E" ) && re.RegisterFontAtlas ) {
+#ifdef BUILD_FREETYPE
+		Com_sprintf( value, valueSize, "%i", CG_R_REGISTERFONTATLAS );
+		return qtrue;
+#else
+		return qfalse;
+#endif
+	}
+
 	return qfalse;
 }
 
@@ -799,6 +808,26 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 	case CG_KEY_CAPSLOCK_ON:
 		return Key_CapsLockOn();
 
+	case CG_R_REGISTERFONTATLAS:
+		{
+			const char *face;
+			fontAtlasInfo_t *atlasOut;
+
+			if ( !re.RegisterFontAtlas ) {
+				return 0;
+			}
+			face = (const char *)VMA(1);
+			if ( !face || !face[0] ) {
+				face = CL_FontResolvedPath();
+			}
+			atlasOut = (fontAtlasInfo_t *)VMA(4);
+			if ( !atlasOut ) {
+				return 0;
+			}
+			VM_CHECKBOUNDS( cgvm, args[4], sizeof( fontAtlasInfo_t ) );
+			return re.RegisterFontAtlas( face, args[2], VMA(3), atlasOut ) ? 1 : 0;
+		}
+
 	case CG_TRAP_GETVALUE:
 		VM_CHECKBOUNDS( cgvm, args[1], args[2] );
 		return CL_GetValue( VMA(1), args[2], VMA(3) );
@@ -848,6 +877,9 @@ void CL_InitCGame( void ) {
 	vmInterpret_t		interpret;
 
 	Cbuf_NestedReset();
+
+	/* Rescan after fs_game / pk3 are on the search path so mod fonts/*.ttf appear. */
+	CL_InitFonts();
 
 	t1 = Sys_Milliseconds();
 

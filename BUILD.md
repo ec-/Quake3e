@@ -6,6 +6,10 @@ Install Visual Studio Community Edition 2017 or later and compile `quake3e` proj
 
 `code/win32/msvc2017/quake3e.sln`
 
+FreeType is linked from vendored static libs under `code/libfreetype/windows/vs2017` (same layout as libcurl). Rebuild them if missing:
+
+`bash code/libfreetype/windows/build-vendor.sh msvc`
+
 Copy resulting exe from `code/win32/msvc2017/output` directory
 
 To compile with Vulkan backend - clean solution, right click on `quake3e` project, find `Project Dependencies` and select `renderervk` instead of `renderer`
@@ -29,7 +33,7 @@ Use `MSYS2 MINGW32` or `MSYS2 MINGW64` depending on your target system, then cop
 
 ### windows/mingw
 
-All build dependencies (libraries, headers) are bundled-in
+All build dependencies (libraries, headers) are bundled-in, including static FreeType under `code/libfreetype/windows` (rebuild with `bash code/libfreetype/windows/build-vendor.sh mingw` if needed).
 
 Build with either `make ARCH=x86` or `make ARCH=x86_64` commands depending on your target system, then copy resulting binaries from created `build` directory or use command:
 
@@ -43,7 +47,7 @@ You may need to run the following commands to install packages (using fresh ubun
 
 * sudo apt install make gcc libcurl4-openssl-dev mesa-common-dev
 * sudo apt install libxxf86dga-dev libxrandr-dev libxxf86vm-dev libasound-dev
-* sudo apt install libsdl2-dev
+* sudo apt install libsdl2-dev libfreetype6-dev
 
 Build with: `make`
 
@@ -79,7 +83,7 @@ Build and install `quake3e-git`:
 
 Install the build dependencies:
 
-* apt install libsdl2-dev libxxf86dga-dev libcurl4-openssl-dev
+* apt install libsdl2-dev libxxf86dga-dev libcurl4-openssl-dev libfreetype6-dev
 
 Build with: `make`
 
@@ -93,6 +97,7 @@ Copy the resulting binaries from created `build` directory or use command:
 
 * install the official SDL2 framework to /Library/Frameworks
 * `brew install molten-vk` or install Vulkan SDK to use MoltenVK library
+* `brew install freetype` (for TTF font support)
 
 Build with: `make`
 
@@ -142,6 +147,8 @@ Several Makefile options are available for linux/mingw/macos builds:
 `RENDERER_DEFAULT=opengl` - set default value for `\cl_renderer` cvar or use selected renderer for static build for `USE_RENDERER_DLOPEN=0`, valid options are `opengl`, `opengl2`, `vulkan`
 
 `USE_SYSTEM_JPEG=0` - use current system JPEG library, disabled by default
+
+`USE_FREETYPE=1` - enable FreeType for TTF fonts (`BUILD_FREETYPE`), enabled by default; MinGW/MSVC link vendored static libs under `code/libfreetype/windows` (mingw/ or vs2017/); CMake uses `find_package(Freetype)` on non-MSVC, or the same vs2017 libs when building with MSVC
 
 Example:
 

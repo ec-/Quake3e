@@ -35,6 +35,7 @@ BUILD_SERVER     = 1
 
 USE_SDL          = 1
 USE_CURL         = 1
+USE_FREETYPE     = 1
 USE_LOCAL_HEADERS= 0
 USE_SYSTEM_JPEG  = 0
 
@@ -247,6 +248,10 @@ ifneq ($(call bin_path, $(PKG_CONFIG)),)
     VORBIS_CFLAGS ?= $(shell $(PKG_CONFIG) --silence-errors --cflags vorbisfile || true)
     VORBIS_LIBS ?= $(shell $(PKG_CONFIG) --silence-errors --libs vorbisfile || echo -lvorbisfile)
   endif
+  ifeq ($(USE_FREETYPE),1)
+    FREETYPE_CFLAGS ?= $(shell $(PKG_CONFIG) --silence-errors --cflags freetype2)
+    FREETYPE_LIBS ?= $(shell $(PKG_CONFIG) --silence-errors --libs freetype2)
+  endif
 endif
 
 # supply some reasonable defaults for SDL/X11
@@ -344,6 +349,8 @@ ifeq ($(USE_CURL),1)
     endif
   endif
 endif
+
+RENDERER_LIBS =
 
 ifeq ($(USE_VULKAN_API),1)
   BASE_CFLAGS += -DUSE_VULKAN_API
@@ -472,6 +479,16 @@ ifdef MINGW
     CLIENT_LDFLAGS += -lcurl -lz -lcrypt32
   endif
 
+  ifeq ($(USE_FREETYPE),1)
+    BASE_CFLAGS += -DBUILD_FREETYPE
+    BASE_CFLAGS += -I$(MOUNT_DIR)/libfreetype/windows/include/freetype2
+    ifeq ($(ARCH),x86)
+      RENDERER_LIBS += -L$(MOUNT_DIR)/libfreetype/windows/mingw/lib32 -Wl,-Bstatic -lfreetype -Wl,-Bdynamic
+    else
+      RENDERER_LIBS += -L$(MOUNT_DIR)/libfreetype/windows/mingw/lib64 -Wl,-Bstatic -lfreetype -Wl,-Bdynamic
+    endif
+  endif
+
   ifeq ($(USE_OGG_VORBIS),1)
     BASE_CFLAGS += -DUSE_OGG_VORBIS $(OGG_FLAGS) $(VORBIS_FLAGS)
     CLIENT_LDFLAGS += $(OGG_LIBS) $(VORBIS_LIBS)
@@ -535,6 +552,18 @@ ifeq ($(COMPILE_PLATFORM),darwin)
   ifeq ($(USE_OGG_VORBIS),1)
     BASE_CFLAGS += -DUSE_OGG_VORBIS $(OGG_FLAGS) $(VORBIS_FLAGS)
     CLIENT_LDFLAGS += $(OGG_LIBS) $(VORBIS_LIBS)
+  endif
+
+  ifeq ($(USE_FREETYPE),1)
+    BASE_CFLAGS += -DBUILD_FREETYPE
+    ifneq ($(FREETYPE_CFLAGS),)
+      BASE_CFLAGS += $(FREETYPE_CFLAGS)
+    endif
+    ifneq ($(FREETYPE_LIBS),)
+      RENDERER_LIBS += $(FREETYPE_LIBS)
+    else
+      RENDERER_LIBS += -lfreetype
+    endif
   endif
 
   DEBUG_CFLAGS = $(BASE_CFLAGS) -DDEBUG -D_DEBUG -g -O0
@@ -615,6 +644,18 @@ else
   ifeq ($(USE_OGG_VORBIS),1)
     BASE_CFLAGS += -DUSE_OGG_VORBIS $(OGG_FLAGS) $(VORBIS_FLAGS)
     CLIENT_LDFLAGS += $(OGG_LIBS) $(VORBIS_LIBS)
+  endif
+
+  ifeq ($(USE_FREETYPE),1)
+    BASE_CFLAGS += -DBUILD_FREETYPE
+    ifneq ($(FREETYPE_CFLAGS),)
+      BASE_CFLAGS += $(FREETYPE_CFLAGS)
+    endif
+    ifneq ($(FREETYPE_LIBS),)
+      RENDERER_LIBS += $(FREETYPE_LIBS)
+    else
+      RENDERER_LIBS += -lfreetype
+    endif
   endif
 
   ifeq ($(PLATFORM),linux)
@@ -1058,6 +1099,7 @@ Q3OBJ = \
   $(B)/client/cl_cgame.o \
   $(B)/client/cl_cin.o \
   $(B)/client/cl_console.o \
+  $(B)/client/cl_fonts.o \
   $(B)/client/cl_input.o \
   $(B)/client/cl_keys.o \
   $(B)/client/cl_main.o \
@@ -1278,13 +1320,17 @@ endif # !MINGW
 
 $(B)/$(TARGET_CLIENT): $(Q3OBJ)
 	$(echo_cmd) "LD $@"
+ifeq ($(USE_RENDERER_DLOPEN),0)
+	$(Q)$(CC) -o $@ $(Q3OBJ) $(CLIENT_LDFLAGS) $(RENDERER_LIBS) $(LDFLAGS)
+else
 	$(Q)$(CC) -o $@ $(Q3OBJ) $(CLIENT_LDFLAGS) $(LDFLAGS)
+endif
 
 # modular renderers
 
 $(B)/$(TARGET_REND1): $(Q3REND1OBJ)
 	$(echo_cmd) "LD $@"
-	$(Q)$(CC) -o $@ $(Q3REND1OBJ) $(SHLIBCFLAGS) $(SHLIBLDFLAGS)
+	$(Q)$(CC) -o $@ $(Q3REND1OBJ) $(SHLIBCFLAGS) $(SHLIBLDFLAGS) $(RENDERER_LIBS)
 
 $(STRINGIFY): $(MOUNT_DIR)/renderer2/stringify.c
 	$(echo_cmd) "LD $@"
@@ -1292,11 +1338,11 @@ $(STRINGIFY): $(MOUNT_DIR)/renderer2/stringify.c
 
 $(B)/$(TARGET_REND2): $(Q3REND2OBJ) $(Q3REND2STROBJ)
 	$(echo_cmd) "LD $@"
-	$(Q)$(CC) -o $@ $(Q3REND2OBJ) $(Q3REND2STROBJ) $(SHLIBCFLAGS) $(SHLIBLDFLAGS)
+	$(Q)$(CC) -o $@ $(Q3REND2OBJ) $(Q3REND2STROBJ) $(SHLIBCFLAGS) $(SHLIBLDFLAGS) $(RENDERER_LIBS)
 
 $(B)/$(TARGET_RENDV): $(Q3RENDVOBJ)
 	$(echo_cmd) "LD $@"
-	$(Q)$(CC) -o $@ $(Q3RENDVOBJ) $(SHLIBCFLAGS) $(SHLIBLDFLAGS)
+	$(Q)$(CC) -o $@ $(Q3RENDVOBJ) $(SHLIBCFLAGS) $(SHLIBLDFLAGS) $(RENDERER_LIBS)
 
 #############################################################################
 # DEDICATED SERVER
