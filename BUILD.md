@@ -97,7 +97,7 @@ Copy the resulting binaries from created `build` directory or use command:
 
 * install the official SDL2 framework to /Library/Frameworks
 * `brew install molten-vk` or install Vulkan SDK to use MoltenVK library
-* `brew install freetype` (for TTF font support)
+* `brew install freetype` (for TTF font support; must match the target arch — Homebrew under `/opt/homebrew` is arm64, so `make ARCH=x86_64` on Apple Silicon skips FreeType unless an x86_64 FreeType is available)
 
 Build with: `make`
 

@@ -361,7 +361,7 @@ jobs:
       run: brew trust aws/tap azure/bicep
 
     - name: Install tools
-      run: brew install coreutils sdl2 # pkg-config
+      run: brew install coreutils sdl2 freetype
 
     - uses: actions/checkout@v7
       with:

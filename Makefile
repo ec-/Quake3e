@@ -554,7 +554,33 @@ ifeq ($(COMPILE_PLATFORM),darwin)
     CLIENT_LDFLAGS += $(OGG_LIBS) $(VORBIS_LIBS)
   endif
 
+  # Homebrew on Apple Silicon is arm64-only; ignore FreeType when linking -arch x86_64
+  # (and vice versa) so cross-arch CI/local builds still succeed without FT symbols.
+  DARWIN_USE_FREETYPE = 0
   ifeq ($(USE_FREETYPE),1)
+    FREETYPE_LIBDIR := $(shell $(PKG_CONFIG) --silence-errors --variable=libdir freetype2)
+    ifneq ($(FREETYPE_LIBDIR),)
+      FREETYPE_DYLIB := $(wildcard $(FREETYPE_LIBDIR)/libfreetype*.dylib)
+    endif
+    ifneq ($(FREETYPE_DYLIB),)
+      FREETYPE_LIPO_ARCHS := $(shell lipo -archs $(firstword $(FREETYPE_DYLIB)) 2>/dev/null)
+      ifeq ($(ARCH),x86_64)
+        ifneq ($(findstring x86_64,$(FREETYPE_LIPO_ARCHS)),)
+          DARWIN_USE_FREETYPE = 1
+        endif
+      endif
+      ifeq ($(ARCH),aarch64)
+        ifneq ($(findstring arm64,$(FREETYPE_LIPO_ARCHS)),)
+          DARWIN_USE_FREETYPE = 1
+        endif
+      endif
+    endif
+    ifeq ($(DARWIN_USE_FREETYPE),0)
+      $(warning FreeType skipped: no $(ARCH)-compatible lib (have: $(FREETYPE_LIPO_ARCHS)))
+    endif
+  endif
+
+  ifeq ($(DARWIN_USE_FREETYPE),1)
     BASE_CFLAGS += -DBUILD_FREETYPE
     ifneq ($(FREETYPE_CFLAGS),)
       BASE_CFLAGS += $(FREETYPE_CFLAGS)
