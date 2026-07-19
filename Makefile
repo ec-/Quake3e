@@ -673,14 +673,22 @@ else
   endif
 
   ifeq ($(USE_FREETYPE),1)
-    BASE_CFLAGS += -DBUILD_FREETYPE
-    ifneq ($(FREETYPE_CFLAGS),)
-      BASE_CFLAGS += $(FREETYPE_CFLAGS)
+    # Multilib (linux32): pkg-config may miss i386 .pc and leave cflags empty
+    ifeq ($(FREETYPE_CFLAGS),)
+      ifneq ($(wildcard /usr/include/freetype2/ft2build.h),)
+        FREETYPE_CFLAGS = -I/usr/include/freetype2
+      endif
     endif
-    ifneq ($(FREETYPE_LIBS),)
-      RENDERER_LIBS += $(FREETYPE_LIBS)
+    ifneq ($(FREETYPE_CFLAGS),)
+      BASE_CFLAGS += -DBUILD_FREETYPE
+      BASE_CFLAGS += $(FREETYPE_CFLAGS)
+      ifneq ($(FREETYPE_LIBS),)
+        RENDERER_LIBS += $(FREETYPE_LIBS)
+      else
+        RENDERER_LIBS += -lfreetype
+      endif
     else
-      RENDERER_LIBS += -lfreetype
+      $(warning FreeType headers not found; building without BUILD_FREETYPE)
     endif
   endif
 
