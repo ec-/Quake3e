@@ -1920,7 +1920,7 @@ void Cvar_SetDescription2( const char *var_name, const char* var_description )
 	if ( !var || !var_description )
 		return;
 
-	if ( strlen( var_description ) >= MAX_CVAR_VALUE_STRING )
+	if ( strlen( var_description ) >= MAXPRINTMSG )
 		return;
 
 	if ( var_description[0] != '\0' )
