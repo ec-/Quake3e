@@ -19,7 +19,7 @@ along with Quake III Arena source code; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
-// qcommon.h -- definitions common between client and server, but not game.or ref modules
+// qcommon.h -- definitions common between client and server, but not game or ref modules
 #ifndef _QCOMMON_H_
 #define _QCOMMON_H_
 
@@ -566,7 +566,7 @@ set r_draworder 0	as above, but creates the cvar if not present
 Cvars are restricted from having the same names as commands to keep this
 interface from being ambiguous.
 
-The are also occasionally used to communicated information between different
+They are also occasionally used to communicate information between different
 modules of the program.
 
 */
@@ -652,7 +652,7 @@ void	Cvar_Restart( qboolean unsetVM );
 void	Cvar_CompleteCvarName( const char *args, int argNum );
 
 extern	int			cvar_modifiedFlags;
-// whenever a cvar is modifed, its flags will be OR'd into this, so
+// whenever a cvar is modified, its flags will be OR'd into this, so
 // a single check can determine if any CVAR_USERINFO, CVAR_SERVERINFO,
 // etc, variables have been modified since the last check.  The bit
 // can then be cleared to allow another change detection.
@@ -675,6 +675,12 @@ issues.
 #define FS_GENERAL_REF	0x01
 #define FS_UI_REF		0x02
 #define FS_CGAME_REF	0x04
+#define FS_QAGAME_REF	0x08
+
+#define FS_PURE_REF		( FS_GENERAL_REF | FS_UI_REF | FS_CGAME_REF )
+#define FS_ALL_REF		( FS_PURE_REF | FS_QAGAME_REF )
+#define FS_LOCK_REF		( FS_UI_REF | FS_CGAME_REF | FS_QAGAME_REF )
+
 // number of id paks that will never be autodownloaded from baseq3/missionpack
 #define NUM_ID_PAKS		9
 #define NUM_TA_PAKS		4
@@ -764,7 +770,7 @@ int		FS_FOpenFileRead( const char *qpath, fileHandle_t *file, qboolean uniqueFIL
 // It is generally safe to always set uniqueFILE to true, because the majority of
 // file IO goes through FS_ReadFile, which Does The Right Thing already.
 
-void FS_TouchFileInPak( const char *filename );
+void FS_TouchFileInPak( const char *filename, int refbits );
 
 void FS_BypassPure( void );
 void FS_RestorePure( void );

@@ -613,16 +613,16 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	// we need to touch the cgame and ui qvm because they could be in
 	// separate pk3 files and the client will need to download the pk3
 	// files with the latest cgame and ui qvm to pass the pure check
-	FS_TouchFileInPak( "vm/cgame.qvm" );
-	FS_TouchFileInPak( "vm/ui.qvm" );
+	FS_TouchFileInPak( "vm/cgame.qvm", FS_CGAME_REF );
+	FS_TouchFileInPak( "vm/ui.qvm", FS_UI_REF );
 
 	// the server sends these to the clients so they can figure
 	// out which pk3s should be auto-downloaded
 	p = FS_ReferencedPakNames();
 	if ( FS_ExcludeReference() ) {
 		// \fs_excludeReference may mask our current ui/cgame qvms
-		FS_TouchFileInPak( "vm/cgame.qvm" );
-		FS_TouchFileInPak( "vm/ui.qvm" );
+		FS_TouchFileInPak( "vm/cgame.qvm", FS_CGAME_REF );
+		FS_TouchFileInPak( "vm/ui.qvm", FS_UI_REF );
 		// rebuild referenced paks list
 		p = FS_ReferencedPakNames();
 	}

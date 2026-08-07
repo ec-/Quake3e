@@ -112,12 +112,6 @@ void NORETURN FORMAT_PRINTF(1, 2) QDECL Sys_Error( const char *error, ... ) {
 		TranslateMessage( &msg );
 		DispatchMessage( &msg );
 	}
-
-	SetUnhandledExceptionFilter( NULL );
-
-	Sys_DestroyConsole();
-
-	exit( 1 );
 }
 
 

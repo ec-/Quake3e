@@ -1909,7 +1909,9 @@ void Cvar_SetDescription( cvar_t *var, const char *var_description )
 
 /*
 =====================
-Cvar_SetDescription
+Cvar_SetDescription2
+
+Called from QVM extension interface
 =====================
 */
 void Cvar_SetDescription2( const char *var_name, const char* var_description )
@@ -1920,7 +1922,7 @@ void Cvar_SetDescription2( const char *var_name, const char* var_description )
 	if ( !var || !var_description )
 		return;
 
-	if ( strlen( var_description ) >= MAX_CVAR_VALUE_STRING )
+	if ( strlen( var_description ) >= MAX_STRING_CHARS )
 		return;
 
 	if ( var_description[0] != '\0' )
