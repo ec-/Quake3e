@@ -141,15 +141,18 @@ typedef enum {
 } opcode_t;
 
 typedef struct {
-	int32_t	value;     // 32
-	byte	op;        // 8
-	byte	opStack;   // 8
-	unsigned jused:1;  // this instruction is a jump target
-	unsigned swtch:1;  // indirect jump
-	unsigned safe:1;   // non-masked OP_STORE*
-	unsigned endp:1;   // for last OP_LEAVE instruction
-	unsigned fpu:1;    // load into FPU register
-	unsigned njump:1;  // near jump
+	int32_t	value;			// 32
+	byte	op;				// 8 -> opcode_t
+	union {					// 8
+		byte	opStack;	// for OP_ENTER and tracking max.opStack during initial bytecode load
+		byte	origOp;		// original opcode for a macro op, used in vm_x86
+	};						
+	unsigned jused:1;		// this instruction is a jump target
+	unsigned swtch:1;		// indirect jump
+	unsigned safe:1;		// non-masked OP_STORE* with known/verified address
+	unsigned endp:1;		// for last OP_LEAVE instruction
+	unsigned fpu:1;			// load into FPU register
+	unsigned njump:1;		// near jump
 } instruction_t;
 
 typedef struct vmSymbol_s {

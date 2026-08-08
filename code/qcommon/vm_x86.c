@@ -194,7 +194,17 @@ typedef enum {
 	MOP_SUB,
 	MOP_BAND,
 	MOP_BOR,
-	MOP_BXOR
+	MOP_BXOR,
+	MOP_EQ,
+	MOP_NE,
+	MOP_LTI,
+	MOP_LEI,
+	MOP_GTI,
+	MOP_GEI,
+	MOP_LTU,
+	MOP_LEU,
+	MOP_GTU,
+	MOP_GEU,
 } macro_op_t;
 #endif
 
@@ -2552,12 +2562,17 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 =================
 VM_FindSameInst
 
-Search for the same base instruction ahead
+Search for the same base instruction ahead till next instruction block
 =================
 */
 static qboolean VM_FindSameLoad4( const instruction_t *base, int offset ) {
 	const instruction_t *next = base + offset;
 	while ( !next->jused ) {
+		if ( next->op == OP_CALL || next->op == OP_JUMP ) {
+			// OP_CALL invalidates registers
+			// OP_JUMP flushes whole opStack and registers
+			break;
+		}
 		if ( next->op == base->op && next->value == base->value ) {
 			if ( !(next + 1)->jused && (next + 1)->op == OP_LOAD4 ) {
 				return qtrue;
@@ -2570,20 +2585,25 @@ static qboolean VM_FindSameLoad4( const instruction_t *base, int offset ) {
 #endif
 
 
+#ifdef MACRO_OPTIMIZE
 /*
 =================
-VM_FindMOps
+VM_IsMopSequence
 
-Search for known macro-op sequences
+Search for particular macro-op sequence:
+
+OP_LOCAL|OP_CONST + OP_LOCAL|OP_CONST + OP_LOAD4 + OP_CONST + OP_XXX + OP_STORE4
 =================
 */
-#ifdef MACRO_OPTIMIZE
-
-static int VM_IsMopSequence( const  instruction_t *i )
+static int VM_IsMopSequence( const instruction_t *i )
 {
 	int n;
 
-	// OP_LOCAL|OP_CONST + OP_LOCAL|OP_CONST + OP_LOAD4 + OP_CONST + OP_XXX + OP_STORE4
+	for ( n = 1; n < 6; n++ ) {
+		if ( (i + n)->jused ) {
+			return OP_UNDEF;
+		}
+	}
 
 	if ( i->op != OP_LOCAL && i->op != OP_CONST ) {
 		return OP_UNDEF;
@@ -2621,21 +2641,86 @@ static int VM_IsMopSequence( const  instruction_t *i )
 }
 
 
+/*
+=================
+VM_IsMopSequence2
+
+Search for particular macro-op sequence:
+
+OP_LOCAL|OP_CONST + OP_LOAD4 + OP_CONST + OP_COND
+=================
+*/
+static int VM_IsMopSequence2( const instruction_t *i )
+{
+	int n;
+
+	for ( n = 1; n < 4; n++ ) {
+		if ( (i + n)->jused ) {
+			return OP_UNDEF;
+		}
+	}
+
+	if ( i->op != OP_LOCAL && i->op != OP_CONST ) {
+		return OP_UNDEF;
+	}
+	if ( (i + 1)->op != OP_LOAD4 || (i + 2)->op != OP_CONST ) {
+		return OP_UNDEF;
+	}
+
+	switch ( (i + 3)->op ) {
+		default:
+			return OP_UNDEF;
+		case OP_EQ:
+			return MOP_EQ;
+		case OP_NE:
+			return MOP_NE;
+		case OP_LTI:
+			return MOP_LTI;
+		case OP_LEI:
+			return MOP_LEI;
+		case OP_GTI:
+			return MOP_GTI;
+		case OP_GEI:
+			return MOP_GEI;
+		case OP_LTU:
+			return MOP_LTU;
+		case OP_LEU:
+			return MOP_LEU;
+		case OP_GTU:
+			return MOP_GTU;
+		case OP_GEU:
+			return MOP_GEU;
+	}
+}
+
+
 static void VM_FindMOps( instruction_t *buf, int instructionCount )
 {
 	instruction_t *i;
-	int n;
+	int n, v;
 
 	i = buf;
 	n = 0;
 
 	while ( n < instructionCount )
 	{
-		int v = VM_IsMopSequence( i );
+		// search for LOCAL|CONST + LOCAL|CONST + LOAD4 + CONST + OP_XXX + STORE4:
+		v = VM_IsMopSequence( i );
 		if ( v != OP_UNDEF && !VM_FindSameLoad4( i, 6 ) ) {
+			i->origOp = i->op; // save original opcode
 			i->op = v;
 			i += 6;
 			n += 6;
+			continue;
+		}
+
+		// search for LOCAL|CONST + LOAD4 + CONST + COND:
+		v = VM_IsMopSequence2( i );
+		if ( v != OP_UNDEF && !VM_FindSameLoad4( i, 4 ) ) {
+			i->origOp = i->op; // save original opcode
+			i->op = v;
+			i += 4;
+			n += 4;
 			continue;
 		}
 
@@ -2652,60 +2737,91 @@ EmitMOPs
 */
 static qboolean EmitMOPs( vm_t *vm, instruction_t *ci, macro_op_t op )
 {
-	uint32_t reg_base;
+	instruction_t *ni;
+	uint32_t reg, reg_base;
 	var_addr_t var;
-	int n;
+	int cnst;
 
-	if ( (ci + 1 )->op == OP_LOCAL )
+	if ( ci->origOp == OP_LOCAL ) {
 		reg_base = R_PROCBASE;
-	else
+	} else {
 		reg_base = R_DATABASE;
+	}
 
 	var.base = reg_base;
 	var.addr = ci->value;
 	var.size = 4;
 
-	wipe_var_range( &var );
+	if ( find_rx_var( &reg, &var ) ) {
+		// reject optimization if an address is already present in some register
+		ci->op = ci->origOp; // recover original opcode
+		return qfalse;
+	}
 
 	switch ( op )
 	{
 		//[var] += CONST
 		case MOP_ADD:
-			n = inst[ ip + 2 ].value;
-			emit_op_mem_imm( X_ADD, reg_base, ci->value, n );
+			cnst = inst[ ip + 2 ].value;
+			emit_op_mem_imm( X_ADD, reg_base, ci->value, cnst );
 			ip += 5;
-			return qtrue;
+			break;
 
 		//[var] -= CONST
 		case MOP_SUB:
-			n = inst[ ip + 2 ].value;
-			emit_op_mem_imm( X_SUB, reg_base, ci->value, n );
+			cnst = inst[ ip + 2 ].value;
+			emit_op_mem_imm( X_SUB, reg_base, ci->value, cnst );
 			ip += 5;
-			return qtrue;
+			break;
 
 		//[var] &= CONST
 		case MOP_BAND:
-			n = inst[ ip + 2 ].value;
-			emit_op_mem_imm( X_AND, reg_base, ci->value, n );
+			cnst = inst[ ip + 2 ].value;
+			emit_op_mem_imm( X_AND, reg_base, ci->value, cnst );
 			ip += 5;
-			return qtrue;
+			break;
 
 		//[var] |= CONST
 		case MOP_BOR:
-			n = inst[ ip + 2 ].value;
-			emit_op_mem_imm( X_OR, reg_base, ci->value, n );
+			cnst = inst[ ip + 2 ].value;
+			emit_op_mem_imm( X_OR, reg_base, ci->value, cnst );
 			ip += 5;
-			return qtrue;
+			break;
 
 		//[var] ^= CONST
 		case MOP_BXOR:
-			n = inst[ ip + 2 ].value;
-			emit_op_mem_imm( X_XOR, reg_base, ci->value, n );
+			cnst = inst[ ip + 2 ].value;
+			emit_op_mem_imm( X_XOR, reg_base, ci->value, cnst );
 			ip += 5;
-			return qtrue;
+			break;
+
+		//if ([var] OP_cond CONST)
+		case MOP_EQ:
+		case MOP_NE:
+		case MOP_LTI:
+		case MOP_LEI:
+		case MOP_GTI:
+		case MOP_GEI:
+		case MOP_LTU:
+		case MOP_LEU:
+		case MOP_GTU:
+		case MOP_GEU:
+			cnst = inst[ ip + 1 ].value;	// OP_CONST
+			ni = inst + ip + 2;				// OP_cond
+			flush_nonvolatile();
+			emit_op_mem_imm( X_CMP, reg_base, ci->value, cnst );
+			EmitJump( ni, ni->op, ni->value );	// jcc
+			ip += 3;
+			break;
+
+		default:
+			Com_Error( ERR_FATAL, "%s: bad opcode %02X", __func__, ci->op );
+			return qfalse;
 	}
 
-	return qfalse;
+	wipe_var_range( &var );
+
+	return qtrue;
 }
 #endif // MACRO_OPTIMIZE
 
@@ -3527,8 +3643,20 @@ __compile:
 			case MOP_BAND:
 			case MOP_BOR:
 			case MOP_BXOR:
-				if ( !EmitMOPs( vm, ci, ci->op ) )
-					Com_Error( ERR_FATAL, "VM_CompileX86: bad opcode %02X", ci->op );
+			case MOP_EQ:
+			case MOP_NE:
+			case MOP_LTI:
+			case MOP_LEI:
+			case MOP_GTI:
+			case MOP_GEI:
+			case MOP_LTU:
+			case MOP_LEU:
+			case MOP_GTU:
+			case MOP_GEU:
+				if ( !EmitMOPs( vm, ci, ci->op ) ) {
+ 					// optimization was rejected, reswitch
+					ip--;
+				}
 				break;
 #endif
 			default:
