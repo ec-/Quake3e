@@ -2908,7 +2908,11 @@ qboolean VM_Compile( vm_t *vm, vmHeader_t *header ) {
 
 #if JUMP_OPTIMIZE
 	for ( i = 0; i < header->instructionCount; i++ ) {
+#ifdef MACRO_OPTIMIZE
+		if ( inst[i].op < OP_MAX && ops[inst[i].op].flags & JUMP ) {
+#else
 		if ( ops[inst[i].op].flags & JUMP ) {
+#endif
 			int d = inst[i].value - i;
 			// we can correctly calculate backward jump offsets even at initial pass
 			// but for forward jumps we do some estimation
