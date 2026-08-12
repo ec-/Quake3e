@@ -1,6 +1,7 @@
 /*
 ===========================================================================
 Copyright (C) 1999-2005 Id Software, Inc.
+Copyright (C) 2026 WofWca
 
 This file is part of Quake III Arena source code.
 
@@ -644,6 +645,7 @@ static qboolean FS_CreatePath( const char *OSPath ) {
 }
 
 
+// Unused
 /*
 =================
 FS_CopyFile
@@ -1019,6 +1021,8 @@ FS_SV_Rename
 */
 void FS_SV_Rename( const char *from, const char *to ) {
 	const char			*from_ospath, *to_ospath;
+	FILE 				*f;
+	int					res;
 
 	if ( !fs_searchpaths ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
@@ -1036,10 +1040,19 @@ void FS_SV_Rename( const char *from, const char *to ) {
 		Com_Printf( "FS_SV_Rename: %s --> %s\n", from_ospath, to_ospath );
 	}
 
-	if ( rename( from_ospath, to_ospath ) ) {
-		// Failed, try copying it and deleting the original
-		FS_CopyFile( from_ospath, to_ospath );
-		FS_Remove( from_ospath );
+	f = Sys_FOpen( from_ospath, "rb" );
+	if ( f ) {
+		fclose( f );
+		// Whether `rename` succeeds if destination already exists
+		// is implementation-dependent, so let's remove the file
+		// for consistency.
+		FS_Remove( to_ospath );
+	}
+
+	res = rename( from_ospath, to_ospath );
+
+	if ( res != 0 && fs_debug->integer ) {
+		Com_Printf( S_COLOR_YELLOW "FS_SV_Rename failed: %i\n", res );
 	}
 }
 
@@ -1052,6 +1065,7 @@ FS_Rename
 void FS_Rename( const char *from, const char *to ) {
 	const char *from_ospath, *to_ospath;
 	FILE *f;
+	int res;
 
 	if ( !fs_searchpaths ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
@@ -1072,13 +1086,16 @@ void FS_Rename( const char *from, const char *to ) {
 	f = Sys_FOpen( from_ospath, "rb" );
 	if ( f ) {
 		fclose( f );
+		// Whether `rename` succeeds if destination already exists
+		// is implementation-dependent, so let's remove the file
+		// for consistency.
 		FS_Remove( to_ospath );
 	}
 
-	if ( rename( from_ospath, to_ospath ) ) {
-		// Failed, try copying it and deleting the original
-		FS_CopyFile( from_ospath, to_ospath );
-		FS_Remove( from_ospath );
+	res = rename( from_ospath, to_ospath );
+
+	if ( res != 0 && fs_debug->integer ) {
+		Com_Printf( S_COLOR_YELLOW "FS_Rename failed: %i\n", res );
 	}
 }
 
