@@ -1637,6 +1637,13 @@ __noJTS:
 		}
 	}
 
+	// explicitly mark all jump targets with unsafe bit
+	for ( i = 0, ci = buf; i < instructionCount; i++, ci++ ) {
+		if ( ci->jused ) {
+			ci->safe = 0;
+		}
+	}
+
 	VM_Fixup( buf, instructionCount );
 
 	return NULL;
