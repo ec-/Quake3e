@@ -235,16 +235,19 @@ static void CL_WriteDemoMessage( msg_t *msg, int headerBytes ) {
 
 /*
 ====================
-CL_StopRecording_f
+CL_StopRecord2
 
 stop recording a demo
 ====================
 */
-void CL_StopRecord_f( void ) {
+static void CL_StopRecord2( const char* prefix ) {
 
 	if ( clc.recordfile != FS_INVALID_HANDLE ) {
-		char tempName[MAX_OSPATH];
-		char finalName[MAX_OSPATH];
+		char tempPath[MAX_OSPATH];
+		char finalPath[MAX_OSPATH];
+		// Slice of `finalPath`, so writing to this will write to `finalPath`.
+		char *finalFilename;
+		int finalFilenameSize;
 		int protocol;
 		int	len, sequence;
 
@@ -266,32 +269,59 @@ void CL_StopRecord_f( void ) {
 			protocol = com_protocol->integer;
 		}
 
-		Com_sprintf( tempName, sizeof( tempName ), "%s.tmp", clc.recordName );
+		Com_sprintf( tempPath, sizeof( tempPath ), "%s.tmp", clc.recordName );
 
-		Com_sprintf( finalName, sizeof( finalName ), "%s.%s%d", clc.recordName, DEMOEXT, protocol );
+		// e.g. `demos/2026123123123`
+		Q_strncpyz( finalPath, clc.recordName, sizeof( finalPath ) );
+		// From now on leave the `demos/` part as is,
+		// and override the `2026123123123` part
+		finalFilename = COM_SkipPath( finalPath );
+		finalFilenameSize = sizeof( finalPath ) - ( finalFilename - finalPath );
+
+		Com_sprintf( finalFilename, finalFilenameSize, "%s%s.%s%d",
+			prefix, COM_SkipPath( clc.recordName ), DEMOEXT, protocol );
 
 		if ( clc.explicitRecordName ) {
-			FS_Remove( finalName );
+			FS_Remove( finalPath );
 		} else {
 			// add sequence suffix to avoid overwrite
 			sequence = 0;
-			while ( FS_FileExists( finalName ) && ++sequence < 1000 ) {
-				Com_sprintf( finalName, sizeof( finalName ), "%s-%02d.%s%d",
-					clc.recordName, sequence, DEMOEXT, protocol );
+			while ( FS_FileExists( finalPath ) && ++sequence < 1000 ) {
+				Com_sprintf( finalFilename, finalFilenameSize, "%s%s-%02d.%s%d",
+					prefix, COM_SkipPath( clc.recordName ), sequence, DEMOEXT, protocol );
 			}
 		}
 
-		FS_Rename( tempName, finalName );
+		FS_Rename( tempPath, finalPath );
+
+		Com_Printf( "Stopped demo recording %s.\n", finalPath );
 	}
 
 	if ( !clc.demorecording ) {
 		Com_Printf( "Not recording a demo.\n" );
-	} else {
-		Com_Printf( "Stopped demo recording.\n" );
 	}
 
 	clc.demorecording = qfalse;
 	clc.spDemoRecording = qfalse;
+}
+static void CL_StopRecord_f( void ) {
+	// User executed the `\stoprecord` command: add a file name prefix
+	// so that the user can easily tell apart manually clipped demos
+	// (e.g. created after a highlight) from auto-recorded ones.
+	const char *prefix = cl_autoRecordDemo->integer & 0x1
+		? "clip-"
+		: "";
+	CL_StopRecord2( prefix );
+}
+/*
+====================
+CL_StopRecord
+
+For stopping the demo automatically, e.g. on game quit.
+====================
+*/
+void CL_StopRecord( void ) {
+	CL_StopRecord2( "" );
 }
 
 
@@ -1213,7 +1243,7 @@ qboolean CL_Disconnect( qboolean showMainMenu ) {
 
 	// Stop demo recording
 	if ( clc.demorecording ) {
-		CL_StopRecord_f();
+		CL_StopRecord();
 	}
 
 	// Stop demo playback
@@ -1788,7 +1818,7 @@ static void CL_Vid_Restart( refShutdownCode_t shutdownCode ) {
 		CL_CloseAVI( qfalse );
 
 	if ( clc.demorecording )
-		CL_StopRecord_f();
+		CL_StopRecord();
 
 	// clear and mute all sounds until next registration
 	S_DisableSounds();
@@ -3080,7 +3110,7 @@ void CL_Frame( int msec, int realMsec ) {
 		}
 		else if ( cls.state != CA_ACTIVE && clc.demorecording ) {
 			// Recording, but not CA_ACTIVE, so stop recording
-			CL_StopRecord_f();
+			CL_StopRecord();
 		}
 	}
 
