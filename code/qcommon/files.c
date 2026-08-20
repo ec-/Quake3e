@@ -621,13 +621,6 @@ Creates any directories needed to store the given filename
 static qboolean FS_CreatePath( const char *OSPath ) {
 	char	path[MAX_OSPATH*2+1];
 	char	*ofs;
-	
-	// make absolutely sure that it can't back up the path
-	// FIXME: is c: allowed???
-	if ( FS_CheckDirTraversal( OSPath ) ) {
-		Com_Printf( "WARNING: refusing to create relative path \"%s\"\n", OSPath );
-		return qtrue;
-	}
 
 	Q_strncpyz( path, OSPath, sizeof( path ) );
 	// Make sure we have OS correct slashes
@@ -896,6 +889,12 @@ fileHandle_t FS_SV_FOpenFileWrite( const char *filename ) {
 		return FS_INVALID_HANDLE;
 	}
 
+	if ( FS_CheckDirTraversal( filename ) ) {
+		return FS_INVALID_HANDLE;
+	}
+
+	FS_CheckFilenameIsNotAllowed( filename, __func__, qtrue );
+
 	ospath = FS_BuildOSPath( fs_homepath->string, filename, NULL );
 
 	f = FS_HandleForFile();
@@ -905,8 +904,6 @@ fileHandle_t FS_SV_FOpenFileWrite( const char *filename ) {
 	if ( fs_debug->integer ) {
 		Com_Printf( "FS_SV_FOpenFileWrite: %s\n", ospath );
 	}
-
-	FS_CheckFilenameIsNotAllowed( ospath, __func__, qtrue );
 
 	Com_DPrintf( "writing to: %s\n", ospath );
 
@@ -1029,6 +1026,11 @@ void FS_SV_Rename( const char *from, const char *to ) {
 	// S_ClearSoundBuffer();
 #endif
 
+	if ( FS_CheckDirTraversal( from ) || FS_CheckDirTraversal( to ) ) {
+		Com_Printf( S_COLOR_ERROR "%s: rename %s -> %s failed\n", __func__, from, to );
+		return;
+	}
+
 	from_ospath = FS_BuildOSPath( fs_homepath->string, from, NULL );
 	to_ospath = FS_BuildOSPath( fs_homepath->string, to, NULL );
 
@@ -1061,6 +1063,11 @@ void FS_Rename( const char *from, const char *to ) {
 	// don't let sound stutter
 	// S_ClearSoundBuffer();
 #endif
+
+	if ( FS_CheckDirTraversal( from ) || FS_CheckDirTraversal( to ) ) {
+		Com_Printf( S_COLOR_ERROR "%s: rename %s -> %s failed\n", __func__, from, to );
+		return;
+	}
 
 	from_ospath = FS_BuildOSPath( fs_homepath->string, fs_gamedir, from );
 	to_ospath = FS_BuildOSPath( fs_homepath->string, fs_gamedir, to );
@@ -1253,13 +1260,17 @@ fileHandle_t FS_FOpenFileWrite( const char *filename ) {
 		return FS_INVALID_HANDLE;
 	}
 
+	if ( FS_CheckDirTraversal( filename ) ) {
+		return FS_INVALID_HANDLE;
+	}
+
+	FS_CheckFilenameIsNotAllowed( filename, __func__, qfalse );
+
 	ospath = FS_BuildOSPath( fs_homepath->string, fs_gamedir, filename );
 
 	if ( fs_debug->integer ) {
 		Com_Printf( "FS_FOpenFileWrite: %s\n", ospath );
 	}
-
-	FS_CheckFilenameIsNotAllowed( ospath, __func__, qfalse );
 
 	f = FS_HandleForFile();
 	fd = &fsh[ f ];
@@ -1305,6 +1316,12 @@ fileHandle_t FS_FOpenFileAppend( const char *filename ) {
 		return FS_INVALID_HANDLE;
 	}
 
+	if ( FS_CheckDirTraversal( filename ) ) {
+		return FS_INVALID_HANDLE;
+	}
+
+	FS_CheckFilenameIsNotAllowed( filename, __func__, qfalse );
+
 #ifndef DEDICATED
 	// don't let sound stutter
 	// S_ClearSoundBuffer();
@@ -1315,8 +1332,6 @@ fileHandle_t FS_FOpenFileAppend( const char *filename ) {
 	if ( fs_debug->integer ) {
 		Com_Printf( "FS_FOpenFileAppend: %s\n", ospath );
 	}
-
-	FS_CheckFilenameIsNotAllowed( ospath, __func__, qfalse );
 
 	f = FS_HandleForFile();
 	fd = &fsh[ f ];
@@ -1631,7 +1646,7 @@ int FS_FOpenFileRead( const char *filename, fileHandle_t *file, qboolean uniqueF
 	// The searchpaths do guarantee that something will always
 	// be prepended, so we don't need to worry about "c:" or "//limbo"
 	if ( FS_CheckDirTraversal( filename ) ) {
-		if (file) {
+		if ( file ) {
 			*file = FS_INVALID_HANDLE;
 		}
 		return -1;
@@ -5773,13 +5788,17 @@ fileHandle_t FS_PipeOpenWrite( const char *cmd, const char *filename ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
 	}
 
+	if ( FS_CheckDirTraversal( filename ) ) {
+		return FS_INVALID_HANDLE;
+	}
+
+	FS_CheckFilenameIsNotAllowed( filename, __func__, qfalse );
+
 	ospath = FS_BuildOSPath( fs_homepath->string, fs_gamedir, filename );
 
 	if ( fs_debug->integer ) {
 		Com_Printf( "FS_PipeOpenWrite: %s\n", ospath );
 	}
-
-	FS_CheckFilenameIsNotAllowed( ospath, __func__, qfalse );
 
 	f = FS_HandleForFile();
 	fd = &fsh[ f ];

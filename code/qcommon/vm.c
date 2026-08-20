@@ -1248,7 +1248,7 @@ const char *VM_CheckInstructions( instruction_t *buf,
 								int dataLength )
 {
 	static char errBuf[ 128 ];
-	instruction_t *opStackPtr[ PROC_OPSTACK_SIZE ];
+	instruction_t *opStackPtr[ PROC_OPSTACK_SIZE + 1 ];
 	int i, m, n, v, op0, op1, opStack, pstack;
 	instruction_t *ci, *proc;
 	int startp, endp;
@@ -1399,6 +1399,20 @@ const char *VM_CheckInstructions( instruction_t *buf,
 			}
 			// mark jump target
 			buf[v].jused = 1;
+#if (id386 || idx64)
+			// mark NaN-checks for vm_x86
+			if ( ops[ci->op].flags & FPU ) {
+				switch ( ci->op ) {
+					case OP_EQF:
+					case OP_LTF:
+					case OP_LEF:
+						ci->nanchk = 1;
+						break;
+					default:
+						break;
+				}
+			}
+#endif
 			continue;
 		}
 

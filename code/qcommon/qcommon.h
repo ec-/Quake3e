@@ -958,6 +958,17 @@ extern	int	CPU_Flags;
 #define CPU_IDIVA  0x02
 #define CPU_VFPv3  0x04
 
+#if id386
+#define USE_X87
+#endif
+
+#ifdef USE_X87
+void Q_fpucw( unsigned short *cw );
+extern int32_t x87_cw_orig;	// double precision, round to nearest - global/syscalls
+extern int32_t x87_cw_rint;	// single precision, round to nearest - qvm/snapvector
+extern int32_t x87_cw_cvfi;	// single precision, truncate to zero - ftol()
+#endif
+
 // TTimo
 // centralized and cleaned, that's the max string you can send to a Com_Printf / Com_DPrintf (above gets truncated)
 // bump to 8192 as 4096 may be not enough to print some data like gl extensions - CE

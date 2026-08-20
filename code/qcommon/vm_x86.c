@@ -81,7 +81,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define MACRO_OPTIMIZE
 //#define RET_OPTIMIZE // increases code size because of far-jumps 
 
-
 #define USE_LITERAL_POOL // allocate data for FP immediates at the end of the code
 
 // allow sharing both variables and constants in registers
@@ -220,6 +219,11 @@ static	int	ip, pass;
 static	int jumpSizeChanged;
 #endif
 
+#ifdef USE_X87
+#define MAX_ST_DEPTH 8
+static int st_depth;
+#endif // USE_X87
+
 static	int	funcOffset[ FUNC_LAST ];
 static	qboolean forceDataMask;
 
@@ -339,6 +343,11 @@ typedef enum {
 	R_XMM4 = 0x04,
 	R_XMM5 = 0x05
 } xmmreg_t;
+
+typedef enum {
+	R_ST0 = 0,
+	R_ST1 = 1
+} streg_t;
 
 typedef union {
 	struct {
@@ -578,7 +587,6 @@ static void emit_op2_reg_base_offset( int prefix, int opcode, int opcode2, uint3
 	emit_modrm_base_offset( reg, base, offset );
 }
 
-
 static void emit_op_reg_base_index( int prefix, int opcode, uint32_t reg, uint32_t base, uint32_t index, int scale, int32_t disp )
 {
 	if ( ( index & R_MASK ) == 4 ) {
@@ -604,7 +612,6 @@ static void emit_op_reg_base_index( int prefix, int opcode, uint32_t reg, uint32
 
 	emit_modrm_base_index( reg, base, index, scale, disp );
 }
-
 
 static void emit_op_reg_index_offset( int opcode, uint32_t reg, uint32_t index, int scale, int32_t offset )
 {
@@ -709,10 +716,20 @@ static void emit_cmp_rx( uint32_t base, uint32_t reg )
 	emit_op_reg( 0, 0x39, base, reg );
 }
 
-/*static*/ void emit_cmp_rx_mem( uint32_t reg, int32_t offset )
+#if id386
+void emit_cmp_rx_mem( uint32_t reg, int32_t offset )
 {
 	emit_op_reg_offset( 0, 0x3B, reg, offset );
 }
+#endif
+
+#if 0
+void emit_cmp_mem_imm8( uint32_t base, int32_t offset, int32_t imm8 )
+{
+	emit_op_reg_base_offset( 0, 0x83, 0x7, base, offset );
+	Emit1( imm8 );
+}
+#endif
 
 static void emit_and_rx( uint32_t base, uint32_t reg )
 {
@@ -1346,6 +1363,18 @@ static void emit_cvtsi2ss( uint32_t xmmreg, uint32_t intreg )
 	emit_op_reg( 0x0F, 0x2A, intreg, xmmreg );
 }
 
+static void emit_cvtsi2ss_offset( uint32_t xmmreg, uint32_t base, int32_t offset )
+{
+	Emit1( 0xF3 );
+	emit_op_reg_base_offset( 0x0F, 0x2A, xmmreg, base, offset );
+}
+
+static void emit_cvtsi2ss_index( uint32_t xmmreg, uint32_t base, uint32_t index )
+{
+	Emit1( 0xF3 );
+	emit_op_reg_base_index( 0x0F, 0x2A, xmmreg, base, index, 1, 0 );
+}
+
 static void emit_cvttss2si( uint32_t intreg, uint32_t xmmreg )
 {
 	Emit1( 0xF3 );
@@ -1372,52 +1401,222 @@ static void emit_ceil( uint32_t xmmreg, uint32_t base, int32_t offset )
 	Emit1( 0x02 ); // exceptions not masked
 }
 
-// legacy x87 functions
-
-static void emit_fld( uint32_t reg, int32_t offset )
+// legacy x87 instruction set
+#ifdef USE_X87
+#if idx64
+static void emit_fldcw_offset( uint32_t reg, int32_t offset )
 {
-	emit_op_reg_base_offset( 0, 0xD9, 0x0, reg, offset );
+	emit_op_reg_base_offset( 0, 0xD9, 0x5, reg, offset );
+}
+#else // id386
+static void emit_fldcw_mem( int32_t offset )
+{
+	Emit1( 0xD9 );
+	emit_modrm_offset( 0x5, offset );
+}
+#endif
+
+#if 0
+static void emit_fnstcw( uint32_t reg, int32_t offset )
+{
+	emit_op_reg_base_offset( 0, 0xD9, 0x7, reg, offset );
 }
 
-static void emit_fstp( uint32_t reg, int32_t offset )
+static void emit_fnstcw_mem( int32_t offset )
 {
-	emit_op_reg_base_offset( 0, 0xD9, 0x3, reg, offset );
+	Emit1( 0xD9 );
+	emit_modrm_offset( 0x7, offset );
+}
+#endif
+
+static void emit_fld_offset( uint32_t reg, int32_t offset )
+{
+	emit_op_reg_base_offset( 0, 0xD9, 0x0, reg, offset );
+	st_depth++;
+}
+
+static void emit_fld_index( uint32_t base, int32_t index )
+{
+	emit_op_reg_base_index( 0, 0xD9, 0x0, base, index, 1, 0 );
+	st_depth++;
+}
+
+static void emit_fld_mem( int32_t offset )
+{
+	Emit1( 0xD9 );
+	emit_modrm_offset( 0, offset );
+	st_depth++;
+}
+
+static void emit_fstp_offset( uint32_t base, int32_t offset )
+{
+	emit_op_reg_base_offset( 0, 0xD9, 0x3, base, offset );
+	st_depth--;
+}
+
+static void emit_fstp_index( uint32_t base, int32_t index )
+{
+	emit_op_reg_base_index( 0, 0xD9, 0x3, base, index, 1, 0 );
+	st_depth--;
 }
 
 static void emit_fild( uint32_t reg, int32_t offset )
 {
 	emit_op_reg_base_offset( 0, 0xDB, 0x0, reg, offset );
+	st_depth++;
 }
+
+#if 0
+static void emit_fist( uint32_t reg, int32_t offset )
+{
+	emit_op_reg_base_offset( 0, 0xDB, 0x2, reg, offset );
+}
+#endif
 
 static void emit_fistp( uint32_t reg, int32_t offset )
 {
 	emit_op_reg_base_offset( 0, 0xDB, 0x3, reg, offset );
+	st_depth--;
 }
 
+#if 0
 static void emit_fadd( uint32_t reg, int32_t offset )
 {
 	emit_op_reg_base_offset( 0, 0xD8, 0x0, reg, offset );
 }
+#endif
 
+static void emit_fadd_mem( int32_t offset )
+{
+	Emit1( 0xD8 );
+	emit_modrm_offset( 0x0, offset );
+}
+
+#if 0
 static void emit_fsub( uint32_t reg, int32_t offset )
 {
 	emit_op_reg_base_offset( 0, 0xD8, 0x4, reg, offset );
 }
+#endif
 
+static void emit_fsub_mem( int32_t offset )
+{
+	Emit1( 0xD8 );
+	emit_modrm_offset( 0x4, offset );
+
+}
+
+#if 0
 static void emit_fmul( uint32_t reg, int32_t offset )
 {
 	emit_op_reg_base_offset( 0, 0xD8, 0x1, reg, offset );
 }
+#endif
 
+static void emit_fmul_mem( int32_t offset )
+{
+	Emit1( 0xD8 );
+	emit_modrm_offset( 0x1, offset );
+}
+
+#if 0
 static void emit_fdiv( uint32_t reg, int32_t offset )
 {
 	emit_op_reg_base_offset( 0, 0xD8, 0x6, reg, offset );
 }
+#endif
 
+static void emit_fdiv_mem( int32_t offset )
+{
+	Emit1( 0xD8 );
+	emit_modrm_offset( 0x6, offset );
+}
+
+#if 0
 static void emit_fcomp( uint32_t reg, int32_t offset )
 {
 	emit_op_reg_base_offset( 0, 0xD8, 0x3, reg, offset );
+	st_depth--;
 }
+#endif
+
+static void emit_faddp( streg_t reg )
+{
+	Emit1( 0xDE );
+	Emit1( 0xC0 + reg );
+	st_depth--;
+}
+
+static void emit_fsubp( streg_t reg )
+{
+	Emit1( 0xDE );
+	Emit1( 0xE8 + reg );
+	st_depth--;
+}
+
+static void emit_fsubrp( streg_t reg )
+{
+	Emit1( 0xDE );
+	Emit1( 0xE0 + reg );
+	st_depth--;
+}
+
+static void emit_fmulp( streg_t reg )
+{
+	Emit1( 0xDE );
+	Emit1( 0xC8 + reg );
+	st_depth--;
+}
+
+static void emit_fdivp( streg_t reg )
+{
+	Emit1( 0xDE );
+	Emit1( 0xF8 + reg );
+	st_depth--;
+}
+
+static void emit_fdivrp( streg_t reg )
+{
+	Emit1( 0xDE );
+	Emit1( 0xF0 + reg );
+	st_depth--;
+}
+
+static void emit_fldz( void )
+{
+	Emit1( 0xD9 );
+	Emit1( 0xEE );
+	st_depth++;
+}
+
+static void emit_fld1( void )
+{
+	Emit1( 0xD9 );
+	Emit1( 0xE8 );
+	st_depth++;
+}
+
+static void emit_fcomip( streg_t reg )
+{
+	Emit1( 0xDF );
+	Emit1( 0xF0 + reg );
+	st_depth--;
+}
+
+static void emit_fstp( void )
+{
+	Emit1( 0xDD );
+	Emit1( 0xD8 );
+	st_depth--;
+}
+
+static void emit_fcompp( void )
+{
+	Emit1( 0xDE );
+	Emit1( 0xD9 );
+	st_depth -= 2;
+}
+#endif // USE_X87
 
 // array sizes for cached/meta registers
 #if idx64
@@ -1531,6 +1730,53 @@ static void mov_sx_imm32( uint32_t reg, uint32_t imm32 )
 }
 
 
+#ifdef USE_X87
+static void mov_st_rx( uint32_t rx )
+{
+	emit_store_rx( rx, R_PROCBASE, 0 );
+	emit_fld_offset( R_PROCBASE, 0 );
+}
+
+static void mov_st_imm32( uint32_t imm32 )
+{
+	if ( imm32 == 0 ) {
+		emit_fldz(); // fldz
+	} else if ( imm32 == 0x3F800000 ) {
+		emit_fld1(); // fld1
+	} else {
+		int rx;
+#ifdef USE_LITERAL_POOL
+		const int v = VM_SearchLiteral( imm32 );
+		if ( v >= 0 ) {
+#if idx64
+			int offset = compiledOfs;	// save original code position
+			emit_fld_mem( 0 );			// estimate instruction length
+			st_depth--;					// correct ST depth
+			offset = compiledOfs - offset;
+			compiledOfs -= offset;		// restore original code position
+			emit_fld_mem( litBase + v * sizeof( uint32_t ) - compiledOfs - offset );
+#else
+			emit_fld_mem( litBase + v * sizeof( uint32_t ) );
+#endif
+			return;
+		}
+#endif
+		rx = alloc_rx_const( R_ECX | TEMP | RCONST, imm32 );
+		mov_st_rx( rx );
+		unmask_rx( rx );
+	}
+}
+
+
+static void mov_st_local( const uint32_t addr )
+{
+	const uint32_t rx = alloc_rx_local( R_ECX | RCONST, addr );
+	mov_st_rx( rx );
+	unmask_rx( rx );
+}
+#endif // USE_X87
+
+
 static void mov_rx_sx( uint32_t intreg, uint32_t xmmreg )
 {
 	emit_mov_rx_sx( intreg, xmmreg );
@@ -1559,6 +1805,20 @@ static void store4_sx( uint32_t sx, uint32_t offset )
 {
 	emit_store_sx( sx, R_OPSTACK, offset );
 }
+
+
+#ifdef USE_X87
+static void load4_st( uint32_t offset )
+{
+	emit_fld_offset( R_OPSTACK, offset );
+}
+
+
+static void store4_st( uint32_t offset )
+{
+	emit_fstp_offset( R_OPSTACK, offset );
+}
+#endif // USE_X87
 
 
 static void store4_const( uint32_t value, uint32_t offset )
@@ -1813,14 +2073,15 @@ static const char *FarJumpStr( int op, int *n )
 }
 
 
-static void EmitJump( instruction_t *i, int op, int addr )
+static void EmitJump( instruction_t *i, int op, int addr, int shouldNaNCheck )
 {
 	const char *str;
 	int v, jump_size = 0;
-	qboolean shouldNaNCheck = qfalse;
+	//qboolean shouldNaNCheck = qfalse;
 
 	v = instructionOffsets[addr] - compiledOfs;
 
+#if 0
 	if ( HasFCOM() ) {
 		// EQF, LTF and LEF use je/jb/jbe to conditional branch. je/jb/jbe branch if CF/ZF
 		// is set. comiss/fucomip was used to perform the compare, so if any of the
@@ -1841,6 +2102,7 @@ static void EmitJump( instruction_t *i, int op, int addr )
 			shouldNaNCheck = qtrue;
 		}
 	}
+#endif
 
 	if ( shouldNaNCheck ) {
 		v -= 2;			// 2 bytes needed to account for NaN
@@ -2048,6 +2310,13 @@ static void EmitCallFunc( vm_t *vm )
 	// allocate stack for shadow(win32)+parameters
 	emit_op_rx_imm32( X_SUB, R_ESP | R_REX, SHADOW_BASE + PUSH_STACK + PARAM_STACK ); // sub rsp, 200
 
+#ifdef USE_X87
+	if ( !HasSSEFP() ) {
+		mov_rx_ptr( R_ECX, &x87_cw_orig );		// mov rcx, &x87_cw_rint
+		emit_fldcw_offset( R_ECX, 0 );			// fldcw word ptr [rcx]
+	}
+#endif
+
 	emit_lea( R_EDX | R_REX, R_ESP, SHADOW_BASE ); // lea rdx, [ rsp + SHADOW_BASE ]
 
 	// save scratch registers
@@ -2094,6 +2363,13 @@ static void EmitCallFunc( vm_t *vm )
 	// currentVm->systemCall( param );
 	emit_call_rx( R_SYSCALL );					// call r12
 
+#ifdef USE_X87
+	if ( !HasSSEFP() ) {
+		mov_rx_ptr( R_ECX, &x87_cw_rint );		// mov rcx, &x87_cw_rint
+		emit_fldcw_offset( R_ECX, 0 );			// fldcw word ptr [rcx]
+	}
+#endif
+
 	// restore registers
 	emit_lea( R_EDX | R_REX, R_ESP, SHADOW_BASE ); // lea rdx, [rsp + SHADOW_BASE]
 
@@ -2110,6 +2386,13 @@ static void EmitCallFunc( vm_t *vm )
 	emit_ret();								// ret
 
 #else // id386
+
+#ifdef USE_X87
+	if ( !HasSSEFP() ) {
+		// restore original x87 FPU control word
+		emit_fldcw_mem( (intptr_t)&x87_cw_orig );
+	}
+#endif
 
 	// params = (int *)((byte *)currentVM->dataBase + programStack + 4);
 	emit_lea( R_ECX, R_EBP, 4 );			// lea ecx, [ebp+4]
@@ -2136,6 +2419,13 @@ static void EmitCallFunc( vm_t *vm )
 
 	// currentVm->systemCall( param );
 	emit_call_indir( (intptr_t) &vm->systemCall ); // call dword ptr [&currentVM->systemCall]
+
+#ifdef USE_X87
+	if ( !HasSSEFP() ) {
+		// set QVM x87 FPU control word
+		emit_fldcw_mem( (intptr_t)&x87_cw_rint );
+	}
+#endif
 
 	// store result in opStack[4]
 	store4_rx( R_EAX, 4 );					// *opstack[ 4 ] = eax
@@ -2183,40 +2473,42 @@ static void EmitBCPYFunc( vm_t *vm )
 }
 
 
-static void EmitFloatJump( instruction_t *i, int op, int addr )
+#ifdef USE_X87
+static void EmitFloatJump( instruction_t *i, int op, int addr, int shouldNaNCheck )
 {
 	switch ( op ) {
 		case OP_EQF:
 			EmitString( "80 E4 44" );	// and ah,0x44 (preserve C2 too)
-			EmitJump( i, OP_NE, addr );
+			EmitJump( i, OP_NE, addr, shouldNaNCheck ); // FIXME: zero?
 			break;
 
 		case OP_NEF:
 			EmitString( "80 E4 40" );	// and ah,0x40 
-			EmitJump( i, OP_EQ, addr );
+			EmitJump( i, OP_EQ, addr, shouldNaNCheck );
 			break;
 
 		case OP_LTF:
 			EmitString( "80 E4 05" );	// and ah,0x05 (preserve C2 too)
-			EmitJump( i, OP_NE, addr );
+			EmitJump( i, OP_NE, addr, shouldNaNCheck );
 			break;
 
 		case OP_LEF:
 			EmitString( "80 E4 45" );	// and ah,0x45 (preserve C2 too)
-			EmitJump( i, OP_NE, addr );
+			EmitJump( i, OP_NE, addr, shouldNaNCheck );
 			break;
 
 		case OP_GTF:
 			EmitString( "80 E4 41" );	// and ah,0x41
-			EmitJump( i, OP_EQ, addr );
+			EmitJump( i, OP_EQ, addr, shouldNaNCheck );
 			break;
 
 		case OP_GEF:
 			EmitString( "80 E4 01" );	// and ah,0x01
-			EmitJump( i, OP_EQ, addr );
+			EmitJump( i, OP_EQ, addr, shouldNaNCheck );
 			break;
 	};
 }
+#endif // USE_87
 
 
 static void EmitPSOFFunc( vm_t *vm )
@@ -2265,6 +2557,42 @@ static void EmitDATWFunc( vm_t *vm )
 	EmitString( "FF 10" );		// call [eax]
 	emit_ret();					// ret
 }
+
+
+#ifdef USE_X87
+static opcode_t CommuteFloatOp( opcode_t op )
+{
+	switch ( op ) {
+		case OP_LEF: return OP_GEF;
+		case OP_LTF: return OP_GTF;
+		case OP_GEF: return OP_LEF;
+		case OP_GTF: return OP_LTF;
+		default: return op;
+	}
+}
+
+
+static void check_st_depth( void )
+{
+	int i, n;
+	for ( i = 0, n = st_depth; i <= opstack && n > MAX_ST_DEPTH; i++ ) {
+		opstack_t* it = &opstackv[i];
+		if ( it->type == TYPE_ST ) {
+			if ( !it->ref || !it->ref->fpu ) {
+				DROP( "invalid ST item reference" );
+			}
+			else {
+				if ( !it->ref->flush ) {
+					// Com_Printf( S_COLOR_WARNING "reduce item to depth %i\n", n-1 );
+					jumpSizeChanged++;
+				}
+				it->ref->flush = 1;
+				n--;
+			}
+		}
+	}
+}
+#endif // USE_X87
 
 
 #ifdef CONST_OPTIMIZE
@@ -2458,7 +2786,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 				if ( (ni+2)->op == OP_EQ || (ni+2)->op == OP_NE ) {
 					dec_opstack();
 					emit_test_rx_imm32( rx, ci->value );// test eax, mask
-					EmitJump( ni+2, (ni+2)->op, (ni+2)->value ); // jcc
+					EmitJump( ni+2, (ni+2)->op, (ni+2)->value, 0 ); // jcc
 					unmask_rx( rx );
 					ip += 3; // OP_BAND + OP_CONST + OP_EQ/OP_NE
 					return qtrue;
@@ -2547,7 +2875,21 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 					return qtrue;
 				}
 			} else {
+#ifdef USE_X87
 				// legacy x87 path
+				if ( ci->value == ~TRAP_SQRT || ci->value == ~TRAP_SIN || ci->value == ~TRAP_COS ) {
+					emit_fld_offset( R_PROCBASE, 8 );	// fld dword ptr [ebp + 8]
+					check_st_depth();
+					switch ( ci->value ) {
+						case ~TRAP_SQRT: EmitString( "D9 FA" ); break; // fsqrt
+						case ~TRAP_SIN: EmitString( "D9 FE" ); break;  // fsin
+						case ~TRAP_COS: EmitString( "D9 FF" ); break;  // fcos
+					}
+					store_st_opstack( ci );
+					ip += 1; // OP_CALL
+					return qtrue;
+				}
+#endif // USE_X87
 			}
 
 			flush_volatile();
@@ -2578,7 +2920,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 
 		case OP_JUMP:
 			flush_opstack();
-			EmitJump( ni, ni->op, ci->value );
+			EmitJump( ni, ni->op, ci->value, 0 );
 			ip += 1; // OP_JUMP
 			return qtrue;
 
@@ -2600,7 +2942,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 				emit_op_rx_imm32( X_CMP, rx, ci->value );	// cmp eax, 0x12345678
 			}
 			unmask_rx( rx );
-			EmitJump( ni, ni->op, ni->value );			// jcc
+			EmitJump( ni, ni->op, ni->value, 0 );			// jcc
 			ip += 1; // OP_cond
 			return qtrue;
 		}
@@ -2640,7 +2982,7 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 				emit_comiss_mem( sx, offset );	// comiss xmm0, dword ptr [offset]
 			}
 			unmask_sx( sx );
-			EmitJump( ni, ni->op, ni->value ); // jcc
+			EmitJump( ni, ni->op, ni->value, ni->nanchk ); // jcc
 			ip += 1; // OP_cond
 			return qtrue;
 		}
@@ -2649,38 +2991,58 @@ static qboolean ConstOptimize( vm_t *vm, instruction_t *ci, instruction_t *ni )
 		case OP_MULF:
 		case OP_DIVF: {
 			int32_t v, offset;
-			int sx;
-			if ( !HasSSEFP() ) {
-				return qfalse;
-			}
 			v = VM_SearchLiteral( ci->value ); // literal index
 			if ( v < 0 ) {
 				return qfalse;
 			}
-			if ( VM_FindSameConst( ni, 1 ) ) {
-				return qfalse;
-			}
-			sx = load_sx_opstack( R_XMM0 );
+			if ( HasSSEFP() ) {
+				// scalar SSE
+				int sx = load_sx_opstack( R_XMM0 );
 #if idx64
-			offset = compiledOfs;		// save original code position
-			emit_add_sx_mem( sx, 0 );	// estimate instruction length
-			offset = compiledOfs - offset;
-			compiledOfs -= offset;		// restore original code position
-			offset = litBase + v * sizeof( uint32_t ) - compiledOfs - offset;
+				offset = compiledOfs;		// save original code position
+				emit_add_sx_mem( sx, 0 );	// estimate instruction length
+				offset = compiledOfs - offset;
+				compiledOfs -= offset;		// restore original code position
+				offset = litBase + v * sizeof( uint32_t ) - compiledOfs - offset;
 #else
-			offset = litBase + v * sizeof( uint32_t );
+				offset = litBase + v * sizeof( uint32_t );
 #endif
-			switch ( ni->op ) {
-				case OP_ADDF: emit_add_sx_mem( sx, offset ); break;
-				case OP_SUBF: emit_sub_sx_mem( sx, offset ); break;
-				case OP_MULF: emit_mul_sx_mem( sx, offset ); break;
-				case OP_DIVF: emit_div_sx_mem( sx, offset ); break;
+				switch ( ni->op ) {
+					case OP_ADDF: emit_add_sx_mem( sx, offset ); break;
+					case OP_SUBF: emit_sub_sx_mem( sx, offset ); break;
+					case OP_MULF: emit_mul_sx_mem( sx, offset ); break;
+					case OP_DIVF: emit_div_sx_mem( sx, offset ); break;
+				}
+				store_sx_opstack( sx );		// *opstack = xmm0
+				ip += 1; // OP_ADDF|OP_SUBF|OP_MULF|OP_DIVF
+				return qtrue;
+			} else {
+#ifdef USE_X87
+				// legacy x87 path
+				load_st_opstack();			// fld dword ptr [opStack]
+				check_st_depth();
+#if idx64
+				offset = compiledOfs;		// save original code position
+				emit_fadd_mem( 0 );			// estimate instruction length
+				offset = compiledOfs - offset;
+				compiledOfs -= offset;		// restore original code position
+				offset = litBase + v * sizeof( uint32_t ) - compiledOfs - offset;
+#else // id386
+				offset = litBase + v * sizeof( uint32_t );
+#endif // id386
+				switch ( ni->op ) {
+					case OP_ADDF: emit_fadd_mem( offset ); break; // fadd st(0), dword ptr [offset]
+					case OP_SUBF: emit_fsub_mem( offset ); break; // fsub st(0), dword ptr [offset]
+					case OP_MULF: emit_fmul_mem( offset ); break; // fmul st(0), dword ptr [offset]
+					case OP_DIVF: emit_fdiv_mem( offset ); break; // fdiv st(0), dword ptr [offset]
+				};
+				store_st_opstack( ci );		// fstp dword ptr [opStack]
+				ip += 1; // OP_XXXX
+				return qtrue;
+#endif // USE_X87
 			}
-			store_sx_opstack( sx );				// *opstack = xmm0
-			ip += 1; // OP_CONST
-			return qtrue;
 		}
-#endif
+#endif // USE_LITERAL_POOL
 	}
 	return qfalse;
 }
@@ -2944,7 +3306,7 @@ static qboolean EmitMOPs( vm_t *vm, instruction_t *ci, macro_op_t op )
 			ni = inst + ip + 2;				// OP_cond
 			flush_nonvolatile();
 			emit_op_mem_imm( X_CMP, reg_base, ci->value, cnst );
-			EmitJump( ni, ni->op, ni->value );	// jcc
+			EmitJump( ni, ni->op, ni->value, 0 );	// jcc
 			ip += 3;
 			break;
 
@@ -3093,6 +3455,10 @@ __compile:
 	proc_end = 0;
 #endif
 
+#ifdef USE_X87
+	st_depth = 0;
+#endif
+
 	init_opstack();
 
 #ifdef DEBUG_INT
@@ -3111,6 +3477,13 @@ __compile:
 	emit_push( R_R15 );				// push r15
 
 	mov_rx_ptr( R_DATABASE, vm->dataBase );			// mov rbx, vm->dataBase
+
+#ifdef  USE_X87
+	if ( !HasSSEFP() ) {
+		mov_rx_ptr( R_EAX, &x87_cw_rint );			// mov rax, &x87_cw_orig
+		emit_fldcw_offset( R_EAX, 0 );				// fldcw dword ptr [rax]
+	}
+#endif // USE_X87
 
 	// do not use wrapper, force constant size there
 	emit_mov_rx_imm64( R_INSPOINTERS, (intptr_t) instructionPointers ); // mov r8, vm->instructionPointers
@@ -3137,6 +3510,13 @@ __compile:
 	emit_store_rx( R_PSTACK, R_EAX, 0 );		// mov [rax], esi
 #endif
 
+#ifdef  USE_X87
+	if ( !HasSSEFP() ) {
+		mov_rx_ptr( R_EAX, &x87_cw_orig );		// mov rax, &x87_cw_orig
+		emit_fldcw_offset( R_EAX, 0 );			// fldcw dword ptr [rax]
+	}
+#endif // USE_X87
+
 	emit_pop( R_R15 );				// pop r15
 	emit_pop( R_R14 );				// pop r14
 	emit_pop( R_R13 );				// pop r13
@@ -3151,13 +3531,26 @@ __compile:
 
 	emit_pushad();					// pushad
 
-	mov_rx_ptr( R_DATABASE, vm->dataBase );	// mov ebx, vm->dataBase
+#ifdef USE_X87
+	if ( !HasSSEFP() ) {
+		emit_fldcw_mem( (intptr_t)&x87_cw_rint ); // fldcw word ptr [x87_cw_rint]
+	}
+#endif
 
+	mov_rx_ptr( R_DATABASE, vm->dataBase );	// mov ebx, vm->dataBase
+	
 	emit_load_rx_offset( R_PSTACK, (intptr_t) &vm->programStack ); // mov esi, [&vm->programStack]
 
 	emit_load_rx_offset( R_OPSTACK, (intptr_t) &vm->opStack ); // mov edi, [&vm->opStack]
 
 	EmitCallOffset( FUNC_ENTR );
+
+#ifdef USE_X87
+	if ( !HasSSEFP() ) {
+		// restore original x87 FPU control word
+		emit_fldcw_mem( (intptr_t)&x87_cw_orig ); // fldcw word ptr [x87_cw_orig]
+	}
+#endif
 
 #ifdef DEBUG_VM
 	emit_store_rx_offset( R_PSTACK, (intptr_t) &vm->programStack ); // mov [&vm->programStack], esi 
@@ -3185,6 +3578,13 @@ __compile:
 			// we can safely perform register optimizations only in case if
 			// we are 100% sure that current instruction is not a jump label
 			flush_opstack();
+#ifdef DEBUG_VM
+#ifdef USE_X87
+			if ( st_depth != 0 ) {
+				DROP( "incorrect ST stack depth %i", st_depth );
+			}
+#endif
+#endif
 		}
 
 		instructionOffsets[ ip++ ] = compiledOfs;
@@ -3204,6 +3604,12 @@ __compile:
 				break;
 
 			case OP_ENTER:
+#ifdef DEBUG_VM
+#ifdef USE_X87
+				if ( st_depth != 0 )
+					DROP( "incorrect st_depth %i", st_depth );
+#endif
+#endif
 				EmitAlign( FUNC_ALIGN );
 
 				instructionOffsets[ ip-1 ] = compiledOfs;
@@ -3248,6 +3654,10 @@ __compile:
 #ifdef DEBUG_VM
 				if ( opstack != 0 )
 					DROP( "opStack corrupted on OP_LEAVE" );
+#ifdef USE_X87
+				if ( st_depth != 0 )
+					DROP( "incorrect st_depth %i", st_depth );
+#endif
 #endif
 
 #ifdef RET_OPTIMIZE
@@ -3345,7 +3755,7 @@ __compile:
 				emit_cmp_rx( rx[1], rx[0] ); // cmp edx, eax
 				unmask_rx( rx[0] );
 				unmask_rx( rx[1] );
-				EmitJump( ci, ci->op, ci->value );
+				EmitJump( ci, ci->op, ci->value, 0 );
 				break;
 			}
 
@@ -3366,27 +3776,33 @@ __compile:
 					}
 					unmask_sx( sx[0] );
 					unmask_sx( sx[1] );
-					EmitJump( ci, ci->op, ci->value );
+					EmitJump( ci, ci->op, ci->value, ci->nanchk );
 					break;
 				} else {
-					// legacy x87 path
-					flush_opstack_top(); dec_opstack();
-					flush_opstack_top(); dec_opstack();
+#ifdef USE_X87
+					opcode_t op = ci->op;
+					if ( opstackv[opstack - 1].type == TYPE_ST ) {
+						// second opstack value supposed to be in st(0) after second load_st_opstack() call
+						op = CommuteFloatOp( op );
+					}
+					load_st_opstack(); dec_opstack();	// rhs - st(1)
+					load_st_opstack(); dec_opstack();	// lhs - st(0)
+					check_st_depth();
 					flush_nonvolatile();
 					if ( HasFCOM() ) {
-						emit_fld( R_OPSTACK, 8 );		// fld dword ptr [opStack+8]
-						emit_fld( R_OPSTACK, 4 );		// fld dword ptr [opStack+4]
-						EmitString( "DF E9" );			// fucomip
-						EmitString( "DD D8" );			// fstp st(0)
-						EmitJump( ci, ci->op, ci->value );
+						emit_fcomip( R_ST1 );			// fcomip st(0), st(1)
+						emit_fstp();					// fstp st(0)
+						EmitJump( ci, op, ci->value, ci->nanchk );
 					} else {
 						alloc_rx( R_EAX | FORCED );
-						emit_fld( R_OPSTACK, 4 );		// fld dword ptr [opStack+4]
-						emit_fcomp( R_OPSTACK, 8 );		// fcomp dword ptr [opStack+8]
+						emit_fcompp();					// fcompp
 						EmitString( "DF E0" );			// fnstsw ax
-						EmitFloatJump( ci, ci->op, ci->value );
+						EmitFloatJump( ci, op, ci->value, ci->nanchk );
 						unmask_rx( R_EAX );
 					}
+#else
+					DROP( "incorrect CPU feature setup" );
+#endif
 					break;
 				}
 			}
@@ -3394,41 +3810,72 @@ __compile:
 			case OP_LOAD2:
 			case OP_LOAD4:
 #ifdef FPU_OPTIMIZE
-				if ( ci->op == OP_LOAD4 && ci->fpu && HasSSEFP() ) {
-					if ( addr_on_top( &var, R_DATABASE, R_PROCBASE ) ) {
-						// address specified by CONST/LOCAL
-						discard_top();
-						var.size = 4;
-						if ( find_sx_var( &sx[0], &var ) ) {
-							// already cached in some register
-							mask_sx( sx[0] );
+				if ( ci->op == OP_LOAD4 && ci->fpu ) {
+					if ( HasSSEFP() ) {
+						if ( addr_on_top( &var, R_DATABASE, R_PROCBASE ) ) {
+							// address specified by CONST/LOCAL
+							discard_top();
+							var.size = 4;
+							if ( find_sx_var( &sx[0], &var ) ) {
+								// already cached in some register
+								mask_sx( sx[0] );
+							} else {
+								// not cached, perform load
+								sx[0] = alloc_sx( R_XMM0 );
+								emit_load_sx( sx[0], var.base, var.addr );	// xmmm0 = var.base[var.addr]
+								set_sx_var( sx[0], &var );
+							}
 						} else {
-							// not cached, perform load
+							// address stored in register
+							rx[0] = load_rx_opstack( forceDataMask ? R_EAX : R_EAX | RCONST );		// eax = *opstack
+							emit_CheckReg( vm, rx[0], FUNC_DATR );
 							sx[0] = alloc_sx( R_XMM0 );
-							emit_load_sx( sx[0], var.base, var.addr );	// xmmm0 = var.base[var.addr]
-							set_sx_var( sx[0], &var );
+							emit_load_sx_index( sx[0], R_DATABASE, rx[0] ); // xmmm0 = dataBase[eax]
+							unmask_rx( rx[0] );
 						}
+						store_sx_opstack( sx[0] );							// *opstack = xmm0
 					} else {
-						// address stored in register
-						rx[0] = load_rx_opstack( forceDataMask ? R_EAX : R_EAX | RCONST );		// eax = *opstack
-						emit_CheckReg( vm, rx[0], FUNC_DATR );
-						sx[0] = alloc_sx( R_XMM0 );
-						emit_load_sx_index( sx[0], R_DATABASE, rx[0] ); // xmmm0 = dataBase[eax]
-						unmask_rx( rx[0] );
+#ifdef USE_X87
+						if ( addr_on_top( &var, R_DATABASE, R_PROCBASE ) ) {
+							// address specified by CONST/LOCAL
+							discard_top();
+							emit_fld_offset( var.base, var.addr );	// fld dword ptr [base + offset]
+						} else {
+							// address stored in register
+							rx[0] = load_rx_opstack( forceDataMask ? R_EAX : R_EAX | RCONST );		// eax = *opstack
+							emit_CheckReg( vm, rx[0], FUNC_DATR );
+							emit_fld_index( R_DATABASE, rx[0] );
+							unmask_rx( rx[0] );
+						}
+						check_st_depth();
+						store_st_opstack( ci );
+#else
+						DROP( "incorrect CPU feature setup" );
+#endif
 					}
-					store_sx_opstack( sx[0] );							// *opstack = xmm0
 					break;
 				}
-#endif
+#endif // FPU_OPTIMIZE
 				switch ( ci->op ) {
 					case OP_LOAD1: var_size = 1; sign_extend = OP_SEX8; break;
 					case OP_LOAD2: var_size = 2; sign_extend = OP_SEX16; break;
 					default:       var_size = 4; sign_extend = OP_UNDEF; break;
 				}
+
 				// integer path
 				if ( addr_on_top( &var, R_DATABASE, R_PROCBASE ) ) {
 					// address specified by CONST/LOCAL
 					discard_top();
+#ifdef USE_X87
+					// merge with next OP_CVIF
+					if ( !HasSSEFP() && (ci + 1)->op == OP_CVIF && !(ci + 1)->jused && ci->op == OP_LOAD4 ) {
+						emit_fild( var.base, var.addr ); // fild dword ptr base[offset]
+						check_st_depth();
+						store_st_opstack( ci );
+						ip += 1; // OP_CVIF
+						break;
+					}
+#endif // USE_X87
 					var.size = var_size;
 					if ( ( reg = find_rx_var( &rx[0], &var ) ) != NULL ) {
 						// already cached in some register
@@ -3467,6 +3914,14 @@ __compile:
 						mask_rx( rx[0] );
 					} else {
 						// not cached, perform load
+						// merge with next OP_CVIF
+						if ( HasSSEFP() && (ci + 1)->op == OP_CVIF && !(ci + 1)->jused && ci->op == OP_LOAD4 ) {
+							sx[0] = alloc_sx( R_XMM0 );
+							emit_cvtsi2ss_offset( sx[0], var.base, var.addr );
+							store_sx_opstack( sx[0] );
+							ip += 1; // OP_CVIF
+							break;
+						}
 						rx[0] = alloc_rx( R_EAX );			// allocate new register, wipe its metadata
 						if ( (ci+1)->op == sign_extend && sign_extend != OP_UNDEF ) {
 							// merge with following sign-extension instruction
@@ -3487,6 +3942,19 @@ __compile:
 					} // not cached, perform load
 				} else {
 					// address stored in register
+
+					// merge with next OP_CVIF
+					if ( HasSSEFP() && (ci + 1)->op == OP_CVIF && !(ci + 1)->jused && ci->op == OP_LOAD4 ) {
+						rx[0] = load_rx_opstack( forceDataMask ? R_EDX : R_EDX | RCONST );
+						emit_CheckReg( vm, rx[0], FUNC_DATR );	// check address bounds
+						sx[0] = alloc_sx( R_XMM0 );
+						emit_cvtsi2ss_index( sx[0], R_DATABASE, rx[0] );
+						store_sx_opstack( sx[0] );
+						unmask_rx( rx[0] );
+						ip += 1; // OP_CVIF
+						break;
+					}
+
 					if ( forceDataMask ) {
 						rx[0] = rx[1] = load_rx_opstack( R_EAX );			// target = address = *opStack
 					} else {
@@ -3519,24 +3987,50 @@ __compile:
 			case OP_STORE1:
 			case OP_STORE2:
 			case OP_STORE4:
-				if ( scalar_on_top() && ci->op == OP_STORE4 && HasSSEFP() ) {
-					sx[0] = load_sx_opstack( R_XMM0 | RCONST );	dec_opstack();		// xmm0 = *opstack; opstack -= 4
-					if ( addr_on_top( &var, R_DATABASE, R_PROCBASE ) ) {
-						// address specified by CONST/LOCAL
-						discard_top(); dec_opstack();
-						emit_store_sx( sx[0], var.base, var.addr );					// baseReg[n] = xmm0
-						var.size = 4;
-						wipe_var_range( &var );
-						set_sx_var( sx[0], &var );									// update metadata
+				if ( scalar_on_top() && ci->op == OP_STORE4 ) {
+					if ( HasSSEFP() ) {
+						// scalar SSE
+						sx[0] = load_sx_opstack( R_XMM0 | RCONST );	dec_opstack();	// xmm0 = *opstack; opstack -= 4
+						if ( addr_on_top( &var, R_DATABASE, R_PROCBASE ) ) {
+							// address specified by CONST/LOCAL
+							discard_top(); dec_opstack();
+							emit_store_sx( sx[0], var.base, var.addr );				// baseReg[n] = xmm0
+							var.size = 4;
+							wipe_var_range( &var );									// invalidate write range
+							set_sx_var( sx[0], &var );								// update metadata
+						} else {
+							// address specified by register
+							rx[1] = load_rx_opstack( forceDataMask ? R_EDX : R_EDX | RCONST );
+							dec_opstack();											// edx = *opStack; opStack -= 4
+							emit_CheckReg( vm, rx[1], FUNC_DATW );
+							emit_store_sx_index( sx[0], R_DATABASE, rx[1] );		// dataBase[edx] = xmm0
+							unmask_rx( rx[1] );
+							wipe_vars(); // dynamic address, wipe all register mappings
+						}
+						unmask_sx( sx[0] );
 					} else {
-						rx[1] = load_rx_opstack( forceDataMask ? R_EDX : R_EDX | RCONST );
-						dec_opstack();												// edx = *opStack; opStack -= 4
-						emit_CheckReg( vm, rx[1], FUNC_DATW );
-						emit_store_sx_index( sx[0], R_DATABASE, rx[1] );			// dataBase[edx] = xmm0
-						unmask_rx( rx[1] );
-						wipe_vars(); // unknown/dynamic address, wipe all register mappings
+#ifdef USE_X87
+						// legacy x87
+						discard_top(); dec_opstack();
+						if ( addr_on_top( &var, R_DATABASE, R_PROCBASE ) ) {
+							// address specified by CONST/LOCAL
+							discard_top(); dec_opstack();
+							emit_fstp_offset( var.base, var.addr );					// fstp [base + offset]
+							var.size = 4;
+							wipe_var_range( &var );									// invalidate write range
+						} else {
+							// address specified by register
+							rx[1] = load_rx_opstack( forceDataMask ? R_EDX : R_EDX | RCONST );
+							dec_opstack();											// edx = *opStack; opStack -= 4
+							emit_CheckReg( vm, rx[1], FUNC_DATW );
+							emit_fstp_index( R_DATABASE, rx[1] );					// fstp [dataBase + edx]
+							unmask_rx( rx[1] );
+							wipe_vars(); // dynamic address, wipe all register mappings
+						}
+#else
+						DROP( "incorrect CPU feature setup" );
+#endif
 					}
-					unmask_sx( sx[0] );
 				} else {
 					// integer path
 					rx[0] = load_rx_opstack( R_EAX | RCONST );	dec_opstack();		// eax = *opstack; opstack -= 4
@@ -3572,10 +4066,19 @@ __compile:
 				var.addr = ci->value;
 				var.size = 4;
 				wipe_var_range( &var );
-				if ( scalar_on_top() && HasSSEFP() ) {
-					sx[0] = load_sx_opstack( R_XMM0 | RCONST ); dec_opstack();	// xmm0 = *opstack; opstack -=4
-					emit_store_sx( sx[0], var.base, var.addr );					// [procBase + v] = xmm0
-					unmask_sx( sx[0] );
+				if ( scalar_on_top() ) {
+					if ( HasSSEFP() ) {
+						sx[0] = load_sx_opstack( R_XMM0 | RCONST ); dec_opstack();	// xmm0 = *opstack; opstack -=4
+						emit_store_sx( sx[0], var.base, var.addr );					// [procBase + v] = xmm0
+						unmask_sx( sx[0] );
+					} else {
+#ifdef USE_X87
+						discard_top(); dec_opstack();								// opStack -= 4
+						emit_fstp_offset( var.base, var.addr );						// fstp dword ptr [procBase + offset]
+#else
+						DROP( "incorrect CPU feature setup" );
+#endif
+					}
 				} else {
 					if ( const_on_top() && top_value() != 0 ) {
 						n = top_value(); discard_top(); dec_opstack();
@@ -3709,17 +4212,26 @@ __compile:
 					unmask_sx( sx[0] );
 					store_sx_opstack( sx[1] ); // *opstack = xmm1
 				} else {
-					// legacy x87 path
-					flush_opstack_top(); dec_opstack(); // value
-					flush_opstack_top(); // target
-					emit_fld( R_OPSTACK, opstack * sizeof( int32_t ) );
-					switch ( ci->op ) {
-						case OP_ADDF: emit_fadd( R_OPSTACK, ( opstack + 1 ) * sizeof( int32_t ) ); break;
-						case OP_SUBF: emit_fsub( R_OPSTACK, ( opstack + 1 ) * sizeof( int32_t ) ); break;
-						case OP_MULF: emit_fmul( R_OPSTACK, ( opstack + 1 ) * sizeof( int32_t ) ); break;
-						case OP_DIVF: emit_fdiv( R_OPSTACK, ( opstack + 1 ) * sizeof( int32_t ) ); break;
+#ifdef USE_X87
+					qboolean inv = qfalse;
+					if ( opstackv[opstack - 1].type == TYPE_ST ) {
+						// second opstack value supposed to be in st(0) after second load_st_opstack() call
+						// so invert fsubrp->fsubp | fdivrp->fdivp or call flush_volatile()
+						inv = qtrue;
 					}
-					emit_fstp( R_OPSTACK, opstack * sizeof( int32_t ) );
+					load_st_opstack(); dec_opstack();	// rhs/value - st(1)
+					load_st_opstack();					// lhs/target - st(0)
+					check_st_depth();
+					switch ( ci->op ) {
+						case OP_ADDF: emit_faddp( R_ST1 ); break; // faddp  st(1), st(0)
+						case OP_SUBF: if ( inv ) emit_fsubp( R_ST1 ); else emit_fsubrp( R_ST1 ); break; // fsubp / fsubrp st(1), st(0)
+						case OP_MULF: emit_fmulp( R_ST1 ); break; // fmulp  st(1), st(0)
+						case OP_DIVF: if ( inv ) emit_fdivp( R_ST1 ); else emit_fdivrp( R_ST1 ); break; // fdivp / fdivrp st(1), st(0)
+					}
+					store_st_opstack( ci );
+#else // !USE_X87
+					DROP( "incorrect CPU feature setup" );
+#endif // !USE_X87
 				}
 				break;
 
@@ -3732,11 +4244,14 @@ __compile:
 					unmask_sx( sx[0] );
 					store_sx_opstack( sx[1] );				// *opstack = xmm1
 				} else {
-					// legacy x87 path
-					flush_opstack_top();
-					emit_fld( R_OPSTACK, opstack * sizeof( int32_t ) ); // fld dword ptr [opStack]
+#ifdef USE_X87
+					load_st_opstack();						// fld dword ptr [opStack]
+					check_st_depth();
 					EmitString( "D9 E0" );					// fchs
-					emit_fstp( R_OPSTACK, opstack * sizeof( int32_t ) ); // fstp dword ptr [opStack]
+					store_st_opstack( ci );					// fstp dword ptr [opStack]
+#else
+					DROP( "incorrect CPU feature setup" );
+#endif
 				}
 				break;
 
@@ -3748,9 +4263,14 @@ __compile:
 					unmask_rx( rx[0] );
 					store_sx_opstack( sx[0] );				// *opstack = xmm0
 				} else {
+#ifdef USE_X87
 					flush_opstack_top();
 					emit_fild( R_OPSTACK, opstack * sizeof( int32_t ) ); // fild dword ptr [opStack]
-					emit_fstp( R_OPSTACK, opstack * sizeof( int32_t ) ); // fstp dword ptr [opStack]
+					check_st_depth();
+					store_st_opstack( ci );
+#else
+					DROP( "incorrect CPU feature setup" );
+#endif
 				}
 				break;
 
@@ -3760,18 +4280,27 @@ __compile:
 					sx[0] = load_sx_opstack( R_XMM0 | RCONST ); // xmm0 = *opstack
 					emit_cvttss2si( rx[0], sx[0] );		// cvttss2si xmm0, eax
 					unmask_sx( sx[0] );
-					store_rx_opstack( rx[0] );				// *opstack = eax
+					store_rx_opstack( rx[0] );			// *opstack = eax
 				} else {
-					static int32_t fp_cw[2] = { 0x0000, 0x0F7F }; // [0] - current value, [1] - round towards zero
-					flush_opstack_top();
-					alloc_rx( R_EAX | FORCED );
-					emit_fld( R_OPSTACK, opstack * sizeof( int32_t ) ); // fld dword ptr [opStack]
-					mov_rx_ptr( R_EAX, &fp_cw );
-					EmitString( "9B D9 38" );	// fnstcw word ptr [eax]
-					EmitString( "D9 68 04" );	// fldcw word ptr [eax+4]
-					emit_fistp( R_OPSTACK, opstack * sizeof( int32_t ) ); // fistp dword ptr [opStack]
-					EmitString( "D9 28" );		// fldcw word ptr [eax]
-					unmask_rx( R_EAX );
+#ifdef USE_X87
+					load_st_opstack();										// fld dword ptr [opStack]
+					check_st_depth();
+#if idx64
+					rx[0] = alloc_rx( R_EAX );
+					mov_rx_ptr( rx[0], &x87_cw_cvfi );						// mov rax, &x87_cw_cvfi
+					emit_fldcw_offset( rx[0], 0 );							// fldcw word ptr [rax]
+					emit_fistp( R_OPSTACK, opstack * sizeof( int32_t ) );	// fistp dword ptr [opStack]
+					mov_rx_ptr( rx[0], &x87_cw_rint );						// mov rax, &x87_cw_rint
+					emit_fldcw_offset( rx[0], 0 );							// fldcw word ptr [rax]
+					unmask_rx( rx[0] );
+#else // id386
+					emit_fldcw_mem( (intptr_t) &x87_cw_cvfi );				// fldcw word ptr [x87_cw_cvfi]
+					emit_fistp( R_OPSTACK, opstack * sizeof( int32_t ) );	// fistp dword ptr [opStack]
+					emit_fldcw_mem( (intptr_t) &x87_cw_rint );				// fldcw word ptr [x87_cw_rint]
+#endif // id386
+#else // !USE_X87
+					DROP( "incorrect CPU feature setup" );
+#endif // !USE_X87
 				}
 				break;
 

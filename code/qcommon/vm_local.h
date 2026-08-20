@@ -153,6 +153,12 @@ typedef struct {
 	unsigned endp:1;		// for last OP_LEAVE instruction
 	unsigned fpu:1;			// load into FPU register
 	unsigned njump:1;		// near jump
+#if (id386 || idx64)
+	unsigned nanchk:1;		// check for NaN on vm_x86
+#ifdef USE_X87
+	unsigned flush:1;		// x87 ST register must be flushed to avoid stack overflow
+#endif
+#endif
 } instruction_t;
 
 typedef struct vmSymbol_s {

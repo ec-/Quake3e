@@ -44,6 +44,9 @@ typedef enum {
 	TYPE_LOCAL,		// address of local variable
 	TYPE_RX,		// volatile - general-purpose register
 	TYPE_SX,		// volatile - FPU scalar register
+#ifdef USE_X87
+	TYPE_ST,		// volatile - x87 FPU stack register
+#endif
 } opstack_value_t;
 
 typedef struct opstack_s {
@@ -51,6 +54,9 @@ typedef struct opstack_s {
 	int offset;		// negative value means it is already on the opStack
 	opstack_value_t type;
 	int safe_arg;	// local/global address validated to be in the sane range
+#ifdef USE_X87
+	instruction_t *ref;
+#endif
 } opstack_t;
 
 typedef struct var_addr_s {
@@ -139,6 +145,20 @@ static void store4_sx( uint32_t sx, uint32_t offset );
 static void store4_const( uint32_t value, uint32_t offset );
 // opStack[offset] = pStack + addr
 static void store4_local( uint32_t value, uint32_t offset );
+
+#ifdef USE_X87
+// push st0, st0 = gp.rx
+static void mov_st_rx( uint32_t rx );
+// push st0; st0 = imm32
+static void mov_st_imm32( uint32_t imm32 );
+// push st0; st0 = programStack + addr
+static void mov_st_local( const uint32_t addr );
+// push st0; st0 = opStack[offset]
+static void load4_st( uint32_t offset );
+// opStack[offset] = st0; pop st0
+static void store4_st( uint32_t offset );
+#endif
+
 
 // internal forward declarations:
 
@@ -438,6 +458,14 @@ static void flush_item( opstack_t *it )
 		store4_sx( it->value, it->offset );
 		break;
 
+#ifdef USE_X87
+	case TYPE_ST:
+		if ( it->offset >= 0 )
+			store4_st( it->offset );
+		// else syscall return, already on the opStack?
+		break;
+#endif
+
 	case TYPE_CONST:
 		store4_const( it->value, it->offset );
 		break;
@@ -457,6 +485,18 @@ static void flush_item( opstack_t *it )
 
 static void flush_items( opstack_value_t type, uint32_t value ) {
 	int i;
+
+#ifdef USE_X87
+	if ( type == TYPE_ST ) {
+		for ( i = opstack; i >= 0; i-- ) {
+			opstack_t* it = opstackv + i;
+			if ( it->type == TYPE_ST ) {
+				flush_item( it );
+			}
+		}
+		return;
+	}
+#endif // USE_X87
 
 	for ( i = 0; i <= opstack; i++ ) {
 		opstack_t *it = opstackv + i;
@@ -490,6 +530,10 @@ qboolean scalar_on_top( void )
 #ifdef FPU_OPTIMIZE
 	if ( opstackv[ opstack ].type == TYPE_SX )
 		return qtrue;
+#ifdef USE_X87
+	if ( opstackv[ opstack ].type == TYPE_ST )
+		return qtrue;
+#endif
 #endif
 	return qfalse;
 }
@@ -1060,6 +1104,16 @@ static void flush_volatile( void )
 {
 	int i;
 
+#ifdef USE_X87
+	// flush x87 registers in LIFO order
+	for ( i = opstack; i >= 0; i-- ) {
+		opstack_t* it = opstackv + i;
+		if ( it->type == TYPE_ST ) {
+			flush_item( it );
+		}
+	}
+#endif
+
 	for ( i = 0; i <= opstack; i++ ) {
 		opstack_t *it = opstackv + i;
 		if ( it->type == TYPE_RX || it->type == TYPE_SX ) {
@@ -1105,6 +1159,16 @@ this must be called for jump targets, before leave/return, uconditional jumps
 static void flush_opstack( void )
 {
 	int i;
+
+#ifdef USE_X87
+	// flush x87 registers in LIFO order
+	for ( i = opstack; i >= 0; i-- ) {
+		opstack_t* it = opstackv + i;
+		if ( it->type == TYPE_ST ) {
+			flush_item( it );
+		}
+	}
+#endif
 
 	for ( i = 0; i <= opstack; i++ ) {
 		opstack_t *it = opstackv + i;
@@ -1182,7 +1246,40 @@ static void store_sx_opstack( uint32_t reg )
 }
 
 
-static void store_item_opstack( instruction_t* ins )
+#ifdef USE_X87
+static void store_st_opstack( instruction_t *ref )
+{
+	opstack_t* it = opstackv + opstack;
+	int i, c;
+
+#ifdef DEBUG_VM
+	if ( opstack <= 0 )
+		DROP( "bad opstack %i", opstack * 4 );
+
+	if ( it->type != TYPE_RAW )
+		DROP( "bad type %i at opstack %i", it->type, opstack * 4 );
+#endif
+
+	it->type = TYPE_ST;
+	it->offset = opstack * sizeof( int32_t );
+	it->value = 0;
+	it->safe_arg = 0;
+	it->ref = ref;
+
+	if ( ref->flush ) {
+		flush_item( it );
+	}
+
+	for ( c = 0, i = 1; i <= opstack; i++ ) {
+		if ( opstackv[i].type == TYPE_ST ) {
+			c++;
+		}
+	}
+}
+#endif // USE_X87
+
+
+static void store_item_opstack( instruction_t *ins )
 {
 	opstack_t *it = opstackv + opstack;
 
@@ -1309,6 +1406,13 @@ static uint32_t load_rx_opstack( uint32_t pref )
 		return finish_rx( pref, reg );
 	}
 
+#ifdef USE_X87
+	// ST register on the opStack
+	if ( it->type == TYPE_ST ) {
+		flush_item( it );
+	}
+#endif
+
 	// default raw type, explicit load from opStack[opsv]
 	reg = alloc_rx( pref );
 	load4_rx( reg, opsv * sizeof( int32_t ) );
@@ -1429,6 +1533,62 @@ static uint32_t load_sx_opstack( uint32_t pref )
 	it->type = TYPE_RAW;
 	return reg;
 }
+
+
+#ifdef USE_X87
+static void load_st_opstack( void )
+{
+	opstack_t *it;
+#ifdef DEBUG_VM
+	if ( opstack <= 0 )
+		DROP( "bad opstack %i", opstack * 4 );
+#endif
+
+	it = &opstackv[ opstack ];
+	if ( it->type == TYPE_SX ) {
+		DROP( "incorrect item type at %i", opstack * 4 );
+	}
+
+	// st register on the stack
+	if ( it->type == TYPE_ST ) {
+		it->type = TYPE_RAW;
+		return;
+	}
+
+	// integer register on the stack
+	if ( it->type == TYPE_RX ) {
+		// move from general-purpose to scalar register
+		// should never happen with FPU type promotion, except syscalls
+		if ( it->offset < 0 ) {
+			// syscall return
+			it->offset = -it->offset + sizeof( int32_t );
+		} else {
+			flush_item( it );
+		}
+		load4_st( it->offset );
+		it->type = TYPE_RAW;
+		return;
+	}
+
+	if ( it->type == TYPE_CONST ) {
+		mov_st_imm32( it->value );
+		it->type = TYPE_RAW;
+		return;
+	}
+
+	if ( it->type == TYPE_LOCAL ) {
+		// bogus case: local address casted to float
+		mov_st_local( it->value );
+		it->type = TYPE_RAW;
+		return;
+	}
+
+	// default raw type, explicit load from opStack[opstack]
+	load4_st( opstack * sizeof( int32_t ) );
+	it->type = TYPE_RAW;
+	return;
+}
+#endif // USE_X87
 
 
 qboolean find_free_rx( void ) {

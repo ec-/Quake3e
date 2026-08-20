@@ -58,6 +58,11 @@ const int demo_protocols[] = { 66, 67, OLD_PROTOCOL_VERSION, NEW_PROTOCOL_VERSIO
 static jmp_buf abortframe;	// an ERR_DROP occurred, exit the entire frame
 
 int		CPU_Flags = 0;
+#ifdef USE_X87
+int32_t	x87_cw_orig = 0;
+int32_t	x87_cw_rint = 0;
+int32_t	x87_cw_cvfi = 0;
+#endif
 
 static fileHandle_t logfile = FS_INVALID_HANDLE;
 static fileHandle_t com_journalFile = FS_INVALID_HANDLE ; // events are written here
@@ -3744,6 +3749,33 @@ static void Com_SetAffinityMask( const char *str )
 #endif // USE_AFFINITY_MASK
 
 
+#ifdef USE_X87
+#ifdef _MSC_VER
+#if id386
+/*
+=================
+Q_fpucw
+=================
+*/
+void Q_fpucw( unsigned short *cw )
+{
+	__asm {
+		mov ecx, cw;
+		fnstcw [ecx];
+	}
+}
+#else // idx64
+// .asm versions
+#endif // idx64
+#else // GCC/clang
+void Q_fpucw( unsigned short *cw )
+{
+	asm volatile("fnstcw %0" : "=m" (*cw));
+}
+#endif // GCC/clang
+#endif // USE_X87
+
+
 /*
 =================
 Com_Init
@@ -3971,6 +4003,15 @@ void Com_Init( char *commandLine ) {
 	}
 	Com_Printf( "%s\n", Cvar_VariableString( "sys_cpustring" ) );
 
+#ifdef USE_X87
+	// initialize x87 FPU control words:
+	Q_fpucw( (unsigned short*) &x87_cw_orig );
+	x87_cw_orig |= 0x003F; // set all exception mask bits
+	x87_cw_orig = (x87_cw_orig & 0xF0FF) | 0x0200; // round to nearest, enforce double precision
+	x87_cw_rint = (x87_cw_orig & 0xF0FF) | 0x0000; // round to nearest, single precision
+	x87_cw_cvfi = (x87_cw_orig & 0xF0FF) | 0x0C00; // round to zero, single precision
+#endif
+
 #ifdef USE_AFFINITY_MASK
 	// get initial process affinity - we will respect it when setting custom affinity masks
 	eCoreMask = pCoreMask = affinityMask = Sys_GetAffinityMask();
@@ -3981,7 +4022,7 @@ void Com_Init( char *commandLine ) {
 		Com_SetAffinityMask( com_affinityMask->string );
 		com_affinityMask->modified = qfalse;
 	}
-#endif
+#endif // USE_AFFINITY_MASK
 
 	// Pick a random port value
 	Com_RandomBytes( (byte*)&qport, sizeof( qport ) );
