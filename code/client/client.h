@@ -476,6 +476,12 @@ void CL_SendCmd( void );
 void CL_WritePacket( int repeat );
 
 //
+// cl_fonts.c
+//
+void CL_InitFonts( void );
+const char *CL_FontResolvedPath( void );
+
+//
 // cl_keys.c
 //
 extern  field_t     chatField;

@@ -4047,6 +4047,8 @@ void CL_Init( void ) {
 	Cvar_Get( "cl_guid", "", CVAR_USERINFO | CVAR_ROM | CVAR_PROTECTED );
 	CL_UpdateGUID( NULL, 0 );
 
+	CL_InitFonts();
+
 	Com_Printf( "----- Client Initialization Complete -----\n" );
 }
 
