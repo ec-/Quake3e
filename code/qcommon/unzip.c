@@ -1041,8 +1041,8 @@ typedef unsigned long  ulg;
 
 
 typedef uLong (*check_func) OF((uLong check, const Byte *buf, uInt len));
-static voidp zcalloc OF((voidp opaque, unsigned items, unsigned size));
-static void   zcfree  OF((voidp opaque, voidp ptr));
+static void *zcalloc OF((void *opaque, unsigned items, unsigned size));
+static void   zcfree  OF((void *opaque, void *ptr));
 
 #define ZALLOC(strm, items, size) \
            (*((strm)->zalloc))((strm)->opaque, (items), (size))
@@ -4073,10 +4073,10 @@ int inflateInit2_(z_streamp z, int w, const char *version, int stream_size)
   z->msg = Z_NULL;
   if (z->zalloc == Z_NULL)
   {
-    z->zalloc = (void *(*)(void *, unsigned, unsigned))zcalloc;
+    z->zalloc = zcalloc;
     z->opaque = (voidp)0;
   }
-  if (z->zfree == Z_NULL) z->zfree = (void (*)(void *, void *))zcfree;
+  if (z->zfree == Z_NULL) z->zfree = zcfree;
   if ((z->state = (struct internal_state *)
        ZALLOC(z,1,sizeof(struct internal_state))) == Z_NULL)
     return Z_MEM_ERROR;
@@ -4334,14 +4334,14 @@ int inflateSyncPoint(z_streamp z)
 }
 #endif
 
-voidp zcalloc (voidp opaque, unsigned items, unsigned size)
+void *zcalloc (void *opaque, unsigned items, unsigned size)
 {
     if (opaque) items += size - size; /* make compiler happy */
     // use small zone to avoid main zone fragmentation
-    return (voidp)S_Malloc(items*size);
+    return S_Malloc(items*size);
 }
 
-void  zcfree (voidp opaque, voidp ptr)
+void  zcfree (void *opaque, void *ptr)
 {
     Z_Free(ptr);
     if (opaque) return; /* make compiler happy */
