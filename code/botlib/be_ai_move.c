@@ -3013,12 +3013,7 @@ void BotMoveToGoal(bot_moveresult_t *result, int movestate, bot_goal_t *goal, in
 	//bsp_trace_t trace;
 	//static int debugline;
 
-	result->failure = qfalse;
-	result->type = 0;
-	result->blocked = qfalse;
-	result->blockentity = 0;
-	result->traveltype = 0;
-	result->flags = 0;
+	Com_Memset(result, 0, sizeof(*result));
 
 	//
 	ms = BotMoveStateFromHandle(movestate);
