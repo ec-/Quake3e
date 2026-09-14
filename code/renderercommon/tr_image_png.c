@@ -58,11 +58,13 @@ PNG LOADING
  *  is bigger than 0 a body and a CRC of the body follow.
  */
 
+#pragma pack(push, 1)
 struct PNG_ChunkHeader
 {
 	uint32_t Length;
 	uint32_t Type;
 };
+#pragma pack(pop)
 
 #define PNG_ChunkHeader_Size (8)
 
