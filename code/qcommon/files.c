@@ -727,6 +727,8 @@ qboolean FS_AllowedExtension( const char *fileName, qboolean allowPk3s, const ch
 	int i, n;
 
 	e = strrchr( fileName, '.' );
+	if ( ext )
+		*ext = e ? e+1 : "";
 
 	// check for unix '.so.[0-9]' pattern
 	if ( e >= (fileName + 3) && *(e+1) >= '0' && *(e+1) <= '9' && *(e+2) == '\0' ) 
@@ -754,8 +756,6 @@ qboolean FS_AllowedExtension( const char *fileName, qboolean allowPk3s, const ch
 	{
 		if ( Q_stricmp( e, extlist[i] ) == 0 ) 
 		{
-			if ( ext )
-				*ext = e;
 			return qfalse;
 		}
 	}
