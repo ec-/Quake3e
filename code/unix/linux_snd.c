@@ -41,7 +41,6 @@ extern cvar_t *s_device;
 
 #define	_pthread_join pthread_join
 #define	_pthread_create pthread_create
-#define	_pthread_exit pthread_exit
 
 #define	_snd_strerror snd_strerror
 #define	_snd_pcm_open snd_pcm_open
@@ -98,7 +97,6 @@ static int (*_pthread_mutex_unlock)(pthread_mutex_t *mutex);
 #endif
 static int (*_pthread_join)(pthread_t __th, void **__thread_return);
 static int (*_pthread_create)(pthread_t *thread, const pthread_attr_t *attr, void *(*func) (void *), void *arg);
-static void (*_pthread_exit)(void *retval);
 
 /* alsa private variables */
 
@@ -159,7 +157,6 @@ sym_t t_list[] = {
 #endif
 	{ (void**)&_pthread_join, "pthread_join" },
 	{ (void**)&_pthread_create, "pthread_create" },
-	{ (void**)&_pthread_exit, "pthread_exit" }
 };
 
 sym_t a_list[] = {
@@ -229,8 +226,8 @@ static int buffer_sz;					// buffers size, in bytes
 static int frame_sz;					// frame size, in bytes
 
 static void async_proc( snd_async_handler_t *ahandler );
-static void thread_proc_mmap( void );
-static void thread_proc_direct( void );
+static void *thread_proc_mmap( void *arg );
+static void *thread_proc_direct( void *arg );
 
 
 void Snd_Memset( void* dest, const int val, const size_t count )
@@ -603,9 +600,9 @@ static qboolean setup_ALSA( smode_t mode )
 #endif
 	
 		if ( use_mmap )
-			err = _pthread_create( &thread, NULL, (void*)&thread_proc_mmap, NULL );
+			err = _pthread_create( &thread, NULL, thread_proc_mmap, NULL );
 		else
-			err = _pthread_create( &thread, NULL, (void*)&thread_proc_direct, NULL );
+			err = _pthread_create( &thread, NULL, thread_proc_direct, NULL );
 
 		if ( err != 0 )
 		{
@@ -830,7 +827,7 @@ int SNDDMA_GetDMAPos( void )
 }
 
 
-static void thread_proc_mmap( void )
+static void *thread_proc_mmap( void *arg )
 {
 	const snd_pcm_channel_area_t *areas;
 	snd_pcm_sframes_t commitres;
@@ -842,6 +839,8 @@ static void thread_proc_mmap( void )
 	int sz0, sz1;
 	int err, p;
 	pid_t thread_id;
+
+	(void)arg;
 
 	// adjust thread priority
 	thread_id = syscall( SYS_gettid );
@@ -941,11 +940,11 @@ static void thread_proc_mmap( void )
 
 	_snd_pcm_drop( handle );
 
-	_pthread_exit( 0 );
+	return NULL;
 }
 
 
-static void thread_proc_direct( void )
+static void *thread_proc_direct( void *arg )
 {
 	snd_pcm_uframes_t size;
 	snd_pcm_uframes_t pos;
@@ -953,6 +952,8 @@ static void thread_proc_direct( void )
 	snd_pcm_state_t state;
 	pid_t thread_id;
 	int err;
+
+	(void)arg;
 
 	// adjust thread priority
 	thread_id = syscall( SYS_gettid );
@@ -1030,7 +1031,7 @@ static void thread_proc_direct( void )
 
 	_snd_pcm_drop( handle );
 
-	_pthread_exit( 0 );
+	return NULL;
 }
 
 
