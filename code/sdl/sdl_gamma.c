@@ -26,6 +26,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #	include <SDL.h>
 #endif
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include "../client/client.h"
 #include "sdl_glw.h"
 
@@ -62,8 +66,6 @@ void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned 
 	}
 
 #ifdef _WIN32
-#include <windows.h>
-
 	// Win2K and newer put this odd restriction on gamma ramps...
 	{
 		//OSVERSIONINFO	vinfo;
