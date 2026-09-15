@@ -143,7 +143,7 @@ void MSG_WriteBits( msg_t *msg, int value, int bits ) {
 				value = (value>>8);
 			}
 		}
-		msg->cursize = (msg->bit>>3)+1;
+		msg->cursize = (msg->bit+7)>>3;
 	}
 
 	if ( msg->bit > msg->maxbits ) {
