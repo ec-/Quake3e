@@ -3828,8 +3828,9 @@ static const char *parseAffinityMask( const char *str, uint64_t *outv, int level
 
 		if ( level == 0 ) {
 			while ( *str == '+' || *str == '-' ) {
+				const char op = *str;
 				str = parseAffinityMask( str + 1, &v, level + 1 );
-				switch ( *str ) {
+				switch ( op ) {
 					case '+': mask |= v; break;
 					case '-': mask &= ~v; break;
 					default: str = ""; break;
