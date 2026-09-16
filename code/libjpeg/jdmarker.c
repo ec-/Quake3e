@@ -503,13 +503,15 @@ get_dht (j_decompress_ptr cinfo)
 
     if (index & 0x10) {		/* AC table definition */
       index -= 0x10;
-      htblptr = &cinfo->ac_huff_tbl_ptrs[index];
+      htblptr = cinfo->ac_huff_tbl_ptrs;
     } else {			/* DC table definition */
-      htblptr = &cinfo->dc_huff_tbl_ptrs[index];
+      htblptr = cinfo->dc_huff_tbl_ptrs;
     }
 
     if (index < 0 || index >= NUM_HUFF_TBLS)
       ERREXIT1(cinfo, JERR_DHT_INDEX, index);
+
+    htblptr += index;
 
     if (*htblptr == NULL)
       *htblptr = jpeg_alloc_huff_table((j_common_ptr) cinfo);
