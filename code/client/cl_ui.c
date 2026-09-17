@@ -776,6 +776,15 @@ static qboolean UI_GetValue( char* value, int valueSize, const char* key ) {
 		return qtrue;
 	}
 
+	if ( !Q_stricmp( key, "trap_R_RegisterFontAtlas_Q3E" ) && re.RegisterFontAtlas ) {
+#ifdef BUILD_FREETYPE
+		Com_sprintf( value, valueSize, "%i", UI_R_REGISTERFONTATLAS );
+		return qtrue;
+#else
+		return qfalse;
+#endif
+	}
+
 	return qfalse;
 }
 
@@ -1177,6 +1186,26 @@ static intptr_t CL_UISystemCalls( intptr_t *args ) {
 	case UI_CVAR_SETDESCRIPTION:
 		Cvar_SetDescription2( (const char*)VMA(1), (const char*)VMA(2) );
 		return 0;
+
+	case UI_R_REGISTERFONTATLAS:
+		{
+			const char *face;
+			fontAtlasInfo_t *atlasOut;
+
+			if ( !re.RegisterFontAtlas ) {
+				return 0;
+			}
+			face = (const char *)VMA(1);
+			if ( !face || !face[0] ) {
+				face = CL_FontResolvedPath();
+			}
+			atlasOut = (fontAtlasInfo_t *)VMA(4);
+			if ( !atlasOut ) {
+				return 0;
+			}
+			VM_CHECKBOUNDS( uivm, args[4], sizeof( fontAtlasInfo_t ) );
+			return re.RegisterFontAtlas( face, args[2], VMA(3), atlasOut ) ? 1 : 0;
+		}
 
 	case UI_TRAP_GETVALUE:
 		VM_CHECKBOUNDS( uivm, args[1], args[2] );

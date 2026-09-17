@@ -103,6 +103,8 @@ typedef struct {
 	void    (*A3D_RenderGeometry) (void *pVoidA3D, void *pVoidGeom, void *pVoidMat, void *pVoidGeomStatus);
 #endif
 	void	(*RegisterFont)(const char *fontName, int pointSize, fontInfo_t *font);
+	/* Extension: bake alphabet into atlas pool; returns qtrue on success */
+	qboolean (*RegisterFontAtlas)(const char *fontName, int pointSize, const char *alphabet, fontAtlasInfo_t *out);
 	void	(*RemapShader)(const char *oldShader, const char *newShader, const char *offsetTime);
 	qboolean (*GetEntityToken)( char *buffer, int size );
 	qboolean (*inPVS)( const vec3_t p1, const vec3_t p2 );
