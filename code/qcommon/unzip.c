@@ -1488,6 +1488,7 @@ static int unzlocal_GetCurrentFileInfoInternal (unzFile file,
 	unz_file_info_internal file_info_internal;
 	byte buf[46];
 	int err=UNZ_OK;
+	int value;
 	//uLong uMagic;
 	long lSeek=0;
 
@@ -1520,8 +1521,10 @@ static int unzlocal_GetCurrentFileInfoInternal (unzFile file,
 	file_info.size_file_comment = LittleShort( *(short*)(buf+32) );
 	file_info.disk_num_start = LittleShort( *(short*)(buf+34) );
 	file_info.internal_fa = LittleShort( *(short*)(buf+36) );
-	file_info.external_fa = LittleLong( *(int*)(buf+38) );
-	file_info_internal.offset_curfile = LittleLong( *(int*)(buf+42) );
+	CopyLittleLong( &value, buf+38 );
+	file_info.external_fa = value;
+	CopyLittleLong( &value, buf+42 );
+	file_info_internal.offset_curfile = value;
 #else
 
 	/* we check the magic */
