@@ -447,7 +447,7 @@ void CL_StartHunkUsers( void );
 
 void CL_Disconnect_f( void );
 void CL_ReadDemoMessage( void );
-void CL_StopRecord_f( void );
+void CL_StopRecord( void );
 
 void CL_InitDownloads( void );
 void CL_NextDownload( void );
