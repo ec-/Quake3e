@@ -202,7 +202,9 @@ int HuffmanGetBit( const byte* buffer, int bitIndex )
 
 int HuffmanGetSymbol( unsigned int* symbol, const byte* buffer, int bitIndex )
 {
-	const uint16_t code = ((*(const uint32_t*)(buffer + (bitIndex >> 3))) >> ((uint32_t)bitIndex & 7)) & 0x7FF;
+	uint32_t bits;
+	memcpy( &bits, buffer + (bitIndex >> 3), sizeof( bits ) );
+	const uint16_t code = (bits >> ((uint32_t)bitIndex & 7)) & 0x7FF;
 	const uint16_t entry = HuffmanDecoderTable[ code ];
 
 	*symbol = (unsigned int)(entry & 0xFF);
