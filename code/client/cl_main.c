@@ -910,11 +910,12 @@ static void CL_PlayDemo_f( void ) {
 	FS_FCloseFile( hFile );
 	hFile = FS_INVALID_HANDLE;
 
+	CL_Disconnect( qtrue );
+
 	// make sure a local server is killed
 	// 2 means don't force disconnect of local client
 	Cvar_Set( "sv_killserver", "2" );
-
-	CL_Disconnect( qtrue );
+	SV_Frame( 0 );
 
 	// clc.demofile will be closed during CL_Disconnect so reopen it
 	if ( FS_FOpenFileRead( name, &clc.demofile, qtrue ) == -1 )
