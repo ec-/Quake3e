@@ -102,9 +102,11 @@ qhandle_t RE_RegisterShaderNoMip( const char *name );
 qhandle_t RE_RegisterShaderFromImage(const char *name, int lightmapIndex, image_t *image, qboolean mipRawImage);
 
 // font stuff
+extern cvar_t *r_saveFontData;
 void R_InitFreeType( void );
 void R_DoneFreeType( void );
 void RE_RegisterFont(const char *fontName, int pointSize, fontInfo_t *font);
+qboolean RE_RegisterFontAtlas(const char *fontName, int pointSize, const char *alphabet, fontAtlasInfo_t *out);
 
 /*
 =============================================================
