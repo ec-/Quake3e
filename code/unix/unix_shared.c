@@ -44,7 +44,7 @@ Sys_Milliseconds
 ================
 */
 /* base time in seconds, that's our origin
-   timeval:tv_sec is an int: 
+   timeval:tv_sec is an int:
    assuming this wraps every 0x7fffffff - ~68 years since the Epoch (1970) - we're safe till 2038
    using unsigned long data type to work right with Sys_XTimeToSysTime */
 unsigned long sys_timeBase = 0;
@@ -59,7 +59,7 @@ int Sys_Milliseconds( void )
 	int curtime;
 
 	gettimeofday( &tp, NULL );
-	
+
 	if ( !sys_timeBase )
 	{
 		sys_timeBase = tp.tv_sec;
@@ -67,7 +67,7 @@ int Sys_Milliseconds( void )
 	}
 
 	curtime = (tp.tv_sec - sys_timeBase) * 1000 + tp.tv_usec / 1000;
-	
+
 	return curtime;
 }
 
@@ -355,7 +355,7 @@ qboolean Sys_ResetReadOnlyAttribute( const char *ospath )
 Sys_Pwd
 =================
 */
-const char *Sys_Pwd( void ) 
+const char *Sys_Pwd( void )
 {
 	static char pwd[ MAX_OSPATH ];
 
@@ -393,19 +393,34 @@ const char *Sys_DefaultHomePath( void )
 
 	if ( *homePath )
 		return homePath;
-            
-	if ( (p = getenv("HOME")) != NULL ) 
+
+	if ( (p = getenv("HOME")) != NULL )
 	{
 		Q_strncpyz( homePath, p, sizeof( homePath ) );
 #ifdef MACOS_X
 		Q_strcat( homePath, sizeof(homePath), "/Library/Application Support/Quake3" );
 #else
 		Q_strcat( homePath, sizeof( homePath ), "/.q3a" );
+# ifdef USE_XDG
+        // Check if ~/.q3a exists
+        struct stat s;
+        if (stat(homePath, &s) == 0 && S_ISDIR(s.st_mode)) {
+            Com_Printf("Found %s, ignoring $XDG_DATA_HOME/QuakeIIIe\n", homePath);
+            return homePath;
+        }
+
+        char* datahome = getenv("XDG_DATA_HOME");
+        if (datahome) {
+            Com_sprintf(homePath, MAX_OSPATH, "%s/QuakeIIIe", datahome);
+        } else {
+            Com_sprintf(homePath, MAX_OSPATH, "%s/.local/share/QuakeIIIe", p);
+        }
+# endif
 #endif
-		if ( mkdir( homePath, 0750 ) ) 
+		if ( mkdir( homePath, 0750 ) )
 		{
-			if ( errno != EEXIST ) 
-				Sys_Error( "Unable to create directory \"%s\", error is %s(%d)\n", 
+			if ( errno != EEXIST )
+				Sys_Error( "Unable to create directory \"%s\", error is %s(%d)\n",
 					homePath, strerror( errno ), errno );
 		}
 		return homePath;
@@ -507,7 +522,7 @@ void *Sys_LoadFunction( void *handle, const char *name )
 	void *symbol;
 	size_t nlen;
 
-	if ( handle == NULL || name == NULL || *name == '\0' ) 
+	if ( handle == NULL || name == NULL || *name == '\0' )
 	{
 		dll_err_count++;
 		return NULL;
