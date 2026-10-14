@@ -561,7 +561,7 @@ qboolean CL_OpenAVIForWriting( const char *fileName, const char *pipeFormat, qbo
 
 	afd.audioFrameSize = ceil( (float)(afd.a.rate * afd.a.sampleSize) / (float)afd.frameRate );
 
-	if ( Cvar_VariableIntegerValue( "s_initsound" ) == 0 )
+	if ( Cvar_VariableIntegerValue( "s_initsound" ) == 0 || afd.audioFrameSize <= 0 )
 	{
 		afd.audio = qfalse;
 	}
