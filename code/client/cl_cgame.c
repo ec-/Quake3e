@@ -1044,6 +1044,8 @@ or bursted delayed packets.
 static void CL_AdjustTimeDelta( void ) {
 	int		newDelta;
 	int		deltaDelta;
+	int		excessDelta;
+	int		targetDelta;
 
 	cl.newSnapshots = qfalse;
 
@@ -1053,21 +1055,26 @@ static void CL_AdjustTimeDelta( void ) {
 	}
 
 	newDelta = cl.snap.serverTime - cls.realtime;
-	deltaDelta = abs( newDelta - cl.serverTimeDelta );
+	targetDelta = newDelta - cl.snapInterval;
+	// This should approach 0.
+	excessDelta = cl.serverTimeDelta - targetDelta;
+	// This should approach `cl.snapInterval`.
+	deltaDelta = newDelta - cl.serverTimeDelta;
 
-	if ( deltaDelta > RESET_TIME ) {
-		cl.serverTimeDelta = newDelta;
-		cl.oldServerTime = cl.snap.serverTime;	// FIXME: is this a problem for cgame?
-		cl.serverTime = cl.snap.serverTime;
+	if ( abs( excessDelta ) > RESET_TIME ) {
+		cl.serverTimeDelta = targetDelta;
+		// Same expression as in `CL_SetCGameTime`.
+		cl.serverTime = cls.realtime + cl.serverTimeDelta - CL_TimeNudge();
+		cl.oldServerTime = cl.serverTime; // FIXME: is this a problem for cgame?
 		if ( cl_showTimeDelta->integer ) {
 			Com_Printf( "<RESET> " );
 		}
-	} else if ( deltaDelta > 100 ) {
+	} else if ( abs( excessDelta ) > 100 ) {
 		// fast adjust, cut the difference in half
 		if ( cl_showTimeDelta->integer ) {
 			Com_Printf( "<FAST> " );
 		}
-		cl.serverTimeDelta = ( cl.serverTimeDelta + newDelta ) >> 1;
+		cl.serverTimeDelta = ( cl.serverTimeDelta + targetDelta ) >> 1;
 	} else {
 		// slow drift adjust, only move 1 or 2 msec
 
@@ -1086,7 +1093,12 @@ static void CL_AdjustTimeDelta( void ) {
 	}
 
 	if ( cl_showTimeDelta->integer ) {
-		Com_Printf( "%i ", cl.serverTimeDelta );
+		if ( cl_showTimeDelta->integer & 0x2 ) {
+			Com_Printf( "%03i snapInterval %i deltaDelta %03i excessDelta %+i\n",
+				cl.serverTimeDelta, cl.snapInterval, deltaDelta, excessDelta );
+		} else {
+			Com_Printf( "%i ", cl.serverTimeDelta );
+		}
 	}
 }
 
