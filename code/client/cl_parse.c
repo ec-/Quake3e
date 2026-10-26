@@ -307,6 +307,7 @@ static void CL_ParseSnapshot( msg_t *msg ) {
 		// so let's not be overly smart.
 		&& newSnap.messageNum == cl.snap.messageNum + 1 )
 	{
+		cl.prevSnapInterval = cl.snapInterval;
 		cl.snapInterval = newSnap.serverTime - cl.snap.serverTime;
 	}
 

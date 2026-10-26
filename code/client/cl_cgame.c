@@ -1046,6 +1046,19 @@ static void CL_AdjustTimeDelta( void ) {
 	int		deltaDelta;
 	int		excessDelta;
 	int		targetDelta;
+	// If the interval is not uniform (`cl.snapInterval != cl.prevSnapInterval`)
+	// then this might be rate limiting kicking in ("rate" CVAR)
+	// or some server hitch (a skipped frame).
+	// Not a very nice solution, but this shouldn't happen often anyway.
+	// To account for hitches the best thing would be to make the server
+	// tell us its `sv_fps` (and account for the `snaps` limit).
+	int		smoothedSnapInterval = cl.snapInterval != 0
+		? cl.prevSnapInterval != 0
+			// If one has a hitch, look at the other
+			? MIN( cl.prevSnapInterval, cl.snapInterval )
+			: cl.snapInterval
+		// Assume 20 snaps per second, the default `sv_fps`.
+		: 1000 / 20;
 
 	cl.newSnapshots = qfalse;
 
@@ -1055,10 +1068,10 @@ static void CL_AdjustTimeDelta( void ) {
 	}
 
 	newDelta = cl.snap.serverTime - cls.realtime;
-	targetDelta = newDelta - cl.snapInterval;
+	targetDelta = newDelta - smoothedSnapInterval;
 	// This should approach 0.
 	excessDelta = cl.serverTimeDelta - targetDelta;
-	// This should approach `cl.snapInterval`.
+	// This should approach `smoothedSnapInterval`.
 	deltaDelta = newDelta - cl.serverTimeDelta;
 
 	if ( abs( excessDelta ) > RESET_TIME ) {
@@ -1094,8 +1107,9 @@ static void CL_AdjustTimeDelta( void ) {
 
 	if ( cl_showTimeDelta->integer ) {
 		if ( cl_showTimeDelta->integer & 0x2 ) {
-			Com_Printf( "%03i snapInterval %i deltaDelta %03i excessDelta %+i\n",
-				cl.serverTimeDelta, cl.snapInterval, deltaDelta, excessDelta );
+			Com_Printf( "%03i snapInterval %i deltaDelta %03i excessDelta %+i%s\n",
+				cl.serverTimeDelta, cl.snapInterval, deltaDelta, excessDelta,
+				smoothedSnapInterval != cl.snapInterval ? " <HITCH>" : "" );
 		} else {
 			Com_Printf( "%i ", cl.serverTimeDelta );
 		}
