@@ -1118,7 +1118,9 @@ static void CL_FirstSnapshot( void ) {
 	// clear old game so we will not switch back to old mod on disconnect
 	CL_ResetOldGame();
 
-	// set the timedelta so we are exactly on this first frame
+	// set the timedelta so we are exactly on this first frame.
+	// This means that we will extrapolate initially,
+	// but `CL_AdjustTimeDelta` will move towards interpolation over time.
 	cl.serverTimeDelta = cl.snap.serverTime - cls.realtime;
 	cl.oldServerTime = cl.snap.serverTime;
 
