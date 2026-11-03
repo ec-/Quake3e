@@ -305,6 +305,7 @@
     <ClCompile Include="..\..\server\sv_game.c" />
     <ClCompile Include="..\..\server\sv_init.c" />
     <ClCompile Include="..\..\server\sv_main.c" />
+    <ClCompile Include="..\..\server\sv_mvconvert.c" />
     <ClCompile Include="..\..\server\sv_net_chan.c" />
     <ClCompile Include="..\..\server\sv_snapshot.c" />
     <ClCompile Include="..\..\server\sv_world.c" />

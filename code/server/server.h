@@ -455,6 +455,7 @@ void SV_PrintLocations_f( client_t *client );
 void SV_TrackDisconnect( int clientNum );
 void SV_ForwardServerCommands( client_t *recorder /*, const client_t *client */ );
 void SV_MultiViewStopRecord_f( void );
+void SV_MultiViewConvert_f( void );
 int SV_FindActiveClient( qboolean checkCommands, int skipClientNum, int minActive );
 void SV_SetTargetClient( int clientNum );
 #endif // USE_MV

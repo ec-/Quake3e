@@ -82,6 +82,9 @@
     <ClCompile Include="..\..\server\sv_main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\server\sv_mvconvert.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\server\sv_net_chan.c">
       <Filter>Source Files</Filter>
     </ClCompile>
