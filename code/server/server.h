@@ -352,6 +352,8 @@ extern	char	sv_demoFileName[ MAX_OSPATH ];
 extern	char	sv_demoFileNameLast[ MAX_OSPATH ];
 
 extern	int		sv_demoClientID;
+extern	qboolean	sv_demoAuto;		// current recording was started by sv_mvAutoRecord
+extern	qboolean	sv_demoAutoPending;	// next mvrecord is issued by sv_mvAutoRecord
 extern	int		sv_lastAck;
 extern	int		sv_lastClientSeq;
 
@@ -359,6 +361,7 @@ extern	cvar_t	*sv_mvClients;
 extern	cvar_t	*sv_mvPassword;
 extern	cvar_t	*sv_demoFlags;
 extern	cvar_t	*sv_autoRecord;
+extern	cvar_t	*sv_mvRecordMatch;
 
 extern	cvar_t	*sv_mvFileCount;
 extern	cvar_t	*sv_mvFolderSize;
@@ -456,6 +459,7 @@ void SV_TrackDisconnect( int clientNum );
 void SV_ForwardServerCommands( client_t *recorder /*, const client_t *client */ );
 void SV_MultiViewStopRecord_f( void );
 void SV_MultiViewConvert_f( void );
+void SV_FinishMultiViewRecord( void );
 int SV_FindActiveClient( qboolean checkCommands, int skipClientNum, int minActive );
 void SV_SetTargetClient( int clientNum );
 #endif // USE_MV

@@ -461,7 +461,7 @@ Writes last snapshot and closes multiview demo, if any.
 Snapshot storage is reset on map change so recording can't continue
 ================
 */
-static void SV_FinishMultiViewRecord( void ) {
+void SV_FinishMultiViewRecord( void ) {
 	if ( sv_demoFile != FS_INVALID_HANDLE ) {
 		if ( svs.clients && svs.clients[ sv.maxclients ].multiview.recorder ) {
 			SV_SendClientSnapshot( &svs.clients[ sv.maxclients ] );
@@ -832,6 +832,12 @@ void SV_Init( void )
 	Cvar_Get( "mvproto", va( "%i", MV_PROTOCOL_VERSION ), CVAR_SERVERINFO | CVAR_ROM );
 	sv_autoRecord = Cvar_Get( "sv_mvAutoRecord", "0", CVAR_ARCHIVE | CVAR_SERVERINFO );
 	Cvar_SetDescription( sv_autoRecord, "Automatically record multiview demos.\n 0: disabled\n N: start recording when at least N human players are active" );
+	sv_mvRecordMatch = Cvar_Get( "sv_mvRecordMatch", "0", CVAR_ARCHIVE );
+	Cvar_CheckRange( sv_mvRecordMatch, "0", "1", CV_INTEGER );
+	Cvar_SetDescription( sv_mvRecordMatch, "Restrict sv_mvAutoRecord to the match itself, one demo per match.\n"
+		" Recording starts when warmup ends and stops 5 seconds into intermission,\n"
+		" on warmup, map_restart or map change.\n"
+		" Relies on the baseq3 CS_WARMUP and CS_INTERMISSION configstrings, shared by most mods." );
 	sv_demoFlags = Cvar_Get( "sv_mvFlags", "3", CVAR_ARCHIVE );
 	Cvar_SetDescription( sv_demoFlags, "Periodic score requests for multiview, bitmask:\n 1: for demo recorder\n 2: for multiview clients" );
 	sv_mvClients = Cvar_Get( "sv_mvClients", "0", CVAR_ARCHIVE | CVAR_LATCH );

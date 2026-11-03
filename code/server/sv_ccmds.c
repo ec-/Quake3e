@@ -288,6 +288,13 @@ static void SV_MapRestart_f( void ) {
 		return;
 	}
 
+#ifdef USE_MV
+	// map_restart starts a new match, finish the demo of the previous one
+	if ( sv_mvRecordMatch->integer && sv_demoAuto ) {
+		SV_FinishMultiViewRecord();
+	}
+#endif
+
 	// toggle the server bit so clients can detect that a
 	// map_restart has happened
 	svs.snapFlagServerBit ^= SNAPFLAG_SERVERCOUNT;
@@ -1863,6 +1870,11 @@ static void SV_MultiViewRecord_f( void )
 	char name[ MAX_QPATH ];
 	const char *s;
 	int i, cid, len;
+	qboolean autoStart;
+
+	// issued by sv_mvAutoRecord?
+	autoStart = sv_demoAutoPending;
+	sv_demoAutoPending = qfalse;
 
 	if ( Cmd_Argc() > 2 ) {
 		Com_Printf( "usage: mvrecord [filename]\n" );
@@ -1918,6 +1930,8 @@ static void SV_MultiViewRecord_f( void )
 		sv_demoFileNameLast[0] = '\0';
 		return;
 	}
+
+	sv_demoAuto = autoStart;
 
 	recorder = svs.clients + sv.maxclients; // reserved recorder slot
 
@@ -2017,6 +2031,7 @@ void SV_MultiViewStopRecord_f( void )
 
 		FS_FCloseFile( sv_demoFile );
 		sv_demoFile = FS_INVALID_HANDLE;
+		sv_demoAuto = qfalse;
 
 		// rename final file
 		if ( sv_demoFileNameLast[0] && sv_demoFileName[0] ) {

@@ -41,6 +41,11 @@ fileHandle_t	sv_demoFile = FS_INVALID_HANDLE;
 char	sv_demoFileName[ MAX_OSPATH ];
 char	sv_demoFileNameLast[ MAX_OSPATH ];
 int		sv_demoClientID; // current client
+qboolean	sv_demoAuto;
+qboolean	sv_demoAutoPending;
+
+#define MV_INTERMISSION_RECORD_TIME 5000 // msec of intermission kept in match demos
+static int	sv_mvIntermissionTime;
 int		sv_lastAck;
 int		sv_lastClientSeq;
 
@@ -48,6 +53,7 @@ cvar_t	*sv_mvClients;
 cvar_t	*sv_mvPassword;
 cvar_t	*sv_demoFlags;
 cvar_t	*sv_autoRecord;
+cvar_t	*sv_mvRecordMatch;
 
 cvar_t	*sv_mvFileCount;
 cvar_t	*sv_mvFolderSize;
@@ -1448,8 +1454,37 @@ void SV_Frame( int msec ) {
 #ifdef USE_MV
 	svs.emptyFrame = qfalse;
 	if ( sv_autoRecord->integer > 0 ) {
-		if ( sv_demoFile == FS_INVALID_HANDLE ) {
+		qboolean inMatch = qtrue;
+		qboolean matchOver = qfalse;
+
+		if ( sv_mvRecordMatch->integer ) {
+			// CS_WARMUP is set while waiting for players, during warmup
+			// and before a delayed map_restart, and empty during the match
+			if ( sv.configstrings[ CS_WARMUP ][0] != '\0' ) {
+				inMatch = qfalse;
+				matchOver = qtrue;
+			} else if ( atoi( sv.configstrings[ CS_INTERMISSION ] ) ) {
+				// keep the final scoreboard for a while,
+				// some mods hold intermission until all players are ready
+				inMatch = qfalse;
+				if ( !sv_mvIntermissionTime ) {
+					sv_mvIntermissionTime = svs.time;
+				} else if ( svs.time - sv_mvIntermissionTime >= MV_INTERMISSION_RECORD_TIME ) {
+					matchOver = qtrue;
+				}
+			} else {
+				sv_mvIntermissionTime = 0;
+			}
+		}
+
+		if ( matchOver ) {
+			if ( sv_demoFile != FS_INVALID_HANDLE && sv_demoAuto ) {
+				Com_Printf( S_COLOR_CYAN "multiview: match is over.\n" );
+				SV_FinishMultiViewRecord();
+			}
+		} else if ( inMatch && sv_demoFile == FS_INVALID_HANDLE ) {
 			if ( SV_FindActiveClient( qtrue, -1, sv_autoRecord->integer ) >= 0 ) {
+				sv_demoAutoPending = qtrue;
 				Cbuf_AddText( "mvrecord\n" );
 			}
 		}
