@@ -87,6 +87,7 @@ struct entityState_s;
 struct playerState_s;
 
 void MSG_WriteBits( msg_t *msg, int value, int bits );
+int MSG_ReadBits( msg_t *msg, int bits );
 
 void MSG_WriteChar (msg_t *sb, int c);
 void MSG_WriteByte (msg_t *sb, int c);
@@ -123,6 +124,79 @@ void MSG_WriteDeltaPlayerstate( msg_t *msg, const playerState_t *from, const pla
 void MSG_ReadDeltaPlayerstate( msg_t *msg, const playerState_t *from, playerState_t *to );
 
 void MSG_ReportChangeVectors_f( void );
+
+// PureMultiView protocol
+
+// defined unconditionally because entityStateFields[] in msg.c references it
+typedef enum {
+	SM_BASE = 1,
+	SM_EFLAGS = 2,
+	SM_TRTIME = 4,	 // CPMA
+	SM_TRTYPE = 8,	 // !CPMA
+	SM_TRDELTA = 16, // CPMA: snapped pos.trDelta values
+	SM_ALL = SM_BASE | SM_EFLAGS | SM_TRTIME | SM_TRTYPE | SM_TRDELTA,
+	SM_BITS = 5,
+} skip_mask;
+
+#ifdef USE_MV
+
+extern int MSG_entMergeMask;
+
+int MSG_PlayerStateToEntityStateXMask( const playerState_t *ps, const entityState_t *s, qboolean snap );
+void MSG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s, qboolean snap, skip_mask sm );
+
+// command compression
+
+#define INDEX_BITS		12	// dictionary index size
+#define LENGTH_BITS		4	// match length bits
+#define LENGTH_MASK		((1<<LENGTH_BITS)-1)	
+#define LENGTH_MASK1	(0xFF & ~LENGTH_MASK)
+#define LZ_WINDOW_SIZE	(1 << INDEX_BITS)
+
+#define RAW_LOOK_AHEAD_SIZE (1 << LENGTH_BITS) // max match length
+#define LZ_MIN_MATCH 3 // minimal match length for efficient encoding
+#define LOOK_AHEAD_SIZE (RAW_LOOK_AHEAD_SIZE + LZ_MIN_MATCH - 1)
+
+#define DICT_SIZE LZ_WINDOW_SIZE
+#define HTAB_SIZE 2048
+
+#define SEARCH_OPTIMIZE
+
+typedef struct lz_ctx_s 
+{
+#ifdef SEARCH_OPTIMIZE
+	byte window[ PAD(LZ_WINDOW_SIZE + LOOK_AHEAD_SIZE, 4) ];
+#else
+	byte window[ LZ_WINDOW_SIZE ];
+#endif
+	int current_pos;
+	// hash context
+	short int htable[ HTAB_SIZE ];
+	short int htlast[ HTAB_SIZE ];
+	short int hlist[ DICT_SIZE ];
+	short int hvals[ DICT_SIZE ];
+} lzctx_t;
+
+typedef struct lzstream_s {
+	int		count;
+	byte	type[(MAX_STRING_CHARS/8)+4]; // bitarray: 0 - match pair, 1 - literal
+	byte	cmd[MAX_STRING_CHARS+1];
+
+	int		zdelta;	      // 0 - reset encoder, 1..7 - control sequences
+	int		zcharbits;    // 0 or 1
+	int		zcommandSize; // 0..3
+	int		zcommandNum;  // client->reliableSequence
+} lzstream_t;
+
+void LZSS_InitContext( lzctx_t *ctx ); 
+void LZSS_SeekEOS( msg_t *msg, int charbits );
+int LZSS_Expand( lzctx_t *ctx, msg_t *msg, byte *out, int maxsize, int charbits );
+int LZSS_Compress( lzctx_t *ctx, msg_t *msg, const byte *in, int length, int charbits );
+int LZSS_CompressToStream( lzctx_t *ctx, lzstream_t *stream, const byte *in, int length );
+void MSG_WriteLZStream( msg_t *msg, lzstream_t *stream );
+
+#endif // USE_MV
+
 
 //============================================================================
 
@@ -340,6 +414,14 @@ enum svc_ops_e {
 	// new commands, supported only by ioquake3 protocol but not legacy
 	svc_voipSpeex,     // not wrapped in USE_VOIP, so this value is reserved.
 	svc_voipOpus,      //
+
+#ifdef USE_MV
+	svc_multiview = 16, // 1.32e multiview extension
+#ifdef USE_MV_ZCMD
+	svc_zcmd = 17,      // LZ-compressed version of svc_serverCommand
+#endif
+#endif
+
 };
 
 
@@ -777,6 +859,8 @@ void FS_BypassPure( void );
 void FS_RestorePure( void );
 
 int FS_Home_FOpenFileRead( const char *filename, fileHandle_t *file );
+char **FS_Home_ListFilteredFiles( const char *path, const char *extension, const char *filter, int *numfiles );
+int	FS_Home_FileSize( const char *name );
 
 qboolean FS_FileIsInPAK( const char *filename, int *pChecksum, char *pakName );
 // returns qtrue if a file is in the PAK file, otherwise qfalse

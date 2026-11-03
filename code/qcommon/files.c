@@ -1862,6 +1862,63 @@ int FS_Home_FOpenFileRead( const char *filename, fileHandle_t *file )
 
 /*
 =================
+FS_Home_ListFilteredFiles
+=================
+*/
+char **FS_Home_ListFilteredFiles( const char *path, const char *extension, const char *filter, int *numfiles ) {
+
+	const char *netpath;
+
+	if ( !fs_searchpaths ) {
+		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
+	}
+
+	if ( !path ) {
+		*numfiles = 0;
+		return NULL;
+	}
+
+	if ( !extension ) {
+		extension = "";
+	}
+
+	netpath = FS_BuildOSPath( fs_homepath->string, fs_gamedir, path );
+
+	return Sys_ListFiles( netpath, extension, filter, numfiles, qfalse );
+}
+
+
+/*
+=================
+FS_Home_FileSize
+=================
+*/
+int FS_Home_FileSize( const char *name ) {
+
+	const char *ospath;
+	int length;
+	FILE *f;
+
+	if ( !fs_searchpaths ) {
+		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
+	}
+
+	ospath = FS_BuildOSPath( fs_homepath->string, fs_gamedir, name );
+
+	f = Sys_FOpen( ospath, "rb" );
+	if ( f ) {
+		length = FS_FileLength( f );
+		fclose( f );
+	} else {
+		length = -1;
+	}
+
+	return length;
+}
+
+
+/*
+=================
 FS_Read
 
 Properly handles partial reads

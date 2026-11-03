@@ -37,6 +37,7 @@ USE_SDL          = 1
 USE_CURL         = 1
 USE_LOCAL_HEADERS= 0
 USE_SYSTEM_JPEG  = 0
+USE_MV           = 0
 
 USE_OGG_VORBIS    = 1
 USE_SYSTEM_OGG    = 0
@@ -332,6 +333,10 @@ endif
 
 ifeq ($(USE_LOCAL_HEADERS),1)
   BASE_CFLAGS += -DUSE_LOCAL_HEADERS=1
+endif
+
+ifeq ($(USE_MV),1)
+  BASE_CFLAGS += -DUSE_MV
 endif
 
 ifeq ($(USE_CURL),1)

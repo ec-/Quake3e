@@ -97,6 +97,26 @@ static void CL_GetCurrentSnapshotNumber( int *snapshotNumber, int *serverTime ) 
 }
 
 
+#ifdef USE_MV
+/*
+====================
+CL_GetParsedEntityIndexByID
+====================
+*/
+static int CL_GetParsedEntityIndexByID( const clSnapshot_t *clSnap, int entityID, int startIndex, int *parsedIndex ) {
+	int index, n;
+	for ( index = startIndex; index < clSnap->numEntities; ++index ) {
+		n = ( clSnap->parseEntitiesNum + index ) & (MAX_PARSE_ENTITIES-1);
+		if ( cl.parseEntities[ n ].number == entityID ) {
+			*parsedIndex = n;
+			return index;
+		}
+	}
+	return -1;
+}
+#endif // USE_MV
+
+
 /*
 ====================
 CL_GetSnapshot
@@ -132,6 +152,70 @@ static qboolean CL_GetSnapshot( int snapshotNumber, snapshot_t *snapshot ) {
 	snapshot->serverCommandSequence = clSnap->serverCommandNum;
 	snapshot->ping = clSnap->ping;
 	snapshot->serverTime = clSnap->serverTime;
+
+#ifdef USE_MV
+	if ( clSnap->multiview ) {
+		int		entityNum;
+		int		startIndex;
+		int		parsedIndex;
+		byte	*entMask;
+
+		if ( clSnap->clps[ clc.clientView ].valid ) {
+			//clientView = clc.clientView;
+		} else {
+			// we need to select another POV
+			if ( clSnap->clps[ clc.clientNum ].valid ) {
+				Com_DPrintf( S_COLOR_CYAN "multiview: switch POV back from %d to %d\n", clc.clientView, clc.clientNum );
+				clc.clientView = clc.clientNum; // fixup to avoid glitches
+			} else { 
+				// invalid primary id? search for any valid
+				for ( i = 0; i < MAX_CLIENTS; i++ ) {
+					if ( clSnap->clps[ i ].valid ) {
+						/*clientView = */ clc.clientNum = clc.clientView = i;
+						Com_Printf( S_COLOR_CYAN "multiview: set primary client id %d\n", clc.clientNum );
+						break;
+					}
+				}
+				if ( i == MAX_CLIENTS ) {
+					if ( !( snapshot->snapFlags & SNAPFLAG_NOT_ACTIVE ) ) {
+						Com_Error( ERR_DROP, "Unable to find any playerState in multiview" );
+						return qfalse;
+					}
+				}
+			}
+		}
+		Com_Memcpy( snapshot->areamask, clSnap->clps[ clc.clientView ].areamask, sizeof( snapshot->areamask ) );
+		snapshot->ps = clSnap->clps[ clc.clientView ].ps;
+		entMask = clSnap->clps[ clc.clientView ].entMask;
+
+		count = 0;
+		startIndex = 0;
+		for ( entityNum = 0; entityNum < MAX_GENTITIES-1; entityNum++ ) {
+			if ( GET_ABIT( entMask, entityNum ) ) {
+				// skip own and spectated entity
+				if ( entityNum != clc.clientView && entityNum != snapshot->ps.clientNum )
+				{
+					startIndex = CL_GetParsedEntityIndexByID( clSnap, entityNum, startIndex, &parsedIndex );
+					if ( startIndex >= 0 ) {
+						// should never happen but anyway:
+						if ( count >= MAX_ENTITIES_IN_SNAPSHOT ) {
+							Com_Error( ERR_DROP, "snapshot entities count overflow for %i", clc.clientView );
+							break;
+						}
+						snapshot->entities[ count++ ] = cl.parseEntities[ parsedIndex ];
+					} else {
+						Com_Error( ERR_DROP, "packet entity not found in snapshot: %i", entityNum );
+						break;
+					}
+				}
+			}
+		}
+
+		snapshot->numEntities = count;
+		return qtrue;
+	}
+#endif // USE_MV
+
 	Com_Memcpy( snapshot->areamask, clSnap->areamask, sizeof( snapshot->areamask ) );
 	snapshot->ps = clSnap->ps;
 	count = clSnap->numEntities;

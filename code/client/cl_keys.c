@@ -587,6 +587,25 @@ static void CL_KeyDownEvent( int key, unsigned time )
 		}
 	}
 
+
+#ifdef USE_MV
+	if ( (/* key == K_MOUSE1 || */ key == K_MOUSE2) && clc.demoplaying && cl.snap.multiview ) {
+		int id, n, d;
+		//if ( key == K_MOUSE1 )
+			d = 1;
+		//else
+		//	d = -1;
+		for ( id = (clc.clientView + d + MAX_CLIENTS ) % MAX_CLIENTS, n = 0; n < MAX_CLIENTS; n++, id = ( id + d + MAX_CLIENTS ) % MAX_CLIENTS ) {
+			if ( cl.snap.clps[ id ].valid ) {
+				Com_Printf( S_COLOR_CYAN "MultiView: switch POV %d => %d\n", clc.clientView, id );
+				clc.clientView = id;
+				break;
+			}
+		}
+	}
+#endif // USE_MV
+
+
 	// escape is always handled special
 	if ( key == K_ESCAPE ) {
 #ifdef USE_CURL

@@ -97,19 +97,44 @@ typedef struct {
 	byte			areabits[MAX_MAP_AREA_BYTES];		// portalarea visibility bits
 	playerState_t	ps;
 	int				num_entities;
-#if 0
-	int				first_entity;		// into the circular sv_packet_entities[]
-										// the entities MUST be in increasing state number
-										// order, otherwise the delta compression will fail
+
+#ifdef USE_MV
+	qboolean		multiview;
+	int				version;
+	int				mergeMask;
+	int				first_psf;				// first playerState index
+	int				num_psf;				// number of playerStates to send
+	byte			psMask[MAX_CLIENTS/8];	// playerState mask
 #endif
+
 	int				messageSent;		// time the message was transmitted
 	int				messageAcked;		// time the message was acked
 	int				messageSize;		// used to rate drop packets
 
 	int				frameNum;			// from snapshot storage to compare with last valid
+#ifdef USE_MV
+	entityState_t	*ents[ MAX_GENTITIES ];
+#else
 	entityState_t	*ents[ MAX_SNAPSHOT_ENTITIES ];
-
+#endif
 } clientSnapshot_t;
+
+#ifdef USE_MV
+
+#define MAX_MV_FILES 4096 // for directory caching
+
+typedef byte entMask_t[ MAX_GENTITIES / 8 ];
+
+typedef struct psFrame_s {
+	int				clientSlot;
+	int				areabytes;
+	byte			areabits[ MAX_MAP_AREA_BYTES ]; // portalarea visibility bits
+	playerState_t	ps;
+	entMask_t		entMask;
+} psFrame_t;
+
+#endif // USE_MV
+
 
 typedef enum {
 	CS_FREE = 0,	// can be reused for a new connection
@@ -230,6 +255,27 @@ typedef struct client_s {
 	char			tld[3]; // "XX\0"
 	const char		*country;
 
+#ifdef USE_MV
+	struct {
+		int				protocol;
+
+		int				scoreQueryTime;
+		int				lastRecvTime; // any received command
+		int				lastSentTime; // any sent command
+#ifdef USE_MV_ZCMD
+		//  command compression
+		struct			{
+			int			deltaSeq;
+			int			reliableSent; // last reliable command sent uncompressed
+			lzctx_t		ctx;
+			lzstream_t	stream[ MAX_RELIABLE_COMMANDS ];
+		} z;
+#endif
+		qboolean		recorder;
+		
+	} multiview;
+#endif // USE_MV
+
 } client_t;
 
 //=============================================================================
@@ -261,6 +307,14 @@ typedef struct {
 	snapshotFrame_t	snapFrames[ NUM_SNAPSHOT_FRAMES ];
 	snapshotFrame_t	*currFrame; // current frame that clients can refer
 
+#ifdef USE_MV	
+	int			numSnapshotPSF;				// sv_democlients->integer*PACKET_BACKUP*MAX_CLIENTS
+	int			nextSnapshotPSF;			// next snapshotPS to use
+	int			modSnapshotPSF;				// clamp value
+	psFrame_t	*snapshotPSF;				// [numSnapshotPS]
+	qboolean	emptyFrame;					// true if no game logic run during SV_Frame()
+#endif // USE_MV
+
 } serverStatic_t;
 
 #ifdef USE_BANS
@@ -291,6 +345,25 @@ extern	cvar_t	*sv_allowDownload;
 extern	cvar_t	*sv_maxclients;
 extern	cvar_t	*sv_maxclientsPerIP;
 extern	cvar_t	*sv_clientTLD;
+
+#ifdef USE_MV
+extern	fileHandle_t	sv_demoFile;
+extern	char	sv_demoFileName[ MAX_OSPATH ];
+extern	char	sv_demoFileNameLast[ MAX_OSPATH ];
+
+extern	int		sv_demoClientID;
+extern	int		sv_lastAck;
+extern	int		sv_lastClientSeq;
+
+extern	cvar_t	*sv_mvClients;
+extern	cvar_t	*sv_mvPassword;
+extern	cvar_t	*sv_demoFlags;
+extern	cvar_t	*sv_autoRecord;
+
+extern	cvar_t	*sv_mvFileCount;
+extern	cvar_t	*sv_mvFolderSize;
+
+#endif // USE_MV
 
 extern	cvar_t	*sv_privateClients;
 extern	cvar_t	*sv_hostname;
@@ -378,12 +451,24 @@ int SV_SendQueuedMessages( void );
 void SV_FreeIP4DB( void );
 void SV_PrintLocations_f( client_t *client );
 
+#ifdef USE_MV
+void SV_TrackDisconnect( int clientNum );
+void SV_ForwardServerCommands( client_t *recorder /*, const client_t *client */ );
+void SV_MultiViewStopRecord_f( void );
+int SV_FindActiveClient( qboolean checkCommands, int skipClientNum, int minActive );
+void SV_SetTargetClient( int clientNum );
+#endif // USE_MV
+
 //
 // sv_ccmds.c
 //
 void SV_Heartbeat_f( void );
 client_t *SV_GetPlayerByHandle( void );
 
+#ifdef USE_MV
+void SV_LoadRecordCache( void );
+void SV_SaveRecordCache( void );
+#endif
 //
 // sv_snapshot.c
 //

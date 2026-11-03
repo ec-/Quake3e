@@ -247,11 +247,20 @@ static int SV_BoundMaxClients( int minimum ) {
 
 	if ( sv_maxclients->integer < minimum ) {
 		Cvar_SetIntegerValue( "sv_maxclients", minimum );
-		sv_maxclients->modified = qfalse;
-		return minimum;
 	}
 
 	sv_maxclients->modified = qfalse;
+
+#ifdef USE_MV
+	// get the current demoClients value
+	Cvar_Get( "sv_mvClients", "0", 0 );
+
+	if ( sv_mvClients->integer > sv_maxclients->integer ) {
+		Cvar_SetIntegerValue( "sv_mvClients", sv_maxclients->integer );
+	}
+
+	sv_mvClients->modified = qfalse;
+#endif
 
 	return sv_maxclients->integer;
 }
@@ -264,6 +273,18 @@ SV_SetSnapshotParams
 */
 static void SV_SetSnapshotParams( void )
 {
+#ifdef USE_MV
+	svs.numSnapshotPSF = sv_mvClients->integer * PACKET_BACKUP * MAX_CLIENTS;
+
+	// reserve 2 additional frames for recorder slot
+	svs.numSnapshotPSF += 2 * MAX_CLIENTS;
+
+	if ( svs.numSnapshotPSF )
+		svs.modSnapshotPSF = ( 0x10000000 / svs.numSnapshotPSF ) * svs.numSnapshotPSF;
+	else
+		svs.modSnapshotPSF = 1;
+#endif	
+
 	// PACKET_BACKUP frames is just about 6.67MB so use that even on listen servers
 	svs.numSnapshotEntities = PACKET_BACKUP * MAX_GENTITIES;
 }
@@ -276,8 +297,14 @@ SV_AllocClients
 */
 static void SV_AllocClients( int count )
 {
+#ifdef USE_MV
+	// +1 client slot for recorder
+	svs.clients = Z_TagMalloc( ( count + 1 ) * sizeof( client_t ), TAG_CLIENTS );
+	Com_Memset( svs.clients, 0x0, ( count + 1 ) * sizeof( client_t ) );
+#else
 	svs.clients = Z_TagMalloc( count * sizeof( client_t ), TAG_CLIENTS );
 	Com_Memset( svs.clients, 0x0, count * sizeof( client_t ) );
+#endif
 	sv.maxclients = count;
 	SV_SetSnapshotParams();
 }
@@ -328,6 +355,10 @@ static void SV_ChangeMaxClients( void ) {
 	int		maxclients;
 	int		count;
 	int		i;
+#ifdef USE_MV
+	int		oldMVClients;
+	client_t recorder;
+#endif
 
 	// get the highest client number in use
 	count = 0;
@@ -340,11 +371,25 @@ static void SV_ChangeMaxClients( void ) {
 	}
 	count++;
 
+#ifdef USE_MV
+	if ( sv_demoFile != FS_INVALID_HANDLE && svs.clients[ sv.maxclients ].state >= CS_ACTIVE )
+		// save recorder slot state
+		Com_Memcpy( &recorder, &svs.clients[ sv.maxclients ], sizeof( recorder ) );
+	else
+		recorder.multiview.recorder = qfalse;
+
+	oldMVClients = sv_mvClients->integer;
+#endif
+
 	// never go below the highest client number in use
 	maxclients = SV_BoundMaxClients( count );
 
 	// if still the same
+#ifdef USE_MV
+	if ( maxclients == sv.maxclients && sv_mvClients->integer == oldMVClients ) {
+#else
 	if ( maxclients == sv.maxclients ) {
+#endif
 		return;
 	}
 
@@ -370,6 +415,13 @@ static void SV_ChangeMaxClients( void ) {
 			svs.clients[i] = oldClients[i];
 		}
 	}
+
+#ifdef USE_MV
+	if ( recorder.multiview.recorder ) {
+		// restore recorder slot state
+		Com_Memcpy( &svs.clients[ sv.maxclients ], &recorder, sizeof( recorder ) );
+	}
+#endif
 
 	// free the old clients on the hunk
 	Hunk_FreeTempMemory( oldClients );
@@ -400,6 +452,26 @@ static void SV_ClearServer( void ) {
 }
 
 
+#ifdef USE_MV
+/*
+================
+SV_FinishMultiViewRecord
+
+Writes last snapshot and closes multiview demo, if any.
+Snapshot storage is reset on map change so recording can't continue
+================
+*/
+static void SV_FinishMultiViewRecord( void ) {
+	if ( sv_demoFile != FS_INVALID_HANDLE ) {
+		if ( svs.clients && svs.clients[ sv.maxclients ].multiview.recorder ) {
+			SV_SendClientSnapshot( &svs.clients[ sv.maxclients ] );
+		}
+		SV_MultiViewStopRecord_f();
+	}
+}
+#endif
+
+
 /*
 ================
 SV_SpawnServer
@@ -419,6 +491,11 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 #endif
 	void		*buf;
 
+#ifdef USE_MV
+	// one demo per map, sv_mvAutoRecord will start a new one when game is running
+	SV_FinishMultiViewRecord();
+#endif
+
 	// shut down the existing game if it is running
 	SV_ShutdownGameProgs();
 
@@ -426,6 +503,10 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 	Com_Printf( "Server: %s\n", mapname );
 
 	Sys_SetStatus( "Initializing server..." );
+
+#ifdef USE_MV
+	SV_LoadRecordCache();
+#endif
 
 #ifndef DEDICATED
 	// if not running a dedicated server CL_MapLoading will connect the client to the server
@@ -454,7 +535,11 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 		SV_Startup();
 	} else {
 		// check for maxclients change
+#ifdef USE_MV
+		if ( sv_maxclients->modified || sv_mvClients->modified ) {
+#else
 		if ( sv_maxclients->modified ) {
+#endif
 			SV_ChangeMaxClients();
 		}
 	}
@@ -473,6 +558,16 @@ void SV_SpawnServer( const char *mapname, qboolean killBots ) {
 
 	// initialize snapshot storage
 	SV_InitSnapshotStorage();
+
+#ifdef USE_MV
+	// MV protocol support
+	if ( svs.numSnapshotPSF ) // can be zero?
+		svs.snapshotPSF = Hunk_Alloc( sizeof(psFrame_t)*svs.numSnapshotPSF, h_high );
+	else
+		svs.snapshotPSF = NULL;
+
+	svs.nextSnapshotPSF = 0;
+#endif
 
 	// toggle the server bit so clients can detect that a
 	// server has changed
@@ -733,6 +828,29 @@ void SV_Init( void )
 	if ( com_dedicated->integer )
 		SV_AddDedicatedCommands();
 
+#ifdef USE_MV
+	Cvar_Get( "mvproto", va( "%i", MV_PROTOCOL_VERSION ), CVAR_SERVERINFO | CVAR_ROM );
+	sv_autoRecord = Cvar_Get( "sv_mvAutoRecord", "0", CVAR_ARCHIVE | CVAR_SERVERINFO );
+	Cvar_SetDescription( sv_autoRecord, "Automatically record multiview demos.\n 0: disabled\n N: start recording when at least N human players are active" );
+	sv_demoFlags = Cvar_Get( "sv_mvFlags", "3", CVAR_ARCHIVE );
+	Cvar_SetDescription( sv_demoFlags, "Periodic score requests for multiview, bitmask:\n 1: for demo recorder\n 2: for multiview clients" );
+	sv_mvClients = Cvar_Get( "sv_mvClients", "0", CVAR_ARCHIVE | CVAR_LATCH );
+	Cvar_CheckRange( sv_mvClients, "0", NULL, CV_INTEGER );
+	Cvar_SetDescription( sv_mvClients, "Max. number of clients that can use multiview via mvjoin, demo recorder is always available." );
+	sv_mvPassword = Cvar_Get( "sv_mvPassword", "", CVAR_ARCHIVE );
+	Cvar_SetDescription( sv_mvPassword, "Password required for mvjoin, empty means no password." );
+
+	sv_mvFileCount = Cvar_Get( "sv_mvFileCount", "1024", CVAR_ARCHIVE );
+	Cvar_CheckRange( sv_mvFileCount, "0", XSTRING( MAX_MV_FILES ), CV_INTEGER );
+	Cvar_SetDescription( sv_mvFileCount, "Max. count of autorecorded demos, older demos will be deleted to release free space." );
+
+	sv_mvFolderSize = Cvar_Get( "sv_mvFolderSize", "768", CVAR_ARCHIVE );
+	Cvar_CheckRange( sv_mvFolderSize, "0", "2048", CV_INTEGER );
+	Cvar_SetDescription( sv_mvFolderSize, "Max. total size of autorecorded demos in megabytes, older demos will be deleted to release free space." );
+
+	SV_LoadRecordCache();
+#endif
+
 	// serverinfo vars
 	Cvar_Get ("dmflags", "0", CVAR_SERVERINFO);
 	Cvar_Get ("fraglimit", "20", CVAR_SERVERINFO);
@@ -902,6 +1020,9 @@ before Sys_Quit or Sys_Error
 */
 void SV_Shutdown( const char *finalmsg ) {
 	if ( !com_sv_running || !com_sv_running->integer ) {
+#ifdef USE_MV
+		SV_SaveRecordCache();
+#endif
 		return;
 	}
 
@@ -914,6 +1035,12 @@ void SV_Shutdown( const char *finalmsg ) {
 	if ( svs.clients && !com_errorEntered ) {
 		SV_FinalMessage( finalmsg );
 	}
+
+#ifdef USE_MV
+	SV_FinishMultiViewRecord();
+
+	SV_SaveRecordCache();
+#endif
 
 	SV_RemoveOperatorCommands();
 	SV_MasterShutdown();

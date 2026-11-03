@@ -35,6 +35,17 @@ static const char *svc_strings[] = {
 	"svc_EOF",
 	"svc_voipSpeex", // ioq3 extension
 	"svc_voipOpus",  // ioq3 extension
+#ifdef USE_MV
+	NULL, // 11
+	NULL, // 12
+	NULL, // 13
+	NULL, // 14
+	NULL, // 15
+	"svc_multiview",  // 1.32e multiview extension
+#ifdef USE_MV_ZCMD
+	"svc_zcmd",       // LZ-compressed version of svc_serverCommand
+#endif
+#endif
 };
 
 static void SHOWNET( msg_t *msg, const char *s ) {
@@ -198,12 +209,28 @@ cl.snap and saved in cl.snapshots[].  If the snapshot is invalid
 for any reason, no changes to the state will be made at all.
 ================
 */
-static void CL_ParseSnapshot( msg_t *msg ) {
-	const clSnapshot_t *old;
+static void CL_ParseSnapshot( msg_t *msg, qboolean multiview ) {
+	clSnapshot_t *old;
 	clSnapshot_t	newSnap;
 	int			deltaNum;
 	int			oldMessageNum;
 	int			i, n, packetNum;
+	int			maxEntities;
+	int			commandTime;
+
+#ifdef USE_MV
+	int			clientNum;
+	entityState_t	*es;
+	playerState_t *oldPs;
+
+	int firstIndex;
+	int lastIndex;
+
+	if ( multiview )
+		maxEntities = MAX_GENTITIES;
+	else
+#endif // USE_MV
+	maxEntities = MAX_SNAPSHOT_ENTITIES;
 
 	// get the reliable sequence acknowledge number
 	// NOTE: now sent with all server to client messages
@@ -250,12 +277,152 @@ static void CL_ParseSnapshot( msg_t *msg ) {
 			// The frame that the server did the delta from
 			// is too old, so we can't reconstruct it properly.
 			Com_Printf ("Delta frame too old.\n");
-		} else if ( cl.parseEntitiesNum - old->parseEntitiesNum > MAX_PARSE_ENTITIES - MAX_SNAPSHOT_ENTITIES ) {
+		} else if ( cl.parseEntitiesNum - old->parseEntitiesNum > MAX_PARSE_ENTITIES - maxEntities ) {
 			Com_Printf ("Delta parseEntitiesNum too old.\n");
 		} else {
 			newSnap.valid = qtrue;	// valid delta parse
 		}
 	}
+
+#ifdef USE_MV
+	if ( multiview ) {
+	
+		if ( !clc.demoplaying && clc.recordfile != FS_INVALID_HANDLE )
+			clc.dm68compat = qfalse;
+
+		newSnap.multiview = qtrue;
+		newSnap.snapFlags |= SNAPFLAG_MULTIVIEW; // to inform CGAME module in runtime
+
+		commandTime = 0;
+
+		if ( old && old->multiview ) {
+			Com_Memcpy( newSnap.clientMask, old->clientMask, sizeof( newSnap.clientMask ) );
+			newSnap.mergeMask = old->mergeMask;
+			newSnap.version = old->version;
+		} else {
+			// already zeroed as new snapshot
+		}
+
+		SHOWNET( msg, "version" );
+		if ( MSG_ReadBits( msg, 1 ) ) {
+			newSnap.version = MSG_ReadByte( msg );
+		}
+
+		// from here we can start version-dependent snapshot parsing
+
+		if ( newSnap.version != MV_PROTOCOL_VERSION ) {
+			Com_Error( ERR_DROP, "CL_ParseSnapshot(): unknown multiview protocol version %i",
+				newSnap.version );
+		}
+
+		// playerState to entityState merge mask
+		SHOWNET( msg, "mergemask" );
+		if ( MSG_ReadBits( msg, 1 ) ) {
+			newSnap.mergeMask = MSG_ReadBits( msg, SM_BITS );
+		}
+
+		// playerstate mask
+		SHOWNET( msg, "psMask" );
+		while ( MSG_ReadBits( msg, 1 ) ) {
+			firstIndex = MSG_ReadBits( msg, 3 ); // 0..7
+			lastIndex = MSG_ReadBits( msg, 3 );  // 0..7
+			//for ( i = firstIndex; i < lastIndex + 1; i++ ) {
+			for ( ; firstIndex < lastIndex + 1; firstIndex++ ) {
+			//	newSnap.clientMask[ firstIndex ] = MSG_ReadByte( msg ); // direct mask
+				newSnap.clientMask[ firstIndex ] ^= MSG_ReadByte( msg ); // delta-xor mask
+			}
+		}
+		
+		// read playerstates
+		for ( clientNum = 0; clientNum < MAX_CLIENTS; clientNum++ ) {
+
+			if ( !GET_ABIT( newSnap.clientMask, clientNum ) )
+				continue; // not masked, skip
+	
+			// areamask
+			SHOWNET( msg, "areamask" );
+			newSnap.clps[ clientNum ].areabytes = MSG_ReadBits( msg, 6 ); // was MSG_ReadByte( msg );
+			if ( newSnap.clps[ clientNum ].areabytes > sizeof( newSnap.clps[ clientNum ].areamask ) ) {
+				Com_Error( ERR_DROP,"CL_ParseSnapshot: Invalid size %d for areamask in clps#%d",
+					newSnap.clps[ clientNum ].areabytes, clientNum );
+				return;
+			}
+			MSG_ReadData( msg, &newSnap.clps[ clientNum ].areamask, newSnap.clps[ clientNum ].areabytes );
+		
+			// playerstate
+			SHOWNET( msg, "playerstate" );
+			if ( old ) {
+				if ( !old->multiview && clientNum == clc.clientNum ) {
+					// transition to multiview?
+					oldPs = &old->ps;
+				} else if ( old->clps[ clientNum ].valid ) {
+					Com_Memcpy( newSnap.clps[ clientNum ].entMask, old->clps[ clientNum ].entMask, sizeof( newSnap.clps[ clientNum ].entMask ) );
+					oldPs = &old->clps[ clientNum ].ps;
+				} else {
+					oldPs = NULL;
+				}
+			} else {
+				oldPs = NULL;
+			}
+
+			MSG_ReadDeltaPlayerstate( msg, oldPs, &newSnap.clps[ clientNum ].ps );
+
+			// spectated (pramary?) playerstate ping
+			if ( clientNum == clc.clientView ) // clc.clientNum?
+				commandTime = newSnap.clps[ clientNum ].ps.commandTime;
+
+			// entity mask
+			SHOWNET( msg, "entity mask" );
+#if 1
+			while ( MSG_ReadBits( msg, 1 ) ) {
+				firstIndex = MSG_ReadBits( msg, 7 ); // 0..127
+				lastIndex = MSG_ReadBits( msg, 7 );  // 0..127
+				for ( i = firstIndex; i < lastIndex + 1; i++ ) {
+					//newSnap.clps[ clientNum ].entMask[ i ] = MSG_ReadByte( msg ); // direct mask
+					newSnap.clps[ clientNum ].entMask[ i ] ^= MSG_ReadByte( msg ); // delta-xor mask
+				}
+			}
+#else
+			MSG_ReadData( msg, &newSnap.clps[ clientNum ].entMask, sizeof( newSnap.clps[ clientNum ].entMask ) );
+#endif
+			newSnap.clps[ clientNum ].valid = qtrue;
+
+			if ( clientNum == clc.clientView /* clc.clientNum */ ) {
+				// copy data to primary playerstate
+				Com_Memcpy( &newSnap.areamask, &newSnap.clps[ clientNum ].areamask, sizeof( newSnap.areamask ) );
+				Com_Memcpy( &newSnap.ps, &newSnap.clps[ clientNum ].ps, sizeof( newSnap.ps ) );
+			}
+		} // for [all clients]
+
+		// read packet entities
+		SHOWNET( msg, "packet entities" );
+		CL_ParsePacketEntities( msg, old, &newSnap );
+
+		// apply skipmask to player entities
+		if ( newSnap.mergeMask ) {
+			for ( i = 0; i < newSnap.numEntities; i++ ) {
+				es = &cl.parseEntities [ (newSnap.parseEntitiesNum + i) & (MAX_PARSE_ENTITIES-1)];
+				if ( es->number >= MAX_CLIENTS )
+					break;
+				if ( newSnap.clps[ es->number ].valid )
+					MSG_PlayerStateToEntityState( &newSnap.clps[ es->number ].ps, es, qtrue, newSnap.mergeMask );
+			}
+		}
+	}
+	else // !multiview
+	{
+		// detect transition to non-multiview
+		if ( cl.snap.multiview ) {
+			clc.clientView = clc.clientNum;
+			if ( old ) {
+				// invalidate state
+				Com_Memset( &old->clps, 0, sizeof( old->clps ) );
+				Com_DPrintf( S_COLOR_CYAN "transition from multiview to legacy stream\n" );
+				//old->ps = old->clps[ clc.clientView ].ps;
+				//Com_Memcpy( old->areamask, old->clps[ clc.clientView ].areamask, sizeof( old->areamask ) );
+			}
+		}
+#endif // USE_MV
 
 	// read areamask
 	newSnap.areabytes = MSG_ReadByte( msg );
@@ -276,9 +443,15 @@ static void CL_ParseSnapshot( msg_t *msg ) {
 		MSG_ReadDeltaPlayerstate( msg, NULL, &newSnap.ps );
 	}
 
+	commandTime = newSnap.ps.commandTime;
+
 	// read packet entities
 	SHOWNET( msg, "packet entities" );
 	CL_ParsePacketEntities( msg, old, &newSnap );
+
+#ifdef USE_MV
+	} // !extended snapshot
+#endif
 
 	// if not valid, dump the entire thing now that it has
 	// been properly read
@@ -306,7 +479,7 @@ static void CL_ParseSnapshot( msg_t *msg ) {
 	// calculate ping time
 	for ( i = 0 ; i < PACKET_BACKUP ; i++ ) {
 		packetNum = ( clc.netchan.outgoingSequence - 1 - i ) & PACKET_MASK;
-		if ( cl.snap.ps.commandTime - cl.outPackets[packetNum].p_serverTime >= 0 ) {
+		if ( commandTime - cl.outPackets[packetNum].p_serverTime >= 0 ) {
 			cl.snap.ping = cls.realtime - cl.outPackets[ packetNum ].p_realtime;
 			break;
 		}
@@ -581,6 +754,11 @@ static void CL_ParseGamestate( msg_t *msg ) {
 
 	clc.eventMask |= EM_GAMESTATE;
 
+#ifdef USE_MV
+	clc.clientView = clc.clientNum;
+	clc.zexpectDeltaSeq = 0; // that will reset compression context
+#endif
+
 	clc.clientNum = MSG_ReadLong(msg);
 	// read the checksum feed
 	clc.checksumFeed = MSG_ReadLong( msg );
@@ -798,6 +976,11 @@ static void CL_ParseCommandString( msg_t *msg ) {
 	if ( clc.serverCommandSequence - seq >= 0 ) {
 		return;
 	}
+
+#ifdef USE_MV
+	clc.zexpectDeltaSeq = 0; // reset if we get new uncompressed command
+#endif
+
 	clc.serverCommandSequence = seq;
 
 	index = seq & (MAX_RELIABLE_COMMANDS-1);
@@ -825,6 +1008,76 @@ static void CL_ParseCommandString( msg_t *msg ) {
 
 	clc.eventMask |= EM_COMMAND;
 }
+
+
+#if defined( USE_MV ) && defined( USE_MV_ZCMD )
+/*
+=====================
+CL_ParseZCommandString
+=====================
+*/
+void CL_ParseZCommandString( msg_t *msg ) {
+	
+	static lzctx_t ctx;	// compression context
+	int		deltaSeq;
+	int		textbits;
+	int		seq_size;
+	int		seq;
+
+	deltaSeq = MSG_ReadBits( msg, 3 ); // 0..2: delta sequence
+	textbits = MSG_ReadBits( msg, 1 ) + 7; // text bits - 7 or 8
+	seq_size = MSG_ReadBits( msg, 2 ) + 1; // command size in bytes // TODO: OCTETS?
+	seq = MSG_ReadBits( msg, seq_size * 8 ); // command sequence
+
+	// future extension, reserved and should be 0 for now
+	if ( MSG_ReadBits( msg, 1 ) != 0 ) {
+		Com_Error( ERR_DROP, "zcmd: bad control bit" ); 
+	}
+
+	//Com_DPrintf( S_COLOR_CYAN "cl: delta: %i, txb: %i, size: %i, seq: %i\n",
+	//	deltaSeq, textbits, seq_size, seq );
+
+	if ( seq <= clc.serverCommandSequence ) {
+		if ( deltaSeq == 0 && clc.zexpectDeltaSeq == 0 ) {
+			Com_Error( ERR_DROP, "zcmd: already stored uncompressed %i", seq );
+		}
+		Com_DPrintf( S_COLOR_YELLOW "zcmd: already stored sequence %i\n", seq );
+		LZSS_SeekEOS( msg, textbits );
+		return;
+	}
+
+	if ( deltaSeq == 0 ) { 
+		// decoder reset
+		Com_DPrintf( S_COLOR_RED" seq %i, reset decompression context\n", seq );
+		LZSS_InitContext( &ctx );
+		clc.zexpectDeltaSeq = 1;
+	} else 	{
+		// see if we have already executed stored it off
+		if ( deltaSeq != clc.zexpectDeltaSeq ) {
+			Com_DPrintf( S_COLOR_YELLOW "zcmd: unexpected delta %i instead of %i\n", deltaSeq, clc.zexpectDeltaSeq );
+			LZSS_SeekEOS( msg, textbits );
+			return;
+		}
+		if ( seq != clc.serverCommandSequence + 1 ) {
+			Com_DPrintf( S_COLOR_YELLOW " unexpected command sequence %i instead of %i\n", seq, clc.serverCommandSequence + 1 );
+			LZSS_SeekEOS( msg, textbits );
+			return;
+		}
+
+		if ( clc.zexpectDeltaSeq >= 7 )
+			clc.zexpectDeltaSeq = 1;
+		else
+			clc.zexpectDeltaSeq++;
+	}
+
+	// store command
+	LZSS_Expand( &ctx, msg, clc.serverCommands[ seq & (MAX_RELIABLE_COMMANDS-1) ], MAX_STRING_CHARS, textbits );
+
+	clc.serverCommandSequence = seq;
+
+	clc.eventMask |= EM_COMMAND;
+}
+#endif // USE_MV
 
 
 /*
@@ -892,12 +1145,22 @@ void CL_ParseServerMessage( msg_t *msg ) {
 		case svc_serverCommand:
 			CL_ParseCommandString( msg );
 			break;
+#if defined( USE_MV ) && defined( USE_MV_ZCMD )
+		case svc_zcmd:
+			CL_ParseZCommandString( msg );
+			break;
+#endif
 		case svc_gamestate:
 			CL_ParseGamestate( msg );
 			break;
 		case svc_snapshot:
-			CL_ParseSnapshot( msg );
+			CL_ParseSnapshot( msg, qfalse );
 			break;
+#ifdef USE_MV
+		case svc_multiview:
+			CL_ParseSnapshot( msg, qtrue );
+			break;
+#endif
 		case svc_download:
 			if ( clc.demofile != FS_INVALID_HANDLE )
 				return;
