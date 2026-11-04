@@ -1291,6 +1291,9 @@ static void SV_Restart( const char *reason ) {
 	}
 
 	Cbuf_AddText( va( "map %s\n", mapName ) );
+	// the restart kicks all bots and does not exec server.cfg again,
+	// so let the server config re-add them via "set sv_onRestart ..."
+	Cbuf_AddText( "vstr sv_onRestart\n" );
 }
 
 
