@@ -67,6 +67,9 @@ void BotDumpAvoidGoals(int goalstate);
 void BotDumpGoalStack(int goalstate);
 //get the name name of the goal with the given number
 void BotGoalName(int number, char *name, int size);
+//get the item config classname of the goal with the given number
+//(matches the weight config names; BotGoalName returns the display name)
+void BotGoalClassName(int number, char *name, int size);
 //get the top goal from the stack
 int BotGetTopGoal(int goalstate, bot_goal_t *goal);
 //get the second goal on the stack
@@ -108,6 +111,12 @@ void BotMutateGoalFuzzyLogic(int goalstate, float range);
 int BotLoadItemWeights(int goalstate, const char *filename);
 //frees the item weights of the bot
 void BotFreeItemWeights(int goalstate);
+//loads the goal fuzzy logic (item weights) for the bot from a file
+int BotLoadGoalFuzzyLogic(int goalstate, const char *filename);
+//scales the goal weight with the given classname (scale clamped to 0..16)
+void BotScaleGoalWeight(int goalstate, const char *name, float scale);
+//returns the item weight config of the goal state (int pointer, 0 if none)
+int BotGoalWeightConfigPtr(int goalstate);
 //returns the handle of a newly allocated goal state
 int BotAllocGoalState(int client);
 //free the given goal state

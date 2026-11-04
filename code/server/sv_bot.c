@@ -37,6 +37,7 @@ static int bot_maxdebugpolys;
 
 extern botlib_export_t	*botlib_export;
 int	bot_enable;
+cvar_t	*bot_travel_exp;
 
 
 /*
@@ -458,6 +459,10 @@ void SV_BotFrame( int time ) {
 	if (!bot_enable) return;
 	//NOTE: maybe the game is already shutdown
 	if (!gvm) return;
+	if (!bot_travel_exp)
+		bot_travel_exp = Cvar_Get("bot_travel_exp", "1", 0);
+	if (botlib_export)
+		botlib_export->BotLibVarSet("bot_travel_exp", bot_travel_exp->string);
 	VM_Call( gvm, 1, BOTAI_START_FRAME, time );
 }
 
@@ -534,6 +539,7 @@ void SV_BotInitCvars(void) {
 	Cvar_Get("bot_interbreedbots", "10", CVAR_CHEAT);	//number of bots used for interbreeding
 	Cvar_Get("bot_interbreedcycle", "20", CVAR_CHEAT);	//bot interbreeding cycle
 	Cvar_Get("bot_interbreedwrite", "", CVAR_CHEAT);	//write interbreeded bots to this file
+	Cvar_Get("bot_travel_exp", "1", 0);					//exponent of the travel time penalty in the goal weight scaling (0 disables it, 1 = 1/travel, 0.5 = 1/sqrt(travel))
 
 	Cvar_CheckRange(cv, "0", "65536", CV_INTEGER);
 }

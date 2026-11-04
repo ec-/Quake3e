@@ -29,7 +29,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
 
-#define	BOTLIB_API_VERSION		2
+#define	BOTLIB_API_VERSION		3
 
 struct aas_clientmove_s;
 struct aas_entityinfo_s;
@@ -346,6 +346,7 @@ typedef struct ai_export_s
 	void	(*BotDumpAvoidGoals)(int goalstate);
 	void	(*BotDumpGoalStack)(int goalstate);
 	void	(*BotGoalName)(int number, char *name, int size);
+	void	(*BotGoalClassName)(int number, char *name, int size);
 	int		(*BotGetTopGoal)(int goalstate, struct bot_goal_s *goal);
 	int		(*BotGetSecondGoal)(int goalstate, struct bot_goal_s *goal);
 	int		(*BotChooseLTGItem)(int goalstate, vec3_t origin, int *inventory, int travelflags);
@@ -365,6 +366,9 @@ typedef struct ai_export_s
 	void	(*BotInterbreedGoalFuzzyLogic)(int parent1, int parent2, int child);
 	void	(*BotSaveGoalFuzzyLogic)(int goalstate, const char *filename);
 	void	(*BotMutateGoalFuzzyLogic)(int goalstate, float range);
+	int		(*BotLoadGoalFuzzyLogic)(int goalstate, const char *filename);
+	void	(*BotScaleGoalWeight)(int goalstate, const char *name, float scale);
+	int		(*BotGoalWeightConfigPtr)(int goalstate);
 	int		(*BotAllocGoalState)(int client);
 	void	(*BotFreeGoalState)(int handle);
 	//-----------------------------------

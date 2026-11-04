@@ -165,6 +165,7 @@ typedef struct bot_goalstate_s
 {
 	struct weightconfig_s *itemweightconfig;	//weight config
 	int *itemweightindex;						//index from item to weight
+	qboolean weightconfig_owned;				//itemweightconfig is a per-bot copy (freed by BotFreeItemWeights)
 	//
 	int client;									//client using this goal state
 	int lastreachabilityarea;					//last area with reachabilities the bot was in
@@ -337,6 +338,28 @@ static itemconfig_t *LoadItemConfig( const char *filename )
 	botimport.Print(PRT_MESSAGE, "loaded %s\n", path);
 	return ic;
 } //end of the function LoadItemConfig
+//===========================================================================
+//
+// Parameter:				-
+// Returns:					-
+// Changes Globals:		-
+//
+// Scales an item's fuzzy weight by the travel time to it. The libvar
+// bot_travel_exp (set by the server each frame) controls the exponent of
+// the penalty: 0 disables it (plain weight), 1 gives weight/travel_time,
+// 0.5 gives weight/sqrt(travel_time), any other value weight/travel^exp.
+//===========================================================================
+static float BotMem_ScaleWeightByTravel(float weight, unsigned int travel)
+{
+	float exp, t;
+
+	exp = LibVarGetValue("bot_travel_exp");
+	if (exp <= 0.0f) return weight;
+	t = (float) travel * 0.01;
+	if (exp >= 1.0f) return weight / t;
+	if (fabsf(exp - 0.5f) < 0.001f) return weight / sqrtf(t);
+	return weight / powf(t, exp);
+} //end of the function BotMem_ScaleWeightByTravel
 //===========================================================================
 // index to find the weight function of an iteminfo
 //
@@ -690,6 +713,34 @@ void BotGoalName(int number, char *name, int size)
 	} //end for
 	strcpy(name, "");
 } //end of the function BotGoalName
+//===========================================================================
+//
+// Parameter:			-
+// Returns:				-
+// Changes Globals:		-
+//
+// Like BotGoalName but returns the item config classname of the goal,
+// which matches the weight configuration names (e.g. "item_quad").
+// BotScaleGoalWeight looks the weight up by classname, so the botmem
+// learning loop must use this one instead of BotGoalName (the display
+// name).
+//===========================================================================
+void BotGoalClassName(int number, char *name, int size)
+{
+	levelitem_t *li;
+
+	if (!itemconfig) return;
+	//
+	for (li = levelitems; li; li = li->next)
+	{
+		if (li->number == number)
+		{
+			Q_strncpyz( name, itemconfig->iteminfo[li->iteminfo].classname, size );
+			return;
+		} //end for
+	} //end for
+	strcpy(name, "");
+} //end of the function BotGoalClassName
 //===========================================================================
 //
 // Parameter:				-
@@ -1376,7 +1427,7 @@ int BotChooseLTGItem(int goalstate, vec3_t origin, int *inventory, int travelfla
 				if (avoidtime - t * 0.009 > 0)
 					continue;
 				//
-				weight /= (float) t * TRAVELTIME_SCALE;
+				weight = BotMem_ScaleWeightByTravel(weight, t);
 				//
 				if (weight > bestweight)
 				{
@@ -1547,7 +1598,7 @@ int BotChooseNBGItem(int goalstate, vec3_t origin, int *inventory, int travelfla
 				if (avoidtime - t * 0.009 > 0)
 					continue;
 				//
-				weight /= (float) t * TRAVELTIME_SCALE;
+				weight = BotMem_ScaleWeightByTravel(weight, t);
 				//
 				if (weight > bestweight)
 				{
@@ -1724,9 +1775,120 @@ void BotFreeItemWeights(int goalstate)
 
 	gs = BotGoalStateFromHandle(goalstate);
 	if (!gs) return;
-	if (gs->itemweightconfig) FreeWeightConfig(gs->itemweightconfig);
+	if (gs->itemweightconfig)
+	{
+		// free the per-bot copy if we own it; otherwise the shared config is
+		// handled by FreeWeightConfig (respects bot_reloadcharacters)
+		if (gs->weightconfig_owned) FreeWeightConfigCopy(gs->itemweightconfig);
+		else FreeWeightConfig(gs->itemweightconfig);
+		gs->itemweightconfig = NULL;
+	} //end if
 	if (gs->itemweightindex) FreeMemory(gs->itemweightindex);
 } //end of the function BotFreeItemWeights
+//===========================================================================
+//
+// Parameter:			-
+// Returns:				BLERR_NOERROR or BLERR_CANNOTLOADITEMWEIGHTS
+// Changes Globals:		-
+//
+// Loads the goal "fuzzy logic" (item weight configuration) for the given
+// goal state from the given file, replacing any previous configuration and
+// rebuilding the item weight index. This is the runtime counterpart of
+// BotLoadItemWeights and lets the game module reload/override a bot's goal
+// weights (used by the botmem learning loop). Caching honours the
+// bot_reloadcharacters libvar.
+//===========================================================================
+int BotLoadGoalFuzzyLogic(int goalstate, const char *filename)
+{
+	bot_goalstate_t *gs;
+	weightconfig_t *wc;
+
+	gs = BotGoalStateFromHandle(goalstate);
+	if (!gs) return BLERR_CANNOTLOADITEMWEIGHTS;
+	//load the weight configuration
+	wc = ReadWeightConfig(filename);
+	if (!wc)
+	{
+		botimport.Print(PRT_ERROR, "couldn't load goal fuzzy logic %s\n", filename);
+		return BLERR_CANNOTLOADITEMWEIGHTS;
+	} //end if
+	//if there's no item configuration
+	if (!itemconfig) return BLERR_CANNOTLOADITEMWEIGHTS;
+	//free the old index (the config itself is cached/shared - do not free it)
+	if (gs->itemweightindex) FreeMemory(gs->itemweightindex);
+	gs->itemweightconfig = wc;
+	//create the item weight index
+	gs->itemweightindex = ItemWeightIndex(wc, itemconfig);
+	//everything went ok
+	return BLERR_NOERROR;
+} //end of the function BotLoadGoalFuzzyLogic
+//===========================================================================
+//
+// Parameter:			-
+// Returns:				-
+// Changes Globals:		-
+//
+// Scales the goal weight (fuzzy weight) with the given classname in the
+// goal state's item weight configuration. scale is clamped to [0, 16];
+// 1 leaves the weight unchanged, 0 suppresses the goal entirely, values
+// above 1 boost it (the engine max). Used by the botmem learning loop to
+// bias a bot's goal selection per item type.
+//===========================================================================
+void BotScaleGoalWeight(int goalstate, const char *name, float scale)
+{
+	bot_goalstate_t *gs;
+
+	if (goalstate <= 0 || goalstate > MAX_CLIENTS)
+	{
+		botimport.Print(PRT_FATAL, "goal state handle %d out of range\n", goalstate);
+		return;
+	} //end if
+	gs = botgoalstates[goalstate];
+	if (!gs)
+	{
+		botimport.Print(PRT_FATAL, "invalid goal state %d\n", goalstate);
+		return;
+	} //end if
+	if (!gs->itemweightconfig) return;
+	// if the config is shared (default, bot_reloadcharacters=0), make a per-bot
+	// copy first so scaling doesn't affect other bots; if it's already
+	// per-goal-state (bot_reloadcharacters=1), scale it directly
+	if (!gs->weightconfig_owned && !LibVarGetValue("bot_reloadcharacters"))
+	{
+		gs->itemweightconfig = CopyWeightConfig(gs->itemweightconfig);
+		gs->weightconfig_owned = qtrue;
+	}
+	if (!gs->itemweightconfig) return;
+	ScaleWeight(gs->itemweightconfig, name, scale);
+} //end of the function BotScaleGoalWeight
+//===========================================================================
+//
+// Parameter:			-
+// Returns:				-
+// Changes Globals:		-
+//
+// Returns the item weight configuration of the given goal state (as an
+// integer pointer, 0 if none). The botmem learning loop latches on this
+// pointer: the first COW scale pass replaces the shared config and changes
+// the pointer, which detects when the scale must be re-applied.
+//===========================================================================
+int BotGoalWeightConfigPtr(int goalstate)
+{
+	bot_goalstate_t *gs;
+
+	if (goalstate <= 0 || goalstate > MAX_CLIENTS)
+	{
+		botimport.Print(PRT_FATAL, "goal state handle %d out of range\n", goalstate);
+		return 0;
+	} //end if
+	gs = botgoalstates[goalstate];
+	if (!gs)
+	{
+		botimport.Print(PRT_FATAL, "invalid goal state %d\n", goalstate);
+		return 0;
+	} //end if
+	return (int) gs->itemweightconfig;
+} //end of the function BotGoalWeightConfigPtr
 //===========================================================================
 //
 // Parameter:				-

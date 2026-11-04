@@ -390,6 +390,9 @@ typedef enum {
 	BOTLIB_AAS_ALTERNATIVE_ROUTE_GOAL,
 	BOTLIB_AAS_PREDICT_ROUTE,
 	BOTLIB_AAS_POINT_REACHABILITY_AREA_INDEX,
+	BOTLIB_AI_LOAD_GOAL_FUZZY_LOGIC,
+	BOTLIB_AI_SCALE_GOAL_WEIGHT,
+	BOTLIB_AI_GOAL_CLASSNAME,		// ( int number, char *name, int size ); item config classname of a goal (matches weight config names), unlike BOTLIB_AI_GOAL_NAME which returns the display name
 
 	BOTLIB_PC_LOAD_SOURCE,
 	BOTLIB_PC_FREE_SOURCE,
@@ -398,7 +401,8 @@ typedef enum {
 
 	// engine extensions
 	G_CVAR_SETDESCRIPTION,
-	G_TRAP_GETVALUE = COM_TRAP_GETVALUE
+	G_TRAP_GETVALUE = COM_TRAP_GETVALUE,
+	BOTLIB_AI_GOAL_WEIGHT_CONFIG_PTR	// ( int goalstate ); item weight config of the goal state (int pointer, 0 if none) - re-apply key for per-bot goal weight scaling
 
 } gameImport_t;
 

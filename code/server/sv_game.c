@@ -868,6 +868,17 @@ static intptr_t SV_GameSystemCalls( intptr_t *args ) {
 	case BOTLIB_AI_MUTATE_GOAL_FUZZY_LOGIC:
 		botlib_export->ai.BotMutateGoalFuzzyLogic( args[1], VMF(2) );
 		return 0;
+	case BOTLIB_AI_LOAD_GOAL_FUZZY_LOGIC:
+		return botlib_export->ai.BotLoadGoalFuzzyLogic( args[1], VMA(2) );
+	case BOTLIB_AI_SCALE_GOAL_WEIGHT:
+		botlib_export->ai.BotScaleGoalWeight( args[1], VMA(2), VMF(3) );
+		return 0;
+	case BOTLIB_AI_GOAL_CLASSNAME:
+		VM_CHECKBOUNDS( gvm, args[2], args[3] );
+		botlib_export->ai.BotGoalClassName( args[1], VMA(2), args[3] );
+		return 0;
+	case BOTLIB_AI_GOAL_WEIGHT_CONFIG_PTR:
+		return botlib_export->ai.BotGoalWeightConfigPtr( args[1] );
 	case BOTLIB_AI_ALLOC_GOAL_STATE:
 		return botlib_export->ai.BotAllocGoalState( args[1] );
 	case BOTLIB_AI_FREE_GOAL_STATE:

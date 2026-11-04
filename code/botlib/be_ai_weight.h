@@ -72,7 +72,10 @@ int FindFuzzyWeight(const weightconfig_t *wc, const char *name);
 float FuzzyWeight(int *inventory, weightconfig_t *wc, int weightnum);
 float FuzzyWeightUndecided(int *inventory, weightconfig_t *wc, int weightnum);
 //scales the weight with the given name
-void ScaleWeight(weightconfig_t *config, char *name, float scale);
+void ScaleWeight(weightconfig_t *config, const char *name, float scale);
+//deep-copies a weight config (for per-bot weight scaling); FreeWeightConfigCopy frees it
+weightconfig_t *CopyWeightConfig(weightconfig_t *config);
+void FreeWeightConfigCopy(weightconfig_t *config);
 //scale the balance range
 void ScaleBalanceRange(weightconfig_t *config, float scale);
 //evolves the weight configuration

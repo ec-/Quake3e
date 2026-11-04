@@ -779,6 +779,7 @@ static void Init_AI_Export( ai_export_t *ai ) {
 	ai->BotDumpAvoidGoals = BotDumpAvoidGoals;
 	ai->BotDumpGoalStack = BotDumpGoalStack;
 	ai->BotGoalName = BotGoalName;
+	ai->BotGoalClassName = BotGoalClassName;
 	ai->BotGetTopGoal = BotGetTopGoal;
 	ai->BotGetSecondGoal = BotGetSecondGoal;
 	ai->BotChooseLTGItem = BotChooseLTGItem;
@@ -797,6 +798,9 @@ static void Init_AI_Export( ai_export_t *ai ) {
 	ai->BotInterbreedGoalFuzzyLogic = BotInterbreedGoalFuzzyLogic;
 	ai->BotSaveGoalFuzzyLogic = BotSaveGoalFuzzyLogic;
 	ai->BotMutateGoalFuzzyLogic = BotMutateGoalFuzzyLogic;
+	ai->BotLoadGoalFuzzyLogic = BotLoadGoalFuzzyLogic;
+	ai->BotScaleGoalWeight = BotScaleGoalWeight;
+	ai->BotGoalWeightConfigPtr = BotGoalWeightConfigPtr;
 	ai->BotAllocGoalState = BotAllocGoalState;
 	ai->BotFreeGoalState = BotFreeGoalState;
 	//-----------------------------------

@@ -441,7 +441,7 @@ weightconfig_t *ReadWeightConfig(const char *filename)
 	//
 	return config;
 } //end of the function ReadWeightConfig
-#if 0
+#if 1
 //===========================================================================
 //
 // Parameter:				-
@@ -531,7 +531,9 @@ qboolean WriteWeightConfig(char *filename, weightconfig_t *config)
 	FILE *fp;
 	weight_t *ifw;
 
-	fp = Sys_FOpen( filename, "wb" );
+	// plain fopen: botlib is standalone (no qcommon.h); the file is written
+	// relative to the server's working directory
+	fp = fopen( filename, "wb" );
 	if (!fp) return qfalse;
 
 	for (i = 0; i < config->numweights; i++)
@@ -759,14 +761,21 @@ static void ScaleFuzzySeperator_r(fuzzyseperator_t *fs, float scale)
 	{
 		ScaleFuzzySeperator_r(fs->child, scale);
 	} //end if
-	else if (fs->type == WT_BALANCE)
+	else
 	{
 		//
-		fs->weight = (float) (fs->maxweight + fs->minweight) * scale;
-		//get the weight between bounds
-		if (fs->weight < fs->minweight) fs->weight = fs->minweight;
-		else if (fs->weight > fs->maxweight) fs->weight = fs->maxweight;
-	} //end else if
+		fs->weight *= scale;
+		fs->minweight *= scale;
+		fs->maxweight *= scale;
+		//keep the weights non-negative. minweight/maxweight are the evolution
+		//bounds (EvolveFuzzySeperator_r); the botmem learning loop uses this
+		//function to *suppress* or *boost* a goal, which requires scaling the
+		//whole undecided range (minweight + random()*(maxweight-minweight)),
+		//not just the central weight
+		if (fs->weight < 0) fs->weight = 0;
+		if (fs->minweight < 0) fs->minweight = 0;
+		if (fs->maxweight < 0) fs->maxweight = 0;
+	} //end else
 	if (fs->next) ScaleFuzzySeperator_r(fs->next, scale);
 } //end of the function ScaleFuzzySeperator_r
 //===========================================================================
@@ -775,12 +784,12 @@ static void ScaleFuzzySeperator_r(fuzzyseperator_t *fs, float scale)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-void ScaleWeight(weightconfig_t *config, char *name, float scale)
+void ScaleWeight(weightconfig_t *config, const char *name, float scale)
 {
 	int i;
 
 	if (scale < 0) scale = 0;
-	else if (scale > 1) scale = 1;
+	else if (scale > 16) scale = 16;
 	for (i = 0; i < config->numweights; i++)
 	{
 		if (!strcmp(name, config->weights[i].name))
@@ -790,6 +799,57 @@ void ScaleWeight(weightconfig_t *config, char *name, float scale)
 		} //end if
 	} //end for
 } //end of the function ScaleWeight
+//===========================================================================
+//
+// Parameter:				-
+// Returns:					-
+// Changes Globals:		-
+//===========================================================================
+// Deep-copies a weight configuration (including the fuzzy separator trees) so
+// that per-bot weight scaling does not modify the shared, cached config that
+// ReadWeightConfig returns. Used by BotScaleGoalWeight (copy-on-write).
+//===========================================================================
+static fuzzyseperator_t *CopyFuzzySeperators_r(fuzzyseperator_t *fs)
+{
+	fuzzyseperator_t *dst;
+
+	if (!fs) return NULL;
+	dst = (fuzzyseperator_t *) GetClearedMemory(sizeof(fuzzyseperator_t));
+	dst->index = fs->index;
+	dst->value = fs->value;
+	dst->type = fs->type;
+	dst->weight = fs->weight;
+	dst->minweight = fs->minweight;
+	dst->maxweight = fs->maxweight;
+	dst->child = CopyFuzzySeperators_r(fs->child);
+	dst->next = CopyFuzzySeperators_r(fs->next);
+	return dst;
+} //end of the function CopyFuzzySeperators_r
+
+weightconfig_t *CopyWeightConfig(weightconfig_t *config)
+{
+	weightconfig_t *dst;
+	int i;
+
+	if (!config) return NULL;
+	dst = (weightconfig_t *) GetClearedMemory(sizeof(weightconfig_t));
+	dst->numweights = config->numweights;
+	Q_strncpyz(dst->filename, config->filename, sizeof(dst->filename));
+	for (i = 0; i < config->numweights; i++)
+	{
+		dst->weights[i].name = (char *) GetClearedMemory(strlen(config->weights[i].name) + 1);
+		strcpy(dst->weights[i].name, config->weights[i].name);
+		dst->weights[i].firstseperator = CopyFuzzySeperators_r(config->weights[i].firstseperator);
+	} //end for
+	return dst;
+} //end of the function CopyWeightConfig
+
+void FreeWeightConfigCopy(weightconfig_t *config)
+{
+	// always frees (unlike FreeWeightConfig, which respects bot_reloadcharacters)
+	if (!config) return;
+	FreeWeightConfig2(config);
+} //end of the function FreeWeightConfigCopy
 //===========================================================================
 //
 // Parameter:				-
