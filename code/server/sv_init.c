@@ -820,7 +820,7 @@ void SV_Init( void )
 	sv_mapChecksum = Cvar_Get( "sv_mapChecksum", "", CVAR_ROM );
 	Cvar_SetDescription( sv_mapChecksum, "Allows check for client server map to match." );
 	sv_lanForceRate = Cvar_Get( "sv_lanForceRate", "1", CVAR_ARCHIVE_ND );
-	Cvar_SetDescription( sv_lanForceRate, "Forces LAN clients to the maximum rate instead of accepting client setting." );
+	Cvar_SetDescription( sv_lanForceRate, "Forces LAN clients to the maximum rate and snaps instead of accepting client setting." );
 
 #ifdef USE_BANS
 	sv_banFile = Cvar_Get("sv_banFile", "serverbans.dat", CVAR_ARCHIVE);
