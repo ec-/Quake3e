@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   server-linux-x86_64:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: debian:bookworm-slim
     steps:
       - name: Install build tools
@@ -26,7 +26,7 @@ jobs:
           apt-get update -qq
           apt-get install -y -qq --no-install-recommends git ca-certificates build-essential
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Build
         run: make -j"$(nproc)" BUILD_CLIENT=0 BUILD_SERVER=1 USE_MV=1 release
@@ -47,7 +47,7 @@ jobs:
             echo "SHA-256: \`$(cut -d' ' -f1 "$name.sha256")\`"
           } > notes.md
 
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           name: ${{ github.ref_name }}
           body_path: notes.md
