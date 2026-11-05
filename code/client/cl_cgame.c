@@ -959,113 +959,6 @@ void CL_CGameRendering( stereoFrame_t stereo ) {
 
 
 /*
-=================
-CL_AdjustTimeDelta
-
-Adjust the clients view of server time.
-
-We attempt to have cl.serverTime exactly equal the server's view
-of time plus the timeNudge, but with variable latencies over
-the internet it will often need to drift a bit to match conditions.
-
-Our ideal time would be to have the adjusted time approach, but not pass,
-the very latest snapshot.
-
-Adjustments are only made when a new snapshot arrives with a rational
-latency, which keeps the adjustment process framerate independent and
-prevents massive overadjustment during times of significant packet loss
-or bursted delayed packets.
-=================
-*/
-
-#define	RESET_TIME	500
-
-static void CL_AdjustTimeDelta( void ) {
-	int		newDelta;
-	int		deltaDelta;
-
-	cl.newSnapshots = qfalse;
-
-	// the delta never drifts when replaying a demo
-	if ( clc.demoplaying ) {
-		return;
-	}
-
-	newDelta = cl.snap.serverTime - cls.realtime;
-	deltaDelta = abs( newDelta - cl.serverTimeDelta );
-
-	if ( deltaDelta > RESET_TIME ) {
-		cl.serverTimeDelta = newDelta;
-		cl.oldServerTime = cl.snap.serverTime;	// FIXME: is this a problem for cgame?
-		cl.serverTime = cl.snap.serverTime;
-		if ( cl_showTimeDelta->integer ) {
-			Com_Printf( "<RESET> " );
-		}
-	} else if ( deltaDelta > 100 ) {
-		// fast adjust, cut the difference in half
-		if ( cl_showTimeDelta->integer ) {
-			Com_Printf( "<FAST> " );
-		}
-		cl.serverTimeDelta = ( cl.serverTimeDelta + newDelta ) >> 1;
-	} else {
-		// slow drift adjust, only move 1 or 2 msec
-
-		// if any of the frames between this and the previous snapshot
-		// had to be extrapolated, nudge our sense of time back a little
-		// the granularity of +1 / -2 is too high for timescale modified frametimes
-		if ( com_timescale->value == 0 || com_timescale->value == 1 ) {
-			if ( cl.extrapolatedSnapshot ) {
-				cl.extrapolatedSnapshot = qfalse;
-				cl.serverTimeDelta -= 2;
-			} else {
-				// otherwise, move our sense of time forward to minimize total latency
-				cl.serverTimeDelta++;
-			}
-		}
-	}
-
-	if ( cl_showTimeDelta->integer ) {
-		Com_Printf( "%i ", cl.serverTimeDelta );
-	}
-}
-
-
-/*
-==================
-CL_FirstSnapshot
-==================
-*/
-static void CL_FirstSnapshot( void ) {
-	// ignore snapshots that don't have entities
-	if ( cl.snap.snapFlags & SNAPFLAG_NOT_ACTIVE ) {
-		return;
-	}
-	cls.state = CA_ACTIVE;
-
-	// clear old game so we will not switch back to old mod on disconnect
-	CL_ResetOldGame();
-
-	// set the timedelta so we are exactly on this first frame
-	cl.serverTimeDelta = cl.snap.serverTime - cls.realtime;
-	cl.oldServerTime = cl.snap.serverTime;
-
-	clc.timeDemoBaseTime = cl.snap.serverTime;
-
-	// if this is the first frame of active play,
-	// execute the contents of activeAction now
-	// this is to allow scripting a timedemo to start right
-	// after loading
-	if ( cl_activeAction->string[0] ) {
-		Cbuf_AddText( cl_activeAction->string );
-		Cbuf_AddText( "\n" );
-		Cvar_Set( "activeAction", "" );
-	}
-
-	Sys_BeginProfiling();
-}
-
-
-/*
 ==================
 CL_AvgPing
 
@@ -1123,6 +1016,141 @@ static int CL_TimeNudge( void ) {
 		return (int)((CL_AvgPing() * autoNudge) + 0.5f) * -1;
 	else
 		return cl_timeNudge->integer;
+}
+
+
+/*
+=================
+CL_AdjustTimeDelta
+
+Adjust the clients view of server time.
+
+We attempt to have cl.serverTime exactly equal the server's view
+of time plus the timeNudge, but with variable latencies over
+the internet it will often need to drift a bit to match conditions.
+
+Our ideal time would be to have the adjusted time approach, but not pass,
+the very latest snapshot.
+
+Adjustments are only made when a new snapshot arrives with a rational
+latency, which keeps the adjustment process framerate independent and
+prevents massive overadjustment during times of significant packet loss
+or bursted delayed packets.
+=================
+*/
+
+#define	RESET_TIME	500
+
+static void CL_AdjustTimeDelta( void ) {
+	int		newDelta;
+	int		deltaDelta;
+	int		excessDelta;
+	int		targetDelta;
+	// If the interval is not uniform (`cl.snapInterval != cl.prevSnapInterval`)
+	// then this might be rate limiting kicking in ("rate" CVAR)
+	// or some server hitch (a skipped frame).
+	// Not a very nice solution, but this shouldn't happen often anyway.
+	// To account for hitches the best thing would be to make the server
+	// tell us its `sv_fps` (and account for the `snaps` limit).
+	int		smoothedSnapInterval = cl.snapInterval != 0
+		? cl.prevSnapInterval != 0
+			// If one has a hitch, look at the other
+			? MIN( cl.prevSnapInterval, cl.snapInterval )
+			: cl.snapInterval
+		// Assume 20 snaps per second, the default `sv_fps`.
+		: 1000 / 20;
+
+	cl.newSnapshots = qfalse;
+
+	// the delta never drifts when replaying a demo
+	if ( clc.demoplaying ) {
+		return;
+	}
+
+	newDelta = cl.snap.serverTime - cls.realtime;
+	targetDelta = newDelta - smoothedSnapInterval;
+	// This should approach 0.
+	excessDelta = cl.serverTimeDelta - targetDelta;
+	// This should approach `smoothedSnapInterval`.
+	deltaDelta = newDelta - cl.serverTimeDelta;
+
+	if ( abs( excessDelta ) > RESET_TIME ) {
+		cl.serverTimeDelta = targetDelta;
+		// Same expression as in `CL_SetCGameTime`.
+		cl.serverTime = cls.realtime + cl.serverTimeDelta - CL_TimeNudge();
+		cl.oldServerTime = cl.serverTime; // FIXME: is this a problem for cgame?
+		if ( cl_showTimeDelta->integer ) {
+			Com_Printf( "<RESET> " );
+		}
+	} else if ( abs( excessDelta ) > 100 ) {
+		// fast adjust, cut the difference in half
+		if ( cl_showTimeDelta->integer ) {
+			Com_Printf( "<FAST> " );
+		}
+		cl.serverTimeDelta = ( cl.serverTimeDelta + targetDelta ) >> 1;
+	} else {
+		// slow drift adjust, only move 1 or 2 msec
+
+		// if any of the frames between this and the previous snapshot
+		// had to be extrapolated, nudge our sense of time back a little
+		// the granularity of +1 / -2 is too high for timescale modified frametimes
+		if ( com_timescale->value == 0 || com_timescale->value == 1 ) {
+			if ( cl.extrapolatedSnapshot ) {
+				cl.extrapolatedSnapshot = qfalse;
+				cl.serverTimeDelta -= 2;
+			} else {
+				// otherwise, move our sense of time forward to minimize total latency
+				cl.serverTimeDelta++;
+			}
+		}
+	}
+
+	if ( cl_showTimeDelta->integer ) {
+		if ( cl_showTimeDelta->integer & 0x2 ) {
+			Com_Printf( "%03i snapInterval %i deltaDelta %03i excessDelta %+i%s\n",
+				cl.serverTimeDelta, cl.snapInterval, deltaDelta, excessDelta,
+				smoothedSnapInterval != cl.snapInterval ? " <HITCH>" : "" );
+		} else {
+			Com_Printf( "%i ", cl.serverTimeDelta );
+		}
+	}
+}
+
+
+/*
+==================
+CL_FirstSnapshot
+==================
+*/
+static void CL_FirstSnapshot( void ) {
+	// ignore snapshots that don't have entities
+	if ( cl.snap.snapFlags & SNAPFLAG_NOT_ACTIVE ) {
+		return;
+	}
+	cls.state = CA_ACTIVE;
+
+	// clear old game so we will not switch back to old mod on disconnect
+	CL_ResetOldGame();
+
+	// set the timedelta so we are exactly on this first frame.
+	// This means that we will extrapolate initially,
+	// but `CL_AdjustTimeDelta` will move towards interpolation over time.
+	cl.serverTimeDelta = cl.snap.serverTime - cls.realtime;
+	cl.oldServerTime = cl.snap.serverTime;
+
+	clc.timeDemoBaseTime = cl.snap.serverTime;
+
+	// if this is the first frame of active play,
+	// execute the contents of activeAction now
+	// this is to allow scripting a timedemo to start right
+	// after loading
+	if ( cl_activeAction->string[0] ) {
+		Cbuf_AddText( cl_activeAction->string );
+		Cbuf_AddText( "\n" );
+		Cvar_Set( "activeAction", "" );
+	}
+
+	Sys_BeginProfiling();
 }
 
 
