@@ -22,7 +22,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 // load time compiler and execution environment for PPC64
-// supports both ELFv2 ABI (ppc64le) and ELFv1 ABI (ppc64 big-endian)
+// supports the ELFv1 and ELFv2 ABIs, big- or little-endian,
 // without dynamic register allocation
 
 #include <sys/types.h>
@@ -41,12 +41,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 	} while(0)
 
 
-// Detect ELFv1 (ppc64 big-endian) vs ELFv2 (ppc64le) ABI
+// Detect the ABI. The ABI is not the byte order: ELFv2 is used by ppc64le
+// and by big-endian systems such as Arch Linux POWER and musl, ELFv1 by
+// the big-endian glibc distributions. A compiler that does not define
+// _CALL_ELF predates ELFv2.
 #if defined(_CALL_ELF) && _CALL_ELF == 2
-#define PPC64_ELFv2 1
-#elif defined(_CALL_ELF) && _CALL_ELF == 1
-#define PPC64_ELFv1 1
-#elif defined(__LITTLE_ENDIAN__) || defined(__LITTLE_ENDIAN)
 #define PPC64_ELFv2 1
 #else
 #define PPC64_ELFv1 1
@@ -1255,7 +1254,7 @@ funcOffset[ FUNC_SYSF ] = compiledOfs;
 
 	// Stack frame layout for syscall handler:
 	//
-	// ELFv1 ABI (ppc64 big-endian):
+	// ELFv1 ABI:
 	//   SP+0:    back chain (8)
 	//   SP+8:    CR save (8)
 	//   SP+16:   LR save area (8)
@@ -1268,7 +1267,7 @@ funcOffset[ FUNC_SYSF ] = compiledOfs;
 	//   SP+248:  our saved rOPSTACK (8)
 	//   Total:   256 bytes (16-byte aligned)
 	//
-	// ELFv2 ABI (ppc64le):
+	// ELFv2 ABI:
 	//   SP+0:    back chain (8)
 	//   SP+32:   args[0..15] (16 * 8 = 128 bytes) -- parameter/local area
 	//   SP+160:  our saved LR (8)
@@ -1760,7 +1759,7 @@ __recompile:
 	// We need to save: LR, R14-R22 (9 GPRs)
 	// Stack frame: 16-byte aligned
 	//
-	// ELFv1 ABI (ppc64 big-endian):
+	// ELFv1 ABI:
 	//   SP+0:    back chain (8)
 	//   SP+8:    CR save (8)
 	//   SP+16:   LR save area (8)
@@ -1772,7 +1771,7 @@ __recompile:
 	//   R14-R22 saved at SP+112..SP+176 (9 * 8 = 72)
 	//   Total: 184, rounded up to 192
 	//
-	// ELFv2 ABI (ppc64le):
+	// ELFv2 ABI:
 	//   SP+0:    back chain (8)
 	//   SP+32:   first available for locals (no mandatory parameter save area)
 	//   R14-R22 saved at SP+48..SP+112 (9 * 8 = 72)
