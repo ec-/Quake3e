@@ -166,6 +166,7 @@ typedef struct bot_goalstate_s
 	struct weightconfig_s *itemweightconfig;	//weight config
 	int *itemweightindex;						//index from item to weight
 	qboolean weightconfig_owned;				//itemweightconfig is a per-bot copy (freed by BotFreeItemWeights)
+	int weightconfig_gen;						//bumped on every itemweightconfig replacement; exposed via BotGoalWeightConfigPtr (0 = no config)
 	//
 	int client;									//client using this goal state
 	int lastreachabilityarea;					//last area with reachabilities the bot was in
@@ -1749,6 +1750,8 @@ int BotLoadItemWeights(int goalstate, const char *filename)
 
 	gs = BotGoalStateFromHandle(goalstate);
 	if (!gs) return BLERR_CANNOTLOADITEMWEIGHTS;
+	//if there's no item configuration
+	if (!itemconfig) return BLERR_CANNOTLOADITEMWEIGHTS;
 	//load the weight configuration
 	gs->itemweightconfig = ReadWeightConfig(filename);
 	if (!gs->itemweightconfig)
@@ -1756,10 +1759,17 @@ int BotLoadItemWeights(int goalstate, const char *filename)
 		botimport.Print(PRT_FATAL, "couldn't load weights\n");
 		return BLERR_CANNOTLOADITEMWEIGHTS;
 	} //end if
-	//if there's no item configuration
-	if (!itemconfig) return BLERR_CANNOTLOADITEMWEIGHTS;
-	//create the item weight index
+	//free a per-bot copy before replacing it (a shared, cached config is
+	//managed by weightFileList and must not be freed here)
+	if (gs->weightconfig_owned)
+	{
+		FreeWeightConfigCopy(gs->itemweightconfig);
+		gs->weightconfig_owned = qfalse;
+	} //end if
+	//create the item weight index (free the old one first)
+	if (gs->itemweightindex) FreeMemory(gs->itemweightindex);
 	gs->itemweightindex = ItemWeightIndex(gs->itemweightconfig, itemconfig);
+	gs->weightconfig_gen++;
 	//everything went ok
 	return BLERR_NOERROR;
 } //end of the function BotLoadItemWeights
@@ -1782,8 +1792,11 @@ void BotFreeItemWeights(int goalstate)
 		if (gs->weightconfig_owned) FreeWeightConfigCopy(gs->itemweightconfig);
 		else FreeWeightConfig(gs->itemweightconfig);
 		gs->itemweightconfig = NULL;
+		gs->weightconfig_owned = qfalse;
 	} //end if
 	if (gs->itemweightindex) FreeMemory(gs->itemweightindex);
+	// no config anymore: reset the generation counter (0 = no config)
+	gs->weightconfig_gen = 0;
 } //end of the function BotFreeItemWeights
 //===========================================================================
 //
@@ -1805,6 +1818,8 @@ int BotLoadGoalFuzzyLogic(int goalstate, const char *filename)
 
 	gs = BotGoalStateFromHandle(goalstate);
 	if (!gs) return BLERR_CANNOTLOADITEMWEIGHTS;
+	//if there's no item configuration
+	if (!itemconfig) return BLERR_CANNOTLOADITEMWEIGHTS;
 	//load the weight configuration
 	wc = ReadWeightConfig(filename);
 	if (!wc)
@@ -1812,13 +1827,19 @@ int BotLoadGoalFuzzyLogic(int goalstate, const char *filename)
 		botimport.Print(PRT_ERROR, "couldn't load goal fuzzy logic %s\n", filename);
 		return BLERR_CANNOTLOADITEMWEIGHTS;
 	} //end if
-	//if there's no item configuration
-	if (!itemconfig) return BLERR_CANNOTLOADITEMWEIGHTS;
-	//free the old index (the config itself is cached/shared - do not free it)
+	//free a per-bot copy before replacing it (a shared, cached config is
+	//managed by weightFileList and must not be freed here)
+	if (gs->weightconfig_owned)
+	{
+		FreeWeightConfigCopy(gs->itemweightconfig);
+		gs->weightconfig_owned = qfalse;
+	} //end if
+	//free the old index
 	if (gs->itemweightindex) FreeMemory(gs->itemweightindex);
 	gs->itemweightconfig = wc;
 	//create the item weight index
 	gs->itemweightindex = ItemWeightIndex(wc, itemconfig);
+	gs->weightconfig_gen++;
 	//everything went ok
 	return BLERR_NOERROR;
 } //end of the function BotLoadGoalFuzzyLogic
@@ -1857,9 +1878,13 @@ void BotScaleGoalWeight(int goalstate, const char *name, float scale)
 	{
 		gs->itemweightconfig = CopyWeightConfig(gs->itemweightconfig);
 		gs->weightconfig_owned = qtrue;
+		if (!gs->itemweightconfig) return;
 	}
-	if (!gs->itemweightconfig) return;
 	ScaleWeight(gs->itemweightconfig, name, scale);
+	// the config was modified (copy made and/or weights scaled): bump the
+	// generation counter so callers latching on it (BotGoalWeightConfigPtr)
+	// notice the change
+	gs->weightconfig_gen++;
 } //end of the function BotScaleGoalWeight
 //===========================================================================
 //
@@ -1867,10 +1892,13 @@ void BotScaleGoalWeight(int goalstate, const char *name, float scale)
 // Returns:				-
 // Changes Globals:		-
 //
-// Returns the item weight configuration of the given goal state (as an
-// integer pointer, 0 if none). The botmem learning loop latches on this
-// pointer: the first COW scale pass replaces the shared config and changes
-// the pointer, which detects when the scale must be re-applied.
+// Returns the generation counter of the given goal state's item weight
+// configuration (0 if none). The counter is bumped on every replacement or
+// modification of the config (COW scale, reload, free) and reset to 0 when
+// the config is freed. The botmem learning loop latches on this counter:
+// the first COW scale pass changes it, which detects when the learned
+// scales must be re-applied. A plain integer is exposed (not a pointer):
+// it is valid on 32- and 64-bit builds alike and cannot dangle.
 //===========================================================================
 int BotGoalWeightConfigPtr(int goalstate)
 {
@@ -1887,7 +1915,7 @@ int BotGoalWeightConfigPtr(int goalstate)
 		botimport.Print(PRT_FATAL, "invalid goal state %d\n", goalstate);
 		return 0;
 	} //end if
-	return (int) gs->itemweightconfig;
+	return gs->weightconfig_gen;
 } //end of the function BotGoalWeightConfigPtr
 //===========================================================================
 //
