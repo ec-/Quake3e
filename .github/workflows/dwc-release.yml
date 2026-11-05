@@ -1,0 +1,56 @@
+# Builds the dedicated server used on the doomwarriors servers and publishes
+# it as a GitHub release. Runs when a tag dwc-YYYY.MM.DD (or dwc-YYYY.MM.DD.N
+# for a second build on the same day) is pushed on the dwc branch.
+#
+# The build runs in Debian bookworm, the base of the server image, so the
+# binary needs no newer glibc than the containers have. A release created
+# with GITHUB_TOKEN does not trigger build.yml, so upstream's client builds
+# stay out of these releases.
+name: dwc-release
+
+on:
+  push:
+    tags:
+      - 'dwc-*'
+
+permissions:
+  contents: write
+
+jobs:
+  server-linux-x86_64:
+    runs-on: ubuntu-latest
+    container: debian:bookworm-slim
+    steps:
+      - name: Install build tools
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq --no-install-recommends git ca-certificates build-essential
+
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: make -j"$(nproc)" BUILD_CLIENT=0 BUILD_SERVER=1 USE_MV=1 release
+
+      - name: Package
+        id: pkg
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          name="quake3e.ded.x64-dwc-$(git rev-parse --short=7 HEAD)"
+          install -m 755 build/release-linux-x86_64/quake3e.ded.x64 "$name"
+          sha256sum "$name" > "$name.sha256"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          {
+            echo "Dedicated server for the doomwarriors servers, branch \`dwc\` at $(git rev-parse --short=7 HEAD)."
+            echo
+            echo "Built on Debian bookworm with \`USE_MV=1\` (server-side multiview demos)."
+            echo
+            echo "SHA-256: \`$(cut -d' ' -f1 "$name.sha256")\`"
+          } > notes.md
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          body_path: notes.md
+          files: |
+            ${{ steps.pkg.outputs.name }}
+            ${{ steps.pkg.outputs.name }}.sha256
