@@ -32,7 +32,7 @@ the test instance (q3-servers, UDP 27970) before the live servers.
   default.** Always pass `-R doomwarriors-clan/Quake3e --base dwc` (or
   `--base main` / `--base multiview` where intended). Never open PRs against
   ec-/Quake3e unless a maintainer asks for it.
-- Commit messages in English, imperative mood.
+- Commit messages in English, imperative mood. English everywhere: commit messages, PR texts, README and other docs, and code comments. Existing German comments are translated when a file is touched anyway.
 
 ## Branches
 
