@@ -26,8 +26,13 @@ the test instance (q3-servers, UDP 27970) before the live servers.
 
 - Open topics are GitHub issues. Run `gh issue list -R doomwarriors-clan/Quake3e`
   before starting and reference the issue in the PR.
-- Every change goes through a pull request; `dwc` and `main` are protected
-  (no direct push, no force push).
+- Every change goes through a pull request; `dwc`, `main` and `multiview` are
+  protected by rulesets (no deletion, no force push; `dwc` only by PR).
+- **The repo deletes a PR's head branch on merge.** Never use a long-lived
+  branch (`main`, `multiview`, `dwc`) as the head of a PR: push a throwaway
+  branch at the same commit (e.g. `merge-multiview-2026-11-06`) and open the
+  PR from that. On 2026-11-06 PR #7 (head `multiview`) deleted `multiview`
+  before it was protected.
 - **`gh pr create` in a fork targets the upstream repo (ec-/Quake3e) by
   default.** Always pass `-R doomwarriors-clan/Quake3e --base dwc` (or
   `--base main` / `--base multiview` where intended). Never open PRs against
@@ -45,8 +50,11 @@ the test instance (q3-servers, UDP 27970) before the live servers.
 Feature work meant for upstream branches off `main`; everything else is a PR
 against `dwc`.
 
-Upstream sync (roughly monthly): fast-forward `main` from ec-/Quake3e, rebase
-or merge `multiview` onto it, merge into `dwc`, build and test, tag.
+Upstream sync (roughly monthly): fast-forward `main` from ec-/Quake3e
+(*Sync fork* or `gh repo sync doomwarriors-clan/Quake3e -b main`), merge it
+into `multiview` (no rebase, `multiview` rejects force pushes), merge
+`multiview` into `dwc` (each via a throwaway PR branch, see above), build and
+test, tag.
 
 ## Build
 
