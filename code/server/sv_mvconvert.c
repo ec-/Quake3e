@@ -690,7 +690,9 @@ MVC_OpenOutput
 */
 static qboolean MVC_OpenOutput( mvConvert_t *mvc, int clientNum ) {
 	mvcOutput_t *out;
-	char playerName[ MAX_NAME_LENGTH ];
+	// the raw name still has its colour codes, which can make it longer than
+	// MAX_NAME_LENGTH; cutting it before Q_CleanStr would lose letters
+	char playerName[ MAX_INFO_VALUE ];
 	char cleanName[ MAX_NAME_LENGTH ];
 	const char *s;
 	int i, n;
