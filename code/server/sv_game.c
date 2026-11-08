@@ -365,6 +365,34 @@ static qboolean SV_GetValue( char* value, int valueSize, const char* key )
 		return qtrue;
 	}
 
+	// DWC botmem extensions: let a game module probe for the new syscalls at
+	// runtime (trap_GetValue) and degrade gracefully on engines without them.
+	// The values are the gameImport_t enum entries; the corresponding QVM
+	// trap numbers are -(enum+1), see g_public.h.
+	if ( !Q_stricmp( key, "trap_BotLoadGoalFuzzyLogic_DWC" ) )
+	{
+		Com_sprintf( value, valueSize, "%i", BOTLIB_AI_LOAD_GOAL_FUZZY_LOGIC );
+		return qtrue;
+	}
+
+	if ( !Q_stricmp( key, "trap_BotScaleGoalWeight_DWC" ) )
+	{
+		Com_sprintf( value, valueSize, "%i", BOTLIB_AI_SCALE_GOAL_WEIGHT );
+		return qtrue;
+	}
+
+	if ( !Q_stricmp( key, "trap_BotGoalClassName_DWC" ) )
+	{
+		Com_sprintf( value, valueSize, "%i", BOTLIB_AI_GOAL_CLASSNAME );
+		return qtrue;
+	}
+
+	if ( !Q_stricmp( key, "trap_BotGoalWeightConfigPtr_DWC" ) )
+	{
+		Com_sprintf( value, valueSize, "%i", BOTLIB_AI_GOAL_WEIGHT_CONFIG_PTR );
+		return qtrue;
+	}
+
 	return qfalse;
 }
 

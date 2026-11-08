@@ -390,9 +390,6 @@ typedef enum {
 	BOTLIB_AAS_ALTERNATIVE_ROUTE_GOAL,
 	BOTLIB_AAS_PREDICT_ROUTE,
 	BOTLIB_AAS_POINT_REACHABILITY_AREA_INDEX,
-	BOTLIB_AI_LOAD_GOAL_FUZZY_LOGIC,
-	BOTLIB_AI_SCALE_GOAL_WEIGHT,
-	BOTLIB_AI_GOAL_CLASSNAME,		// ( int number, char *name, int size ); item config classname of a goal (matches weight config names), unlike BOTLIB_AI_GOAL_NAME which returns the display name
 
 	BOTLIB_PC_LOAD_SOURCE,
 	BOTLIB_PC_FREE_SOURCE,
@@ -402,7 +399,14 @@ typedef enum {
 	// engine extensions
 	G_CVAR_SETDESCRIPTION,
 	G_TRAP_GETVALUE = COM_TRAP_GETVALUE,
-	BOTLIB_AI_GOAL_WEIGHT_CONFIG_PTR	// ( int goalstate ); item weight config of the goal state (int pointer, 0 if none) - re-apply key for per-bot goal weight scaling
+	// DWC botmem extensions: appended at the END of the enum (after the last
+	// stock entry) so existing trap numbers - and therefore existing QVMs -
+	// are not shifted. Discoverable at runtime via trap_GetValue, see the
+	// "_DWC" names in SV_GetValue (sv_game.c).
+	BOTLIB_AI_GOAL_WEIGHT_CONFIG_PTR,	// ( int goalstate ); generation counter of the goal state's item weight config (0 if none) - re-apply key for per-bot goal weight scaling
+	BOTLIB_AI_LOAD_GOAL_FUZZY_LOGIC,	// ( int goalstate, char *filename ); load a goal fuzzy-logic weight config into the goal state
+	BOTLIB_AI_SCALE_GOAL_WEIGHT,		// ( int goalstate, char *name, float scale ); multiply one goal's weight+minweight+maxweight by scale (copy-on-write weight config)
+	BOTLIB_AI_GOAL_CLASSNAME			// ( int number, char *name, int size ); item config classname of a goal (matches weight config names), unlike BOTLIB_AI_GOAL_NAME which returns the display name
 
 } gameImport_t;
 
