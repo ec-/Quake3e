@@ -1747,14 +1747,15 @@ void BotResetGoalState(int goalstate)
 int BotLoadItemWeights(int goalstate, const char *filename)
 {
 	bot_goalstate_t *gs;
+	weightconfig_t *wc;
 
 	gs = BotGoalStateFromHandle(goalstate);
 	if (!gs) return BLERR_CANNOTLOADITEMWEIGHTS;
 	//if there's no item configuration
 	if (!itemconfig) return BLERR_CANNOTLOADITEMWEIGHTS;
 	//load the weight configuration
-	gs->itemweightconfig = ReadWeightConfig(filename);
-	if (!gs->itemweightconfig)
+	wc = ReadWeightConfig(filename);
+	if (!wc)
 	{
 		botimport.Print(PRT_FATAL, "couldn't load weights\n");
 		return BLERR_CANNOTLOADITEMWEIGHTS;
@@ -1768,7 +1769,8 @@ int BotLoadItemWeights(int goalstate, const char *filename)
 	} //end if
 	//create the item weight index (free the old one first)
 	if (gs->itemweightindex) FreeMemory(gs->itemweightindex);
-	gs->itemweightindex = ItemWeightIndex(gs->itemweightconfig, itemconfig);
+	gs->itemweightconfig = wc;
+	gs->itemweightindex = ItemWeightIndex(wc, itemconfig);
 	gs->weightconfig_gen++;
 	//everything went ok
 	return BLERR_NOERROR;
