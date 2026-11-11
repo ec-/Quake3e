@@ -103,6 +103,9 @@ typedef struct {
 	qboolean	extrapolatedSnapshot;	// set if any cgame frame has been forced to extrapolate
 									// cleared when CL_AdjustTimeDelta looks at it
 	qboolean	newSnapshots;		// set on parse of any valid packet
+	int			snapInterval;		// server time interval between last two
+									// consecutively received snapshots
+	int			prevSnapInterval;
 
 	gameState_t	gameState;			// configstrings
 	char		mapname[MAX_QPATH];	// extracted from CS_SERVERINFO
