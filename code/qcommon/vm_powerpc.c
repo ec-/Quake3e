@@ -1206,7 +1206,7 @@ static void emit_CheckProc( vm_t *vm, instruction_t *ins )
 		emit( PPC_ADD( R11, rOPSTACK, R11 ) );
 		emit( PPC_CMPLD( 0, R11, rOPSTACKTOP ) ); //
 
-		offset = branchOffset[FUNC_PSOF] - compiledOfs;
+		offset = branchOffset[FUNC_OSOF] - compiledOfs;
 		if ( (int16_t)offset == offset ) {
 			emit( PPC_BGT( offset ) );	// unsigned >
 		} else {
