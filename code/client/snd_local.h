@@ -32,6 +32,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define SND_CHUNK_SIZE_FLOAT	(SND_CHUNK_SIZE/2)		// floats
 #define SND_CHUNK_SIZE_BYTE		(SND_CHUNK_SIZE*2)		// floats
 
+// Special entity number, for `S_Base_StartLocalSound`.
+#define ENTITYNUM_LOCALSOUND	(-0x1000)
+
 typedef struct {
 	int			left;	// the final values will be clamped to +/- 0x00ffff00 and shifted down
 	int			right;
@@ -97,7 +100,7 @@ typedef struct
 {
 	int			allocTime;
 	int			startSample;	// START_SAMPLE_IMMEDIATE = set immediately on next mix
-	int			entnum;			// to allow overriding a specific sound
+	int			entnum;			// to allow overriding a specific sound. Might also be `ENTITYNUM_LOCALSOUND`
 	int			entchannel;		// to allow overriding a specific sound
 	int			leftvol;		// 0-255 volume after spatialization
 	int			rightvol;		// 0-255 volume after spatialization
