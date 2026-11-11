@@ -202,7 +202,13 @@ int HuffmanGetBit( const byte* buffer, int bitIndex )
 
 int HuffmanGetSymbol( unsigned int* symbol, const byte* buffer, int bitIndex )
 {
-	const uint16_t code = ((*(const uint32_t*)(buffer + (bitIndex >> 3))) >> ((uint32_t)bitIndex & 7)) & 0x7FF;
+	// the bitstream is LSB-first within each byte and byte-sequential, i.e.
+	// a little-endian word: assemble it as such (a host-endian uint32_t
+	// load decoded garbage on big-endian, and was unaligned); the 11 code
+	// bits after a shift of at most 7 fit in three bytes
+	const byte *p = buffer + (bitIndex >> 3);
+	const uint32_t w = (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16);
+	const uint16_t code = (w >> ((uint32_t)bitIndex & 7)) & 0x7FF;
 	const uint16_t entry = HuffmanDecoderTable[ code ];
 
 	*symbol = (unsigned int)(entry & 0xFF);
