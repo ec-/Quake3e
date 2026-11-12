@@ -913,6 +913,11 @@ void SV_Init( void )
 	sv_fps = Cvar_Get ("sv_fps", "20", CVAR_TEMP );
 	Cvar_CheckRange( sv_fps, "10", "125", CV_INTEGER );
 	Cvar_SetDescription( sv_fps, "Set the max frames per second the server sends the client." );
+	sv_timescale = Cvar_Get( "sv_timescale", "1", CVAR_CHEAT | CVAR_SYSTEMINFO );
+	Cvar_CheckRange( sv_timescale, "1", NULL, CV_FLOAT );
+	Cvar_SetDescription( sv_timescale, "Server simulation speed factor: 1 = realtime (default), > 1 = faster than realtime. "
+		"Only the simulation clock is scaled, not the tick size (1000/sv_fps), so per-tick dynamics match realtime. "
+		"For bot-vs-bot training runs: while > 1 the server is bots-only (real clients are rejected on connect)." );
 	sv_timeout = Cvar_Get( "sv_timeout", "200", CVAR_TEMP );
 	Cvar_CheckRange( sv_timeout, "4", NULL, CV_INTEGER );
 	Cvar_SetDescription( sv_timeout, "Seconds without any message before automatic client disconnect." );

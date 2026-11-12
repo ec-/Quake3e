@@ -27,6 +27,7 @@ server_t		sv;					// local server
 vm_t			*gvm = NULL;		// game virtual machine
 
 cvar_t	*sv_fps;				// time rate for running non-clients
+cvar_t	*sv_timescale;			// simulation speed factor (bot training; 1 = realtime)
 cvar_t	*sv_timeout;			// seconds without any message
 cvar_t	*sv_zombietime;			// seconds to sink messages after disconnect
 cvar_t	*sv_rconPassword;		// password for remote server commands
@@ -1350,7 +1351,11 @@ void SV_Frame( int msec ) {
 		frameMsec = 1;
 	}
 
-	sv.timeResidual += msec;
+	// sv_timescale (fast bot training): scale the simulation clock, not the
+	// tick size, so e.g. a 10x match keeps the 1000/sv_fps tick resolution and
+	// per-tick dynamics identical to a realtime match. Rounding keeps
+	// fractional factors drift-free over long runs.
+	sv.timeResidual += (int)(msec * sv_timescale->value + 0.5f);
 
 	if ( !com_dedicated->integer )
 		SV_BotFrame( sv.time + sv.timeResidual );

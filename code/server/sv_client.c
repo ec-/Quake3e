@@ -507,6 +507,15 @@ void SV_DirectConnect( const netadr_t *from ) {
 		return;
 	}
 
+	// fast training mode (sv_timescale > 1): the simulation runs faster than
+	// realtime, so client prediction and the game-time-based timeouts can't
+	// keep up -- this is a bots-only training server.
+	if ( sv_timescale->value > 1.0f && from->type != NA_BOT ) {
+		Com_Printf( "sv_timescale fast mode: rejecting client %s\n", NET_AdrToString( from ) );
+		NET_OutOfBandPrint( NS_SERVER, from, "print\nServer runs faster than realtime (sv_timescale), bots only.\n" );
+		return;
+	}
+
 	// check for concurrent connections
 	for ( i = 0, n = 0; i < sv.maxclients; i++ ) {
 		const netadr_t *addr = &svs.clients[ i ].netchan.remoteAddress;
