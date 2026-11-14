@@ -163,6 +163,11 @@ void GL_Cull( cullType_t cullType ) {
 		{
 			cullFront = !cullFront;
 		}
+		// mirrored view reverses triangle winding
+		if ( r_flip->integer && !backEnd.projection2D )
+		{
+			cullFront = !cullFront;
+		}
 
 		qglCullFace( cullFront ? GL_FRONT : GL_BACK );
 	}
