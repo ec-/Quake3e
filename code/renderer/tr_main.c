@@ -602,6 +602,11 @@ void R_SetupProjection( viewParms_t *dest, float zProj, qboolean computeFrustum 
 	dest->projectionMatrix[11] = -1;
 	dest->projectionMatrix[15] = 0;
 	
+	if ( r_flip->integer ) {
+	       dest->projectionMatrix[0] = -dest->projectionMatrix[0];
+	       dest->projectionMatrix[8] = -dest->projectionMatrix[8];
+	       dest->projectionMatrix[12] = -dest->projectionMatrix[12];
+	}
 	// Now that we have all the data for the projection matrix we can also setup the view frustum.
 	if ( computeFrustum )
 		R_SetupFrustum( dest, xmin, xmax, ymax, zProj, stereoSep );
