@@ -411,7 +411,7 @@ static void S_SpatializeOrigin( const vec3_t origin, int master_vol, int *left_v
 	
 	VectorRotate( source_vec, listener_axis, vec );
 
-	dot = -vec[1];
+	dot = cl_flip->integer ? vec[1] : -vec[1];
 
 	if (dma.channels == 1)
 	{	// no attenuation = no spatialization
