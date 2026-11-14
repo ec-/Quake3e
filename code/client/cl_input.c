@@ -519,7 +519,7 @@ static void CL_MouseMove( usercmd_t *cmd )
 	my *= cl.cgameSensitivity;
 
 	if ( cl_flip->integer )
-		mx = -mx
+		mx = -mx;
 
 	// add mouse X/Y movement to cmd
 	if ( in_strafe.active )
