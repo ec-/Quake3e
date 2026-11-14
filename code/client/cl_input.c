@@ -86,6 +86,8 @@ static cvar_t *m_forward;
 static cvar_t *m_side;
 static cvar_t *m_filter;
 
+cvar_t *cl_flip;
+
 static qboolean in_mlooking;
 
 static void IN_CenterView( void ) {
@@ -1020,6 +1022,8 @@ void CL_InitInput( void ) {
 	m_filter = Cvar_Get( "m_filter", "0", CVAR_ARCHIVE_ND );
 #endif
 	Cvar_SetDescription( m_filter, "Toggle use of mouse 'smoothing'." );
+	cl_flip = Cvar_Get( "cl_flip", "0", CVAR_ARCHIVE_ND );
+	Cvar_SetDescription( cl_flip, "Flip the game horizontally");
 }
 
 
