@@ -3175,6 +3175,7 @@ void Com_GameRestart( int checksumFeed, qboolean clientRestart )
 		// Reset console command history
 		Con_ResetHistory();
 
+		Com_Shutdown();
 		// Shutdown FS early so Cvar_Restart will not reset old game cvars
 		FS_Shutdown( qtrue );
 
