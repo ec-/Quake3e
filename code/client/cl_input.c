@@ -307,8 +307,8 @@ static void CL_AdjustAngles( void ) {
 	}
 
 	if ( !in_strafe.active ) {
-		cl.viewangles[YAW] -= speed*cl_yawspeed->value*CL_KeyState (&in_right);
-		cl.viewangles[YAW] += speed*cl_yawspeed->value*CL_KeyState (&in_left);
+		float turn = speed*cl_yawspeed->value*( CL_KeyState (&in_left) - CL_KeyState (&in_right) );
+		cl.viewangles[YAW] += cl_flip->integer ? -turn : turn;
 	}
 
 	cl.viewangles[PITCH] -= speed*cl_pitchspeed->value * CL_KeyState (&in_lookup);
@@ -359,6 +359,9 @@ static void CL_KeyMove( usercmd_t *cmd ) {
 	forward -= movespeed * CL_KeyState (&in_back);
 
 	cmd->forwardmove = ClampCharMove( forward );
+	if ( cl_flip->integer )
+		side = -side;
+
 	cmd->rightmove = ClampCharMove( side );
 	cmd->upmove = ClampCharMove( up );
 }
