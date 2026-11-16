@@ -300,6 +300,17 @@ static void CL_ParseSnapshot( msg_t *msg ) {
 		cl.snapshots[ ( oldMessageNum + i ) & PACKET_MASK ].valid = qfalse;
 	}
 
+	if ( cl.snap.valid
+		&& newSnap.serverTime - cl.snap.serverTime > 0
+		// We could also update the value if the prev snapshot was dropped,
+		// but `snapInterval` anyway normally stays constant,
+		// so let's not be overly smart.
+		&& newSnap.messageNum == cl.snap.messageNum + 1 )
+	{
+		cl.prevSnapInterval = cl.snapInterval;
+		cl.snapInterval = newSnap.serverTime - cl.snap.serverTime;
+	}
+
 	// copy to the current good spot
 	cl.snap = newSnap;
 	cl.snap.ping = 999;
@@ -315,8 +326,8 @@ static void CL_ParseSnapshot( msg_t *msg ) {
 	cl.snapshots[cl.snap.messageNum & PACKET_MASK] = cl.snap;
 
 	if (cl_shownet->integer == 3) {
-		Com_Printf( "   snapshot:%i  delta:%i  ping:%i\n", cl.snap.messageNum,
-		cl.snap.deltaNum, cl.snap.ping );
+		Com_Printf( "   snapshot:%i  delta:%i  ping:%i  interval:%i\n",
+		cl.snap.messageNum, cl.snap.deltaNum, cl.snap.ping, cl.snapInterval );
 	}
 
 	cl.newSnapshots = qtrue;
