@@ -572,7 +572,7 @@ static qboolean isStaticShader( shader_t *shader )
 	world_vbo.fogFPindex = getFPindex( 0, 0, FP_FOG_ONLY );
 
 	CompileVertexProgram( world_vbo.fogVPindex[0], 0, VP_FOG_EYE_IN, 0 );
-	CompileVertexProgram( world_vbo.fogVPindex[0], 0, VP_FOG_EYE_OUT, 0 );
+	CompileVertexProgram( world_vbo.fogVPindex[1], 0, VP_FOG_EYE_OUT, 0 );
 
 	CompileFragmentProgram( world_vbo.fogFPindex, 0 /*mtx*/, 0 /*atest*/, FP_FOG_ONLY );
 
