@@ -88,6 +88,7 @@ cvar_t		*s_khz;
 cvar_t		*s_show;
 static cvar_t *s_mixahead;
 static cvar_t *s_mixOffset;
+static cvar_t *s_oldLocalSoundSpatialization;
 #if defined(__linux__) && !defined(USE_SDL)
 cvar_t		*s_device;
 #endif
@@ -466,7 +467,9 @@ static void S_Base_StartSound( const vec3_t origin, int entityNum, int entchanne
 		return;
 	}
 
-	if ( !origin && ( entityNum < 0 || entityNum >= MAX_GENTITIES ) ) {
+	if ( !origin && ( entityNum < 0 || entityNum >= MAX_GENTITIES ) &&
+		entityNum != ENTITYNUM_LOCALSOUND )
+	{
 		Com_Error( ERR_DROP, "S_StartSound: bad entitynum %i", entityNum );
 	}
 
@@ -513,7 +516,7 @@ static void S_Base_StartSound( const vec3_t origin, int entityNum, int entchanne
 	// pick a channel to play on
 
 	// try to limit sound duplication
-	if ( entityNum == listener_number )
+	if ( entityNum == listener_number || entityNum == ENTITYNUM_LOCALSOUND )
 		allowed = 16;
 	else
 		allowed = 8;
@@ -545,7 +548,7 @@ static void S_Base_StartSound( const vec3_t origin, int entityNum, int entchanne
 		oldest = sfx->lastTimeUsed;
 		chosen = -1;
 		for ( i = 0 ; i < MAX_CHANNELS ; i++, ch++ ) {
-			if (ch->entnum != listener_number && ch->entnum == entityNum && ch->allocTime - oldest < 0 && ch->entchannel != CHAN_ANNOUNCER) {
+			if (ch->entnum != listener_number && ch->entnum != ENTITYNUM_LOCALSOUND && ch->entnum == entityNum && ch->allocTime - oldest < 0 && ch->entchannel != CHAN_ANNOUNCER) {
 				oldest = ch->allocTime;
 				chosen = i;
 			}
@@ -553,14 +556,14 @@ static void S_Base_StartSound( const vec3_t origin, int entityNum, int entchanne
 		if (chosen == -1) {
 			ch = s_channels;
 			for ( i = 0 ; i < MAX_CHANNELS ; i++, ch++ ) {
-				if (ch->entnum != listener_number && ch->allocTime - oldest < 0 && ch->entchannel != CHAN_ANNOUNCER) {
+				if (ch->entnum != listener_number && ch->entnum != ENTITYNUM_LOCALSOUND && ch->allocTime - oldest < 0 && ch->entchannel != CHAN_ANNOUNCER) {
 					oldest = ch->allocTime;
 					chosen = i;
 				}
 			}
 			if (chosen == -1) {
 				ch = s_channels;
-				if (ch->entnum == listener_number) {
+				if (ch->entnum == listener_number || ch->entnum == ENTITYNUM_LOCALSOUND) {
 					for ( i = 0 ; i < MAX_CHANNELS ; i++, ch++ ) {
 						if ( ch->allocTime - oldest < 0 ) {
 							oldest = ch->allocTime;
@@ -612,7 +615,9 @@ static void S_Base_StartLocalSound( sfxHandle_t sfxHandle, int channelNum ) {
 		return;
 	}
 
-	S_Base_StartSound (NULL, listener_number, channelNum, sfxHandle );
+	S_Base_StartSound (NULL,
+		s_oldLocalSoundSpatialization->integer ? listener_number : ENTITYNUM_LOCALSOUND,
+		channelNum, sfxHandle );
 }
 
 
@@ -1055,7 +1060,7 @@ void S_Base_Respatialize( int entityNum, const vec3_t head, vec3_t axis[3], int 
 			continue;
 		}
 		// anything coming from the view entity will always be full volume
-		if (ch->entnum == listener_number) {
+		if (ch->entnum == listener_number || ch->entnum == ENTITYNUM_LOCALSOUND) {
 			ch->leftvol = ch->master_vol;
 			ch->rightvol = ch->master_vol;
 		} else {
@@ -1520,6 +1525,22 @@ qboolean S_Base_Init( soundInterface_t *si ) {
 
 	s_mixOffset = Cvar_Get( "s_mixOffset", "0", CVAR_ARCHIVE_ND | CVAR_DEVELOPER );
 	Cvar_CheckRange( s_mixOffset, "0", "0.5", CV_FLOAT );
+
+	// Example where this matters:
+	// 1. Start a match.
+	// 2. Enter spectator mode, start following someone.
+	// 3. Wait for someone to score, and the announcer to say
+	//    "you have taken / lost the lead"
+	// 4. Before the sound ends, start following another player.
+	s_oldLocalSoundSpatialization = Cvar_Get( "s_oldLocalSoundSpatialization", "0", CVAR_ARCHIVE_ND );
+	Cvar_CheckRange( s_oldLocalSoundSpatialization, "0", "1", CV_INTEGER );
+	Cvar_SetDescription( s_oldLocalSoundSpatialization,
+		"When 0, sounds started with `trap_S_StartLocalSound` "
+		"(such as announcer sounds, hit sounds) "
+		"will keep playing at full volume, with no spatialization, "
+		"even when switching to another entity (e.g. when spectating). "
+		"Set to 1 for vanilla behavior, i.e. such sounds will be emitted "
+		"by the entity which we were following when the sound was started." );
 
 	s_show = Cvar_Get( "s_show", "0", CVAR_CHEAT );
 	Cvar_SetDescription( s_show, "Debugging output (used sound files)." );
