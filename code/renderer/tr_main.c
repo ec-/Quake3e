@@ -650,7 +650,7 @@ static void R_SetupProjectionZ( viewParms_t *dest )
 
 		// Lengyel, Eric. "Modifying the Projection Matrix to Perform Oblique Near-plane Clipping".
 		// Terathon Software 3D Graphics Library, 2004. http://www.terathon.com/code/oblique.html
-		q[0] = (SGN(plane2[0]) + dest->projectionMatrix[8]) / dest->projectionMatrix[0];
+		q[0] = ((r_flip->integer ? -SGN(plane2[0]) : SGN(plane2[0])) + dest->projectionMatrix[8]) / dest->projectionMatrix[0];
 		q[1] = (SGN(plane2[1]) + dest->projectionMatrix[9]) / dest->projectionMatrix[5];
 		q[2] = -1.0f;
 		q[3] = (1.0f + dest->projectionMatrix[10]) / dest->projectionMatrix[14];
