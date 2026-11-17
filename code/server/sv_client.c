@@ -1811,7 +1811,9 @@ void SV_UserinfoChanged( client_t *cl, qboolean updateUserinfo, qboolean runFilt
 
 	// snaps command
 	val = Info_ValueForKey( cl->userinfo, "snaps" );
-	if ( val[0] && !NET_IsLocalAddress( &cl->netchan.remoteAddress ) )
+	if ( val[0] &&
+		!( NET_IsLocalAddress( &cl->netchan.remoteAddress ) &&
+			sv_lanForceRate->integer ) )
 		i = atoi( val );
 	else
 		i = sv_fps->integer; // sync with server
