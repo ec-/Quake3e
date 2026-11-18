@@ -86,6 +86,8 @@ static cvar_t *m_forward;
 static cvar_t *m_side;
 static cvar_t *m_filter;
 
+cvar_t *cl_flip;
+
 static qboolean in_mlooking;
 
 static void IN_CenterView( void ) {
@@ -305,8 +307,8 @@ static void CL_AdjustAngles( void ) {
 	}
 
 	if ( !in_strafe.active ) {
-		cl.viewangles[YAW] -= speed*cl_yawspeed->value*CL_KeyState (&in_right);
-		cl.viewangles[YAW] += speed*cl_yawspeed->value*CL_KeyState (&in_left);
+		float turn = speed*cl_yawspeed->value*( CL_KeyState (&in_left) - CL_KeyState (&in_right) );
+		cl.viewangles[YAW] += cl_flip->integer ? -turn : turn;
 	}
 
 	cl.viewangles[PITCH] -= speed*cl_pitchspeed->value * CL_KeyState (&in_lookup);
@@ -357,6 +359,9 @@ static void CL_KeyMove( usercmd_t *cmd ) {
 	forward -= movespeed * CL_KeyState (&in_back);
 
 	cmd->forwardmove = ClampCharMove( forward );
+	if ( cl_flip->integer )
+		side = -side;
+
 	cmd->rightmove = ClampCharMove( side );
 	cmd->upmove = ClampCharMove( up );
 }
@@ -403,6 +408,7 @@ CL_JoystickMove
 static void CL_JoystickMove( usercmd_t *cmd ) {
 	//int		movespeed;
 	float	anglespeed;
+	int	side;
 
 	if ( in_speed.active ^ cl_run->integer ) {
 		//movespeed = 2;
@@ -417,10 +423,12 @@ static void CL_JoystickMove( usercmd_t *cmd ) {
 		anglespeed = 0.001 * cls.frametime;
 	}
 
+	side = cl_flip->integer ? -cl.joystickAxis[AXIS_SIDE] : cl.joystickAxis[AXIS_SIDE];
+
 	if ( !in_strafe.active ) {
-		cl.viewangles[YAW] += anglespeed * cl_yawspeed->value * cl.joystickAxis[AXIS_SIDE];
+		cl.viewangles[YAW] += anglespeed * cl_yawspeed->value * side;
 	} else {
-		cmd->rightmove = ClampCharMove( cmd->rightmove + cl.joystickAxis[AXIS_SIDE] );
+		cmd->rightmove = ClampCharMove( cmd->rightmove + side );
 	}
 
 	if ( in_mlooking ) {
@@ -515,6 +523,9 @@ static void CL_MouseMove( usercmd_t *cmd )
 	// ingame FOV
 	mx *= cl.cgameSensitivity;
 	my *= cl.cgameSensitivity;
+
+	if ( cl_flip->integer )
+		mx = -mx;
 
 	// add mouse X/Y movement to cmd
 	if ( in_strafe.active )
@@ -1020,6 +1031,8 @@ void CL_InitInput( void ) {
 	m_filter = Cvar_Get( "m_filter", "0", CVAR_ARCHIVE_ND );
 #endif
 	Cvar_SetDescription( m_filter, "Toggle use of mouse 'smoothing'." );
+	cl_flip = Cvar_Get( "cl_flip", "0", CVAR_ARCHIVE_ND );
+	Cvar_SetDescription( cl_flip, "Flip maps and models over the X axis. Requires OpenGL renderer.");
 }
 
 

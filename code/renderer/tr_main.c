@@ -602,6 +602,11 @@ void R_SetupProjection( viewParms_t *dest, float zProj, qboolean computeFrustum 
 	dest->projectionMatrix[11] = -1;
 	dest->projectionMatrix[15] = 0;
 	
+	if ( r_flip->integer ) {
+	       dest->projectionMatrix[0] = -dest->projectionMatrix[0];
+	       dest->projectionMatrix[8] = -dest->projectionMatrix[8];
+	       dest->projectionMatrix[12] = -dest->projectionMatrix[12];
+	}
 	// Now that we have all the data for the projection matrix we can also setup the view frustum.
 	if ( computeFrustum )
 		R_SetupFrustum( dest, xmin, xmax, ymax, zProj, stereoSep );
@@ -645,7 +650,7 @@ static void R_SetupProjectionZ( viewParms_t *dest )
 
 		// Lengyel, Eric. "Modifying the Projection Matrix to Perform Oblique Near-plane Clipping".
 		// Terathon Software 3D Graphics Library, 2004. http://www.terathon.com/code/oblique.html
-		q[0] = (SGN(plane2[0]) + dest->projectionMatrix[8]) / dest->projectionMatrix[0];
+		q[0] = ((r_flip->integer ? -SGN(plane2[0]) : SGN(plane2[0])) + dest->projectionMatrix[8]) / dest->projectionMatrix[0];
 		q[1] = (SGN(plane2[1]) + dest->projectionMatrix[9]) / dest->projectionMatrix[5];
 		q[2] = -1.0f;
 		q[3] = (1.0f + dest->projectionMatrix[10]) / dest->projectionMatrix[14];
