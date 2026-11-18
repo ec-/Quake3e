@@ -1032,7 +1032,7 @@ void CL_InitInput( void ) {
 #endif
 	Cvar_SetDescription( m_filter, "Toggle use of mouse 'smoothing'." );
 	cl_flip = Cvar_Get( "cl_flip", "0", CVAR_ARCHIVE_ND );
-	Cvar_SetDescription( cl_flip, "Flip the game horizontally");
+	Cvar_SetDescription( cl_flip, "Flip maps and models over the X axis. Requires OpenGL renderer.");
 }
 
 
