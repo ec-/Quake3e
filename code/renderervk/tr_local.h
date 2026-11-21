@@ -1900,6 +1900,17 @@ typedef struct {
 	float	s2, t2;
 } stretchPicCommand_t;
 
+typedef struct {
+	int		commandId;
+	float	x, y;
+	float	w, h;
+	float	s1, t1;
+	float	s2, t2;
+	float	radius;
+	float	alpha;
+	image_t	*mask;	// NULL - rectangle
+} blurPicCommand_t;
+
 typedef struct drawSurfsCommand_s {
 	int		commandId;
 	trRefdef_t	refdef;
@@ -1935,7 +1946,8 @@ typedef enum {
 	RC_FINISHBLOOM,
 	RC_COLORMASK,
 	RC_CLEARDEPTH,
-	RC_CLEARCOLOR
+	RC_CLEARCOLOR,
+	RC_BLUR_PIC
 } renderCommand_t;
 
 
@@ -1975,6 +1987,7 @@ void RB_TakeScreenshotBMP( int x, int y, int width, int height, const char *file
 void R_AddDrawSurfCmd( drawSurf_t *drawSurfs, int numDrawSurfs );
 
 void RE_SetColor( const float *rgba );
+void RE_DrawBlurPic( float x, float y, float w, float h, float s1, float t1, float s2, float t2, qhandle_t hShader, float radius, float alpha );
 void RE_StretchPic ( float x, float y, float w, float h, 
 					  float s1, float t1, float s2, float t2, qhandle_t hShader );
 void RE_BeginFrame( stereoFrame_t stereoFrame );

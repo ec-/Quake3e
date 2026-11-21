@@ -289,6 +289,9 @@ void vk_draw_dot( uint32_t storage_offset );
 
 void vk_read_pixels( byte* buffer, uint32_t width, uint32_t height ); // screenshots
 qboolean vk_bloom( void );
+struct image_s;
+void vk_blur_pic( float x, float y, float w, float h, float ms1, float mt1, float ms2, float mt2, const struct image_s *mask, float radius, float alpha );
+void vk_blur_pic_invalidate( void );
 
 qboolean vk_alloc_vbo( const byte *vbo_data, int vbo_size );
 void vk_update_mvp( const float *m );
@@ -395,6 +398,7 @@ typedef struct {
 	VkPipelineLayout pipeline_layout_storage;	// flare test shader layout
 	VkPipelineLayout pipeline_layout_post_process;	// post-processing
 	VkPipelineLayout pipeline_layout_blend;		// post-processing
+	VkPipelineLayout pipeline_layout_blurmask;	// DrawBlurPic composite
 
 	VkDescriptorSet color_descriptor;
 
@@ -501,6 +505,8 @@ typedef struct {
 
 		VkShaderModule bloom_fs;
 		VkShaderModule blur_fs;
+		VkShaderModule blurmask_vs;
+		VkShaderModule blurmask_fs;
 		VkShaderModule blend_fs;
 
 		VkShaderModule gamma_fs;
@@ -572,6 +578,9 @@ typedef struct {
 	VkPipeline bloom_extract_pipeline;
 	VkPipeline blur_pipeline[VK_NUM_BLOOM_PASSES*2]; // horizontal & vertical pairs
 	VkPipeline bloom_blend_pipeline;
+	VkPipeline blurpic_copy_pipeline;
+	VkPipeline blurpic_composite_pipeline; // masked composite (blurmask shaders)
+	int blurpic_cached_level; // -1 = no valid blurred copy of current frame
 
 	uint32_t frame_count;
 	qboolean active;
