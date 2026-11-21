@@ -616,6 +616,20 @@ static const char *dummyVP = {
 };
 
 
+// blurred screen (texture0, sampled by window position), opacity = mask alpha (texture1) * local[0].x
+static const char *blurMaskFP = {
+	"!!ARBfp1.0 \n"
+	"OPTION ARB_precision_hint_fastest; \n"
+	"TEMP b, m, w; \n"
+	"MUL w.xy, fragment.position, program.local[1]; \n"
+	"TEX b, w, texture[0], 2D; \n"
+	"TEX m, fragment.texcoord[0], texture[1], 2D; \n"
+	"MOV result.color.xyz, b; \n"
+	"MUL result.color.w, m.w, program.local[0].x; \n"
+	"END \n"
+};
+
+
 static const char *spriteFP = {
 	"!!ARBfp1.0 \n"
 	"OPTION ARB_precision_hint_fastest; \n"
@@ -1058,6 +1072,9 @@ qboolean ARB_UpdatePrograms( void )
 		return qfalse;
 
 	if ( !ARB_CompileProgram( Fragment, blend2FP, programs[ BLEND2_FRAGMENT ] ) )
+		return qfalse;
+
+	if ( !ARB_CompileProgram( Fragment, blurMaskFP, programs[ BLURMASK_FRAGMENT ] ) )
 		return qfalse;
 
 	if ( !ARB_CompileProgram( Fragment, va( blend2gammaFP, ARB_BuildGreyscaleProgram( buf ) ), programs[ BLEND2_GAMMA_FRAGMENT ] ) )
@@ -1954,6 +1971,162 @@ qboolean FBO_Bloom( const float gamma, const float obScale, qboolean finalStage 
 }
 
 
+#define MAX_BLURPIC_LEVELS 6
+static frameBuffer_t blurPicFB[ MAX_BLURPIC_LEVELS * 2 ];
+static int blurPicLevels;
+
+#ifndef GL_READ_FRAMEBUFFER_BINDING
+#define GL_READ_FRAMEBUFFER_BINDING 0x8CAA
+#endif
+#ifndef GL_DRAW_FRAMEBUFFER_BINDING
+#define GL_DRAW_FRAMEBUFFER_BINDING 0x8CA6
+#endif
+
+static void FBO_CleanBlurPic( void )
+{
+	int i;
+	for ( i = 0; i < ARRAY_LEN( blurPicFB ); i++ )
+		FBO_Clean( &blurPicFB[ i ] );
+	blurPicLevels = 0;
+}
+
+
+static qboolean FBO_CreateBlurPic( void )
+{
+	int width = glConfig.vidWidth;
+	int height = glConfig.vidHeight;
+	int i;
+
+	for ( i = 0; i < MAX_BLURPIC_LEVELS; i++ )
+	{
+		if ( !FBO_Create( &blurPicFB[ i*2 + 0 ], width, height, qfalse, NULL, NULL ) ||
+			!FBO_Create( &blurPicFB[ i*2 + 1 ], width, height, qfalse, NULL, NULL ) ) {
+			FBO_CleanBlurPic();
+			return qfalse;
+		}
+		blurPicLevels = i + 1;
+		width /= 2;
+		height /= 2;
+		if ( width < 8 || height < 8 )
+			break;
+	}
+
+	return qtrue;
+}
+
+
+/*
+=============
+FBO_BlurPic
+
+Draws blurred copy of current render target contents into x,y,w,h (screen pixels, top-left origin)
+=============
+*/
+static int blurPicCachedLevel = -1;
+static int blurPicCachedPasses = -1;
+
+// called when frame contents change in a way that makes cached blur stale (3D scene, new frame)
+void FBO_BlurPicInvalidate( void )
+{
+	blurPicCachedLevel = -1;
+	blurPicCachedPasses = -1;
+}
+
+
+void FBO_BlurPic( float x, float y, float w, float h, float ms1, float mt1, float ms2, float mt2, const image_t *mask, float radius, float alpha )
+{
+	const int vw = glConfig.vidWidth;
+	const int vh = glConfig.vidHeight;
+	const frameBuffer_t *fb;
+	GLint target, readTarget;
+	int level, passes, i;
+
+	if ( !fboEnabled || !qglActiveTextureARB || !programCompiled )
+		return;
+
+	if ( !blurPicLevels )
+	{
+		if ( !FBO_CreateBlurPic() )
+		{
+			ri.Printf( PRINT_WARNING, "...error creating framebuffers for blur\n" );
+			return;
+		}
+	}
+
+	target = 0;
+	readTarget = 0;
+	qglGetIntegerv( GL_DRAW_FRAMEBUFFER_BINDING, &target );
+	qglGetIntegerv( GL_READ_FRAMEBUFFER_BINDING, &readTarget );
+	if ( target == 0 )
+		return; // rendering directly to back buffer
+
+	// choose downscale level: each level doubles effective blur radius (~3px at level 0)
+	level = 0;
+	while ( level < blurPicLevels - 1 && radius > 3.0f * (float)( 2 << level ) )
+		level++;
+	passes = ( radius > 3.0f * (float)( 1 << level ) * 1.5f ) ? 2 : 1;
+
+	fb = &blurPicFB[ level*2 ];
+
+	if ( level != blurPicCachedLevel || passes != blurPicCachedPasses )
+	{
+		// copy current render target into level 0 (resolves MSAA too)
+		FBO_Bind( GL_READ_FRAMEBUFFER, (GLuint)target );
+		FBO_Bind( GL_DRAW_FRAMEBUFFER, blurPicFB[ 0 ].fbo );
+		qglBlitFramebuffer( 0, 0, vw, vh, 0, 0, vw, vh, GL_COLOR_BUFFER_BIT, GL_NEAREST );
+
+		// downscale chain
+		for ( i = 1; i <= level; i++ )
+		{
+			const frameBuffer_t *src = &blurPicFB[ (i-1)*2 ];
+			const frameBuffer_t *dst = &blurPicFB[ i*2 ];
+			FBO_Bind( GL_READ_FRAMEBUFFER, src->fbo );
+			FBO_Bind( GL_DRAW_FRAMEBUFFER, dst->fbo );
+			qglBlitFramebuffer( 0, 0, src->width, src->height, 0, 0, dst->width, dst->height, GL_COLOR_BUFFER_BIT, GL_LINEAR );
+		}
+
+		GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
+		qglColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
+		for ( i = 0; i < passes; i++ )
+			FBO_Blur2( fb, fb+1, fb );
+		ARB_ProgramDisable();
+
+		blurPicCachedLevel = level;
+		blurPicCachedPasses = passes;
+	}
+
+	// composite back into original render target, weighted by mask
+	FBO_Bind( GL_DRAW_FRAMEBUFFER, (GLuint)target );
+	qglViewport( 0, 0, vw, vh );
+	qglScissor( 0, 0, vw, vh );
+
+	GL_BindTexture( 1, mask ? mask->texnum : tr.whiteImage->texnum );
+	GL_BindTexture( 0, fb->color );
+	GL_State( GLS_DEPTHTEST_DISABLE | GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA );
+	qglColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
+	ARB_ProgramEnable( DUMMY_VERTEX, BLURMASK_FRAGMENT );
+	qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 0, alpha, 0.0f, 0.0f, 0.0f );
+	qglProgramLocalParameter4fARB( GL_FRAGMENT_PROGRAM_ARB, 1, 1.0f / vw, 1.0f / vh, 0.0f, 0.0f );
+	{
+		vec3_t v[4];
+		vec2_t t[4];
+		VectorSet( v[0], x, y, 0 );         t[0][0] = ms1; t[0][1] = mt1;
+		VectorSet( v[1], x + w, y, 0 );     t[1][0] = ms2; t[1][1] = mt1;
+		VectorSet( v[2], x, y + h, 0 );     t[2][0] = ms1; t[2][1] = mt2;
+		VectorSet( v[3], x + w, y + h, 0 ); t[3][0] = ms2; t[3][1] = mt2;
+		GL_ClientState( 0, CLS_TEXCOORD_ARRAY );
+		qglVertexPointer( 3, GL_FLOAT, 0, v );
+		qglTexCoordPointer( 2, GL_FLOAT, 0, t );
+		qglDrawArrays( GL_TRIANGLE_STRIP, 0, 4 );
+	}
+	ARB_ProgramDisable();
+	GL_BindTexture( 1, 0 );
+	GL_SelectTexture( 0 );
+
+	FBO_Bind( GL_READ_FRAMEBUFFER, (GLuint)readTarget );
+}
+
+
 void R_BloomScreen( void )
 {
 	if ( r_bloom->integer == 1 && fboEnabled && qglActiveTextureARB )
@@ -2114,6 +2287,7 @@ void QGL_DoneFBO( void )
 		FBO_Clean(&frameBuffers[3]);
 		FBO_Clean(&frameBuffers[4]);
 		FBO_CleanBloom();
+		FBO_CleanBlurPic();
 		FBO_CleanDepth();
 		fboEnabled = qfalse;
 		fboBloomInited = qfalse;

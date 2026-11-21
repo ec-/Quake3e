@@ -121,6 +121,11 @@ typedef struct {
 	void	(*VertexLighting)( qboolean allowed );
 	void	(*SyncRender)( void );
 
+	// blur already rendered frame inside x,y,w,h (screen pixels), radius in pixels, alpha 0..1;
+	// optional hShader alpha channel (s/t like DrawStretchPic) masks the shape, 0 = rectangle;
+	// does nothing without framebuffer objects
+	void	(*DrawBlurPic)( float x, float y, float w, float h, float s1, float t1, float s2, float t2, qhandle_t hShader, float radius, float alpha );
+
 
 } refexport_t;
 

@@ -2535,6 +2535,12 @@ static void FixRenderCommandList( int newShader ) {
 				curCmd = (const void *)(cc_cmd + 1);
 				break;
 				}
+			case RC_BLUR_PIC:
+				{
+				const blurPicCommand_t *bp_cmd = (const blurPicCommand_t *)curCmd;
+				curCmd = (const void *)(bp_cmd + 1);
+				break;
+				}
 			case RC_END_OF_LIST:
 			default:
 				return;
