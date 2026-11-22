@@ -308,7 +308,7 @@ static void CL_AdjustAngles( void ) {
 
 	if ( !in_strafe.active ) {
 		float turn = speed*cl_yawspeed->value*( CL_KeyState (&in_left) - CL_KeyState (&in_right) );
-		cl.viewangles[YAW] += cl_flip->integer ? -turn : turn;
+		cl.viewangles[YAW] += ( re.CanFlip && cl_flip->integer ) ? -turn : turn;
 	}
 
 	cl.viewangles[PITCH] -= speed*cl_pitchspeed->value * CL_KeyState (&in_lookup);
@@ -359,7 +359,7 @@ static void CL_KeyMove( usercmd_t *cmd ) {
 	forward -= movespeed * CL_KeyState (&in_back);
 
 	cmd->forwardmove = ClampCharMove( forward );
-	if ( cl_flip->integer )
+	if ( re.CanFlip && cl_flip->integer )
 		side = -side;
 
 	cmd->rightmove = ClampCharMove( side );
@@ -423,7 +423,7 @@ static void CL_JoystickMove( usercmd_t *cmd ) {
 		anglespeed = 0.001 * cls.frametime;
 	}
 
-	side = cl_flip->integer ? -cl.joystickAxis[AXIS_SIDE] : cl.joystickAxis[AXIS_SIDE];
+	side = ( re.CanFlip && cl_flip->integer ) ? -cl.joystickAxis[AXIS_SIDE] : cl.joystickAxis[AXIS_SIDE];
 
 	if ( !in_strafe.active ) {
 		cl.viewangles[YAW] += anglespeed * cl_yawspeed->value * side;
@@ -524,7 +524,7 @@ static void CL_MouseMove( usercmd_t *cmd )
 	mx *= cl.cgameSensitivity;
 	my *= cl.cgameSensitivity;
 
-	if ( cl_flip->integer )
+	if ( re.CanFlip && cl_flip->integer )
 		mx = -mx;
 
 	// add mouse X/Y movement to cmd
