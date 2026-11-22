@@ -49,6 +49,7 @@ cvar_t	*r_railSegmentLength;
 
 cvar_t	*r_detailTextures;
 
+cvar_t	*r_flip;
 cvar_t	*r_znear;
 cvar_t	*r_zproj;
 cvar_t	*r_stereoSeparation;
@@ -1560,6 +1561,7 @@ static void R_Register( void )
 	ri.Cvar_SetDescription( r_lodCurveError, "Level of detail error on curved surface grids. Higher values result in better quality at a distance." );
 	r_lodbias = ri.Cvar_Get( "r_lodbias", "-2", CVAR_ARCHIVE_ND );
 	ri.Cvar_SetDescription( r_lodbias, "Sets the level of detail of in-game models:\n -2: Ultra (further delays LOD transition in the distance)\n -1: Very High (delays LOD transition in the distance)\n 0: High\n 1: Medium\n 2: Low" );
+	r_flip = ri.Cvar_Get( "cl_flip", "0", CVAR_ARCHIVE_ND );
 	r_znear = ri.Cvar_Get( "r_znear", "4", CVAR_CHEAT );
 	ri.Cvar_CheckRange( r_znear, "0.001", "200", CV_FLOAT );
 	ri.Cvar_SetDescription( r_znear, "Viewport distance from view origin (how close objects can be to the player before they're clipped out of the scene)." );
@@ -1982,6 +1984,18 @@ static void RE_EndRegistration( void ) {
 
 
 /*
+=============
+RE_CanFlip
+
+We can flip this renderer along the X axis
+=============
+*/
+static qboolean RE_CanFlip( void ) {
+    return qtrue;
+}
+
+
+/*
 @@@@@@@@@@@@@@@@@@@@@
 GetRefAPI
 @@@@@@@@@@@@@@@@@@@@@
@@ -2053,6 +2067,7 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 	re.GetConfig = RE_GetConfig;
 	re.VertexLighting = RE_VertexLighting;
 	re.SyncRender = RE_SyncRender;
+	re.CanFlip = RE_CanFlip;
 
 	return &re;
 }

@@ -56,6 +56,7 @@ It is based on ioquake3-r1160 (latest non-SDL revision) with upstream patches an
 <li>negative <b>\r_overBrightBits</b> - force hardware gamma in windowed mode <i>(not actual with <b><a href="#r_fbo">\r_fbo 1</a></b>)</i></li>
 <li><a href="#video-pipe"><b>\video-pipe</b></a>&nbsp;<font color=silver>&lt;filename&gt;</font> - redirect captured video to ffmpeg input pipe and save encoded file as &lt;filename&gt;</li>
 <li><a href="#arr"><b>\r_renderWidth</b> &amp; <b>\r_renderHeight</b></a> - arbitrary resolution rendering, requires <b><a href="#r_fbo">\r_fbo 1</a></b></li>
+<li><b>\cl_flip</b> <font color=silver><b>0</b>|1</font> - flips left and right for all objects including maps and models. Requires the OpenGL backend.</li>
 <li><b>\cl_conColor [RRR GGG BBB AAA]</b> - custom console color, <u>non-archived, use <b>\seta</b> command to set archive flag and store in config</u></li>
 <li><b>\cl_autoNudge</b> <font color=silver>[<b>0</b>..1]</font> - automatic time nudge that uses your average ping as the time nudge, values:<br>
 &nbsp;&nbsp; 0 - use fixed <b>\cl_timeNudge</b><br>

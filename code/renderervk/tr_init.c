@@ -2026,6 +2026,18 @@ static void RE_EndRegistration( void ) {
 #endif
 }
 
+/*
+=============
+RE_CanFlip
+
+We can not yet flip this renderer along the X axis
+=============
+*/
+static qboolean RE_CanFlip( void ) {
+    return qfalse;
+}
+
+
 
 /*
 @@@@@@@@@@@@@@@@@@@@@
@@ -2099,6 +2111,7 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 	re.GetConfig = RE_GetConfig;
 	re.VertexLighting = RE_VertexLighting;
 	re.SyncRender = RE_SyncRender;
+	re.CanFlip = RE_CanFlip;
 
 	return &re;
 }
