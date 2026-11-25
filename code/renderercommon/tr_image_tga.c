@@ -287,28 +287,20 @@ void R_LoadTGA ( const char *name, byte **pic, int *width, int *height)
 		}
 	}
 
-#if 0
-  // TTimo: this is the chunk of code to ensure a behavior that meets TGA specs
-  // bit 5 set => top-down
-  if (targa_header.attributes & 0x20) {
-    unsigned char *flip = (unsigned char*)malloc (columns*4);
-    unsigned char *src, *dst;
-
-    for (row = 0; row < rows/2; row++) {
-      src = targa_rgba + row * 4 * columns;
-      dst = targa_rgba + (rows - row - 1) * 4 * columns;
-
-      memcpy (flip, src, columns*4);
-      memcpy (src, dst, columns*4);
-      memcpy (dst, flip, columns*4);
-    }
-    free (flip);
-  }
-#endif
-  // instead we just print a warning
-  if (targa_header.attributes & 0x20) {
-    ri.Printf( PRINT_WARNING, "WARNING: '%s' TGA file header declares top-down image, ignoring\n", name);
-  }
+	// The decoder writes the first input row at the bottom.
+	// Reverse the rows for a top-origin image.
+	if ( targa_header.attributes & 0x20 ) {
+		const unsigned rowBytes = columns * 4;
+		byte *scratch = ri.Malloc( rowBytes );
+		for ( row = 0; row < (int)rows / 2; row++ ) {
+			byte *top = targa_rgba + row * rowBytes;
+			byte *bottom = targa_rgba + ( rows - row - 1 ) * rowBytes;
+			memcpy( scratch, top, rowBytes );
+			memcpy( top, bottom, rowBytes );
+			memcpy( bottom, scratch, rowBytes );
+		}
+		ri.Free( scratch );
+	}
 
   if (width)
 	  *width = columns;
