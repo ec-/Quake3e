@@ -575,6 +575,7 @@ typedef struct {
 
 	uint32_t frame_count;
 	qboolean active;
+	qboolean fillModeNonSolid;
 	qboolean wideLines;
 	qboolean samplerAnisotropy;
 	qboolean fragmentStores;

@@ -113,6 +113,9 @@ static void DrawTris( const shaderCommands_t *input ) {
 #ifdef USE_VULKAN
 	uint32_t pipeline;
 
+	if ( !vk.fillModeNonSolid )
+		return;
+
 	if ( r_showtris->integer == 1 && backEnd.drawConsole )
 		return;
 

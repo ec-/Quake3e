@@ -1764,11 +1764,6 @@ static qboolean vk_create_device( VkPhysicalDevice physical_device, int device_i
 #endif // _DEBUG
 		qvkGetPhysicalDeviceFeatures( physical_device, &device_features );
 
-		if ( device_features.fillModeNonSolid == VK_FALSE ) {
-			ri.Printf( PRINT_ERROR, "...fillModeNonSolid feature is not supported\n" );
-			return qfalse;
-		}
-
 		queue_desc.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		queue_desc.pNext = NULL;
 		queue_desc.flags = 0;
@@ -1777,7 +1772,11 @@ static qboolean vk_create_device( VkPhysicalDevice physical_device, int device_i
 		queue_desc.pQueuePriorities = &priority;
 
 		Com_Memset( &features, 0, sizeof( features ) );
-		features.fillModeNonSolid = VK_TRUE;
+		features.fillModeNonSolid = device_features.fillModeNonSolid;
+		vk.fillModeNonSolid = device_features.fillModeNonSolid != VK_FALSE;
+		if ( !vk.fillModeNonSolid ) {
+			ri.Printf( PRINT_ALL, "...triangle wireframe debug rendering disabled\n" );
+		}
 
 #ifdef _DEBUG
 		if ( device_features.shaderInt64 ) {
@@ -3116,48 +3115,50 @@ static void vk_alloc_persistent_pipelines( void )
 	}
 
 	// DrawTris()
-	state_bits = GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE;
-	{
-		Com_Memset(&def, 0, sizeof(def));
-		def.state_bits = state_bits;
-		def.shader_type = TYPE_COLOR_WHITE;
-		def.face_culling = CT_FRONT_SIDED;
-		vk.tris_debug_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
-	}
-	{
-		Com_Memset(&def, 0, sizeof(def));
-		def.state_bits = state_bits;
-		def.shader_type = TYPE_COLOR_WHITE;
-		def.face_culling = CT_BACK_SIDED;
-		vk.tris_mirror_debug_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
-	}
-	{
-		Com_Memset(&def, 0, sizeof(def));
-		def.state_bits = state_bits;
-		def.shader_type = TYPE_COLOR_GREEN;
-		def.face_culling = CT_FRONT_SIDED;
-		vk.tris_debug_green_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
-	}
-	{
-		Com_Memset(&def, 0, sizeof(def));
-		def.state_bits = state_bits;
-		def.shader_type = TYPE_COLOR_GREEN;
-		def.face_culling = CT_BACK_SIDED;
-		vk.tris_mirror_debug_green_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
-	}
-	{
-		Com_Memset(&def, 0, sizeof(def));
-		def.state_bits = state_bits;
-		def.shader_type = TYPE_COLOR_RED;
-		def.face_culling = CT_FRONT_SIDED;
-		vk.tris_debug_red_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
-	}
-	{
-		Com_Memset(&def, 0, sizeof(def));
-		def.state_bits = state_bits;
-		def.shader_type = TYPE_COLOR_RED;
-		def.face_culling = CT_BACK_SIDED;
-		vk.tris_mirror_debug_red_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
+	if ( vk.fillModeNonSolid ) {
+		state_bits = GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE;
+		{
+			Com_Memset(&def, 0, sizeof(def));
+			def.state_bits = state_bits;
+			def.shader_type = TYPE_COLOR_WHITE;
+			def.face_culling = CT_FRONT_SIDED;
+			vk.tris_debug_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
+		}
+		{
+			Com_Memset(&def, 0, sizeof(def));
+			def.state_bits = state_bits;
+			def.shader_type = TYPE_COLOR_WHITE;
+			def.face_culling = CT_BACK_SIDED;
+			vk.tris_mirror_debug_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
+		}
+		{
+			Com_Memset(&def, 0, sizeof(def));
+			def.state_bits = state_bits;
+			def.shader_type = TYPE_COLOR_GREEN;
+			def.face_culling = CT_FRONT_SIDED;
+			vk.tris_debug_green_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
+		}
+		{
+			Com_Memset(&def, 0, sizeof(def));
+			def.state_bits = state_bits;
+			def.shader_type = TYPE_COLOR_GREEN;
+			def.face_culling = CT_BACK_SIDED;
+			vk.tris_mirror_debug_green_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
+		}
+		{
+			Com_Memset(&def, 0, sizeof(def));
+			def.state_bits = state_bits;
+			def.shader_type = TYPE_COLOR_RED;
+			def.face_culling = CT_FRONT_SIDED;
+			vk.tris_debug_red_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
+		}
+		{
+			Com_Memset(&def, 0, sizeof(def));
+			def.state_bits = state_bits;
+			def.shader_type = TYPE_COLOR_RED;
+			def.face_culling = CT_BACK_SIDED;
+			vk.tris_mirror_debug_red_pipeline = vk_find_pipeline_ext( 0, &def, qfalse );
+		}
 	}
 
 	// DrawNormals()
@@ -6335,7 +6336,10 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, renderPass_t renderPassI
 	rasterization_state.flags = 0;
 	rasterization_state.depthClampEnable = VK_FALSE;
 	rasterization_state.rasterizerDiscardEnable = VK_FALSE;
-	if ( def->shader_type == TYPE_DOT ) {
+	if ( !vk.fillModeNonSolid ) {
+		// Point and line lists use their primitive topology.
+		rasterization_state.polygonMode = VK_POLYGON_MODE_FILL;
+	} else if ( def->shader_type == TYPE_DOT ) {
 		rasterization_state.polygonMode = VK_POLYGON_MODE_POINT;
 	} else {
 		rasterization_state.polygonMode = (state_bits & GLS_POLYMODE_LINE) ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL;
