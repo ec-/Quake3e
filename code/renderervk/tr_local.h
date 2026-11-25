@@ -391,6 +391,8 @@ typedef struct {
 #ifdef USE_VULKAN
 	uint32_t		tessFlags;
 	uint32_t		numTexBundles;
+	image_t			*normalImage;
+	qboolean		heightMap;
 
 	uint32_t		vk_pipeline[2]; // normal,fogged
 	uint32_t		vk_mirror_pipeline[2];
@@ -1326,6 +1328,9 @@ extern cvar_t	*r_dlightIntensity;		// 0.1 - 1.0
 #endif
 extern cvar_t	*r_dlightSaturation;	// 0.0 - 1.0
 #ifdef USE_VULKAN
+extern cvar_t	*r_vkNormalMapping;
+extern cvar_t	*r_vkParallaxMapping;
+extern cvar_t	*r_vkBaseParallax;
 extern cvar_t	*r_device;
 #ifdef USE_VBO
 extern cvar_t	*r_vbo;

@@ -79,6 +79,9 @@ cvar_t	*r_dlightIntensity;
 #endif
 cvar_t	*r_dlightSaturation;
 #ifdef USE_VULKAN
+cvar_t	*r_vkNormalMapping;
+cvar_t	*r_vkParallaxMapping;
+cvar_t	*r_vkBaseParallax;
 cvar_t	*r_device;
 #ifdef USE_VBO
 cvar_t	*r_vbo;
@@ -1604,6 +1607,16 @@ static void R_Register( void )
 	ri.Cvar_CheckRange( r_dlightIntensity, "0.1", "1", CV_FLOAT );
 	ri.Cvar_SetDescription( r_dlightIntensity, "Adjusts dynamic light intensity but not radius." );
 #endif // USE_PMLIGHT
+
+#ifdef USE_VULKAN
+	r_vkNormalMapping = ri.Cvar_Get( "r_vkNormalMapping", "0", CVAR_ARCHIVE | CVAR_LATCH );
+	ri.Cvar_SetDescription( r_vkNormalMapping, "Use normal maps on supported Vulkan materials. Restart the renderer to apply this setting." );
+	r_vkParallaxMapping = ri.Cvar_Get( "r_vkParallaxMapping", "0", CVAR_ARCHIVE );
+	ri.Cvar_SetDescription( r_vkParallaxMapping, "Use the alpha channel of _nh normal maps to offset texture coordinates." );
+	r_vkBaseParallax = ri.Cvar_Get( "r_vkBaseParallax", "0.035", CVAR_ARCHIVE );
+	ri.Cvar_CheckRange( r_vkBaseParallax, "0", "0.08", CV_FLOAT );
+	ri.Cvar_SetDescription( r_vkBaseParallax, "Scale the texture coordinate offset for parallax mapping." );
+#endif
 
 	r_dlightSaturation = ri.Cvar_Get( "r_dlightSaturation", "1", CVAR_ARCHIVE_ND );
 	ri.Cvar_CheckRange( r_dlightSaturation, "0", "1", CV_FLOAT );

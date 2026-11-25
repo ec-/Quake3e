@@ -8,7 +8,7 @@
 #define USE_CL1
 #endif
 
-#if defined (USE_FOG) || defined (USE_ENT_COLOR)
+#if defined (USE_FOG) || defined (USE_ENT_COLOR) || defined(USE_MATERIAL)
 layout(set = 0, binding = 0) uniform UBO {
 	// light/env parameters:
 	vec4 eyePos;				// vertex
@@ -116,12 +116,72 @@ float CorrectAlpha(float threshold, float alpha, vec2 tc)
 #endif
 #endif
 
+#ifdef USE_MATERIAL
+layout(set = 3, binding = 0) uniform sampler2D normal_texture;
+layout(location = 7) in vec3 material_position;
+layout(location = 8) in vec3 material_normal;
+
+// Derive an orthonormal frame from object position and diffuse UVs. This
+// works on animated models and the existing static world VBOs.
+bool MaterialFrame(vec3 p, vec3 n, vec2 ds, vec2 dt, out mat3 frame)
+{
+	vec3 dx = dFdx(p);
+	vec3 dy = dFdy(p);
+	float det = ds.x * dt.y - ds.y * dt.x;
+	vec3 t = (dx * dt.y - dy * ds.y) * sign(det);
+	vec3 b = (dy * ds.x - dx * dt.x) * sign(det);
+	t -= n * dot(n, t);
+	float len2 = dot(t, t);
+	if (abs(det) < 1e-12 || len2 < 1e-12)
+		return false;
+	t *= inversesqrt(len2);
+	b = cross(n, t) * sign(dot(cross(n, t), b));
+	frame = mat3(t, b, n);
+	return true;
+}
+
+vec4 MaterialColor(vec2 uv)
+{
+	vec2 ds = dFdx(uv);
+	vec2 dt = dFdy(uv);
+	float len2 = dot(material_normal, material_normal);
+	mat3 frame;
+	float relief = 1.0;
+	if (lightVector.w <= 0.0 || len2 < 1e-12)
+		return textureGrad(texture0, uv, ds, dt);
+	vec3 n = material_normal * inversesqrt(len2);
+	if (MaterialFrame(material_position, n, ds, dt, frame)) {
+		if (eyePos.w > 0.0) {
+			vec3 view = transpose(frame) * normalize(eyePos.xyz - material_position);
+			float depth = 1.0 - textureGrad(normal_texture, uv, ds, dt).a;
+			vec2 shift = view.xy * (eyePos.w / max(abs(view.z), 0.42));
+			uv -= depth * shift;
+		}
+		vec3 mapped = textureGrad(normal_texture, uv, ds, dt).rgb * 2.0 - 1.0;
+		float mappedLen2 = dot(mapped, mapped);
+		if (mappedLen2 > 1e-12) {
+			mapped *= inversesqrt(mappedLen2);
+			vec3 light = lightVector.xyz;
+			// Apply the normal map to the directional component of the lighting.
+			float original = 0.72 + 0.28 * max(dot(n, light), 0.0);
+			float detail = 0.72 + 0.28 * max(dot(frame * mapped, light), 0.0);
+			relief = detail / original;
+		}
+	}
+	vec4 diffuse = textureGrad(texture0, uv, ds, dt);
+	diffuse.rgb *= relief;
+	return diffuse;
+}
+#endif
+
 void main() {
 #ifdef USE_FOG
 	vec4 fog = texture(fog_texture, fog_tex_coord);
 #endif
 
-#if defined (USE_CLX_IDENT)
+#if defined(USE_MATERIAL)
+	vec4 color0 = MaterialColor(frag_tex_coord0) * frag_color0;
+#elif defined (USE_CLX_IDENT)
 	vec4 color0 = texture(texture0, frag_tex_coord0);
 #elif defined (USE_FIXED_COLOR)
 	const vec4 frag_color = vec4(identity_color, identity_color,identity_color, identity_alpha);

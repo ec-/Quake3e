@@ -130,6 +130,10 @@ typedef enum {
 	TYPE_BLEND3_DST_COLOR_SRC_ALPHA,
 	TYPE_BLEND3_DST_COLOR_SRC_ALPHA_ENV,
 
+	// These use a spare sampler set in one- and two-texture pipelines.
+	TYPE_MATERIAL_MODEL,
+	TYPE_MATERIAL_LIGHTMAP,
+
 	TYPE_GENERIC_END = TYPE_BLEND3_MIX_ONE_MINUS_ALPHA_ENV
 
 } Vk_Shader_Type;
@@ -495,6 +499,9 @@ typedef struct {
 			VkShaderModule ent[1][2];    // tx[0], fog[0,1]
 			VkShaderModule light[2][2];  // linear[0,1] fog[0,1]
 		} frag;
+
+		VkShaderModule material_vs[2][2]; // model/lightmap, fog
+		VkShaderModule material_fs[2][2];
 
 		VkShaderModule color_fs;
 		VkShaderModule color_vs;

@@ -2758,6 +2758,22 @@ qboolean vk_alloc_vbo( const byte *vbo_data, int vbo_size )
 #include "shaders/spirv/shader_data.c"
 #define SHADER_MODULE(name) SHADER_MODULE(name,sizeof(name))
 
+static void vk_create_material_shader_modules( void )
+{
+	if ( vk.modules.material_vs[0][0] != VK_NULL_HANDLE )
+		return;
+
+	vk.modules.material_vs[0][0] = SHADER_MODULE( vert_material_model );
+	vk.modules.material_vs[0][1] = SHADER_MODULE( vert_material_model_fog );
+	vk.modules.material_vs[1][0] = SHADER_MODULE( vert_material_world );
+	vk.modules.material_vs[1][1] = SHADER_MODULE( vert_material_world_fog );
+	vk.modules.material_fs[0][0] = SHADER_MODULE( frag_material_model );
+	vk.modules.material_fs[0][1] = SHADER_MODULE( frag_material_model_fog );
+	vk.modules.material_fs[1][0] = SHADER_MODULE( frag_material_world );
+	vk.modules.material_fs[1][1] = SHADER_MODULE( frag_material_world_fog );
+}
+
+
 static void vk_create_shader_modules( void )
 {
 	int i, j, k, l;
@@ -4647,6 +4663,15 @@ void vk_shutdown( refShutdownCode_t code )
 		}
 	}
 
+	if ( vk.modules.material_vs[0][0] != VK_NULL_HANDLE ) {
+		for ( i = 0; i < 2; i++ ) {
+			for ( j = 0; j < 2; j++ ) {
+				qvkDestroyShaderModule( vk.device, vk.modules.material_vs[i][j], NULL );
+				qvkDestroyShaderModule( vk.device, vk.modules.material_fs[i][j], NULL );
+			}
+		}
+	}
+
 	qvkDestroyShaderModule( vk.device, vk.modules.frag.gen0_df, NULL );
 
 	qvkDestroyShaderModule( vk.device, vk.modules.color_fs, NULL );
@@ -5641,6 +5666,15 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, renderPass_t renderPassI
 
 	switch ( def->shader_type ) {
 
+		case TYPE_MATERIAL_MODEL:
+		case TYPE_MATERIAL_LIGHTMAP: {
+			const int lightmap = (def->shader_type == TYPE_MATERIAL_LIGHTMAP);
+			vk_create_material_shader_modules();
+			vs_module = &vk.modules.material_vs[lightmap][0];
+			fs_module = &vk.modules.material_fs[lightmap][0];
+			break;
+		}
+
 		case TYPE_SIGNLE_TEXTURE_LIGHTING:
 			vs_module = &vk.modules.vert.light[0];
 			fs_module = &vk.modules.frag.light[0][0];
@@ -6052,6 +6086,24 @@ VkPipeline create_pipeline( const Vk_Pipeline_Def *def, renderPass_t renderPassI
 	//
 	num_binds = num_attrs = 0;
 	switch ( def->shader_type ) {
+
+		case TYPE_MATERIAL_MODEL:
+		case TYPE_MATERIAL_LIGHTMAP:
+			push_bind( 0, sizeof( vec4_t ) );
+			push_bind( 1, sizeof( color4ub_t ) );
+			push_bind( 2, sizeof( vec2_t ) );
+			if ( def->shader_type == TYPE_MATERIAL_LIGHTMAP ) {
+				push_bind( 3, sizeof( vec2_t ) );
+			}
+			push_bind( 5, sizeof( vec4_t ) );
+			push_attr( 0, 0, VK_FORMAT_R32G32B32A32_SFLOAT );
+			push_attr( 1, 1, VK_FORMAT_R8G8B8A8_UNORM );
+			push_attr( 2, 2, VK_FORMAT_R32G32_SFLOAT );
+			if ( def->shader_type == TYPE_MATERIAL_LIGHTMAP ) {
+				push_attr( 3, 3, VK_FORMAT_R32G32_SFLOAT );
+			}
+			push_attr( 5, 5, VK_FORMAT_R32G32B32A32_SFLOAT );
+			break;
 
 		case TYPE_FOG_ONLY:
 		case TYPE_DOT:

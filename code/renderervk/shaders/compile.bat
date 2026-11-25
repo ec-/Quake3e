@@ -267,4 +267,28 @@ for %%f in (*.frag) do (
 "%cl%" -S frag -V -o "%tmpf%" gen_frag.tmpl -DUSE_CL2 -DUSE_TX2 -DUSE_FOG
 "%bh%" "%tmpf%" %outf% frag_tx2_cl_fog
 
+@rem compile material shader variations from the generic templates
+
+for %%s in (vert frag) do (
+    "%cl%" -S %%s -V -Os -o "%tmpf%" gen_%%s.tmpl -DUSE_MATERIAL
+    if errorlevel 1 exit /b 1
+    "%bh%" "%tmpf%" %outf% %%s_material_model
+    if errorlevel 1 exit /b 1
+
+    "%cl%" -S %%s -V -Os -o "%tmpf%" gen_%%s.tmpl -DUSE_MATERIAL -DUSE_FOG
+    if errorlevel 1 exit /b 1
+    "%bh%" "%tmpf%" %outf% %%s_material_model_fog
+    if errorlevel 1 exit /b 1
+
+    "%cl%" -S %%s -V -Os -o "%tmpf%" gen_%%s.tmpl -DUSE_MATERIAL -DUSE_TX1
+    if errorlevel 1 exit /b 1
+    "%bh%" "%tmpf%" %outf% %%s_material_world
+    if errorlevel 1 exit /b 1
+
+    "%cl%" -S %%s -V -Os -o "%tmpf%" gen_%%s.tmpl -DUSE_MATERIAL -DUSE_TX1 -DUSE_FOG
+    if errorlevel 1 exit /b 1
+    "%bh%" "%tmpf%" %outf% %%s_material_world_fog
+    if errorlevel 1 exit /b 1
+)
+
 del /Q "%tmpf%"
