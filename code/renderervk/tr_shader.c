@@ -3588,6 +3588,43 @@ static shader_t *FinishShader( void ) {
 				}
 			}
 
+			// A material is a data sibling of the diffuse image. Only opaque,
+			// single-pass lightmapped or diffuse-lit shaders can consume it.
+			if ( r_vkNormalMapping->integer && stage == 1 &&
+				!shader.isSky && !shader.polygonOffset && !shader.numDeforms &&
+				!pStage->depthFragment && !( pStage->stateBits & (GLS_BLEND_BITS | GLS_ATEST_BITS) ) &&
+				(pStage->stateBits & GLS_DEPTHMASK_TRUE) &&
+				pStage->bundle[0].tcGen == TCGEN_TEXTURE && !pStage->bundle[0].numTexMods &&
+				pStage->bundle[0].numImageAnimations <= 1 && !pStage->bundle[0].isVideoMap &&
+				pStage->bundle[0].image[0] &&
+				((pStage->numTexBundles == 2 && pStage->mtEnv == GL_MODULATE &&
+					pStage->bundle[1].lightmap >= 0 && pStage->bundle[1].tcGen == TCGEN_LIGHTMAP) ||
+				 (pStage->numTexBundles == 1 && pStage->bundle[0].rgbGen == CGEN_LIGHTING_DIFFUSE)) ) {
+				const image_t *diffuse = pStage->bundle[0].image[0];
+				if ( !Q_stricmpn( diffuse->imgName, "textures/", 9 ) ||
+					 !Q_stricmpn( diffuse->imgName, "models/", 7 ) ) {
+					char base[MAX_QPATH], path[MAX_QPATH];
+					imgFlags_t flags = (diffuse->flags & (IMGFLAG_MIPMAP | IMGFLAG_CLAMPTOEDGE)) |
+						IMGFLAG_NOLIGHTSCALE | IMGFLAG_NO_COMPRESSION | IMGFLAG_NORMALMAP;
+					COM_StripExtension( diffuse->imgName, base, sizeof( base ) );
+					if ( strlen( base ) + sizeof( "_nh" ) <= sizeof( path ) ) {
+						Com_sprintf( path, sizeof( path ), "%s_nh", base );
+						pStage->normalImage = R_FindImageFile( path, flags );
+						pStage->heightMap = pStage->normalImage != NULL;
+						if ( !pStage->normalImage ) {
+							Com_sprintf( path, sizeof( path ), "%s_n", base );
+							pStage->normalImage = R_FindImageFile( path, flags );
+						}
+					}
+				}
+				if ( pStage->normalImage ) {
+					qboolean lightmap = pStage->numTexBundles == 2;
+					def.shader_type = lightmap ? TYPE_MATERIAL_LIGHTMAP : TYPE_MATERIAL_MODEL;
+					pStage->tessFlags = TESS_RGBA0 | TESS_ST0 | (lightmap ? TESS_ST1 : 0);
+					shader.tessFlags |= TESS_NNN | TESS_VPOS;
+				}
+			}
+
 			def.mirror = qfalse;
 			pStage->vk_pipeline[0] = vk_find_pipeline_ext( 0, &def, qtrue );
 			def.mirror = qtrue;

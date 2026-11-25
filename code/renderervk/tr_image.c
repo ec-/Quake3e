@@ -1273,7 +1273,7 @@ image_t	*R_FindImageFile( const char *name, imgFlags_t flags )
 	// see if the image is already loaded
 	//
 	for ( image = hashTable[ hash ]; image; image = image->next ) {
-		if ( !Q_stricmp( name, image->imgName ) ) {
+		if ( !Q_stricmp( name, image->imgName ) && !( (image->flags ^ flags) & IMGFLAG_NORMALMAP ) ) {
 			// the white image can be used with any set of parms, but other mismatches are errors
 			if ( strcmp( name, "*white" ) ) {
 				if ( image->flags != flags ) {
@@ -1288,7 +1288,7 @@ image_t	*R_FindImageFile( const char *name, imgFlags_t flags )
 		// try with stripped extension
 		COM_StripExtension( name, strippedName, sizeof( strippedName ) );
 		for ( image = hashTable[ hash ]; image; image = image->next ) {
-			if ( !Q_stricmp( strippedName, image->imgName ) ) {
+			if ( !Q_stricmp( strippedName, image->imgName ) && !( (image->flags ^ flags) & IMGFLAG_NORMALMAP ) ) {
 				//if ( strcmp( strippedName, "*white" ) ) {
 					if ( image->flags != flags ) {
 						ri.Printf( PRINT_DEVELOPER, "WARNING: reused image %s with mixed flags (%i vs %i)\n", strippedName, image->flags, flags );
@@ -1307,7 +1307,7 @@ image_t	*R_FindImageFile( const char *name, imgFlags_t flags )
 		return NULL;
 	}
 
-	if ( tr.mapLoading && r_mapGreyScale->value > 0 ) {
+	if ( !(flags & IMGFLAG_NORMALMAP) && tr.mapLoading && r_mapGreyScale->value > 0 ) {
 		byte *img;
 		int i;
 		for ( i = 0, img = pic; i < width * height; i++, img += 4 ) {

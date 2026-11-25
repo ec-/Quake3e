@@ -49,7 +49,7 @@ layout(location = 3) in vec2 in_tex_coord1;
 layout(location = 4) in vec2 in_tex_coord2;
 #endif
 
-#ifdef USE_ENV
+#if defined(USE_ENV) || defined(USE_MATERIAL)
 layout(location = 5) in vec3 in_normal;
 #endif
 
@@ -85,12 +85,21 @@ layout(location = 3) out vec2 frag_tex_coord2;
 layout(location = 4) out vec2 fog_tex_coord;
 #endif
 
+#ifdef USE_MATERIAL
+layout(location = 7) out vec3 material_position;
+layout(location = 8) out vec3 material_normal;
+#endif
+
 out gl_PerVertex {
 	vec4 gl_Position;
 };
 
 void main() {
 	gl_Position = mvp * vec4(in_position, 1.0);
+#ifdef USE_MATERIAL
+	material_position = in_position;
+	material_normal = in_normal;
+#endif
 
 
 #if defined (USE_CLX_IDENT) || defined (USE_FIXED_COLOR)

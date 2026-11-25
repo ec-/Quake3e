@@ -1000,6 +1000,22 @@ static void RB_IterateStagesGeneric( const shaderCommands_t *input )
 			}
 		}
 
+		if ( pStage->normalImage ) {
+			static const vec3_t mapFill = { -0.48f, 0.40f, 0.78f };
+			// Quake III lightmaps have no per-pixel direction. Keep their
+			// baked color and use a fixed fill direction for fine relief.
+			if ( backEnd.currentEntity && backEnd.currentEntity != &tr.worldEntity ) {
+				VectorCopy( backEnd.currentEntity->lightDir, uniform.light.vector );
+			} else {
+				VectorCopy( mapFill, uniform.light.vector );
+			}
+			uniform.eyePos[3] = pStage->heightMap && r_vkParallaxMapping->integer ?
+				r_vkBaseParallax->value : 0.0f;
+			uniform.light.vector[3] = r_lightmap->integer ? 0.0f : 1.0f;
+			vk_update_descriptor( VK_DESC_TEXTURE2, pStage->normalImage->descriptor );
+			pushUniform = qtrue;
+		}
+
 		if ( pushUniform ) {
 			pushUniform = qfalse;
 			VK_PushUniform( &uniform );
