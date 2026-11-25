@@ -3345,6 +3345,24 @@ static void CL_SetScaling( float factor, int captureWidth, int captureHeight ) {
 }
 
 
+#ifdef USE_RENDERER_DLOPEN
+static void *CL_LoadRendererLibrary( const char *name ) {
+	const char *basePath = Sys_DefaultBasePath();
+#ifdef __APPLE__
+	const char *appPath = Sys_DefaultAppPath();
+
+	if ( appPath[0] && strcmp( appPath, basePath ) != 0 ) {
+		void *library = Sys_LoadLibrary( FS_BuildOSPath( appPath, name, NULL ) );
+		if ( library ) {
+			return library;
+		}
+	}
+#endif
+	return Sys_LoadLibrary( FS_BuildOSPath( basePath, name, NULL ) );
+}
+#endif
+
+
 /*
 ============
 CL_InitRef
@@ -3355,7 +3373,7 @@ static void CL_InitRef( void ) {
 	refexport_t	*ret;
 #ifdef USE_RENDERER_DLOPEN
 	GetRefAPI_t		GetRefAPI;
-	char			dllName[ MAX_OSPATH ], *ospath;
+	char			dllName[ MAX_OSPATH ];
 #endif
 
 	CL_InitGLimp_Cvars();
@@ -3371,14 +3389,12 @@ static void CL_InitRef( void ) {
 #endif
 
 	Com_sprintf( dllName, sizeof( dllName ), RENDERER_PREFIX "_%s_" REND_ARCH_STRING DLL_EXT, cl_renderer->string );
-	ospath = FS_BuildOSPath( Sys_DefaultBasePath(), dllName, NULL );
-	rendererLib = Sys_LoadLibrary( ospath );
+	rendererLib = CL_LoadRendererLibrary( dllName );
 	if ( !rendererLib )
 	{
 		Cvar_ForceReset( "cl_renderer" );
 		Com_sprintf( dllName, sizeof( dllName ), RENDERER_PREFIX "_%s_" REND_ARCH_STRING DLL_EXT, cl_renderer->string );
-		ospath = FS_BuildOSPath( Sys_DefaultBasePath(), dllName, NULL );
-		rendererLib = Sys_LoadLibrary( ospath );
+		rendererLib = CL_LoadRendererLibrary( dllName );
 		if ( !rendererLib )
 		{
 			Com_Error( ERR_FATAL, "Failed to load renderer %s", dllName );
