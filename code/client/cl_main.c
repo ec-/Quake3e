@@ -685,6 +685,10 @@ CL_DemoCompleted
 =================
 */
 static void CL_DemoCompleted( void ) {
+	if ( clc.demoSeeking ) {
+		Com_Printf( "The demo ended before the seek position.\n" );
+	}
+
 	if ( com_timedemo->integer ) {
 		int	time;
 
@@ -841,6 +845,60 @@ static void CL_CompleteDemoName(const char *args, int argNum )
 
 /*
 ====================
+CL_StartDemo
+====================
+*/
+static void CL_StartDemo( const char *name, qboolean compat ) {
+	const char *shortname, *slash;
+
+	CL_Disconnect( qtrue );
+
+	// make sure a local server is killed
+	// 2 means don't force disconnect of local client
+	Cvar_Set( "sv_killserver", "2" );
+	SV_Frame( 0 );
+
+	// clc.demofile will be closed during CL_Disconnect so reopen it
+	if ( FS_FOpenFileRead( name, &clc.demofile, qtrue ) == -1 )
+	{
+		// drop this time
+		Com_Error( ERR_DROP, "couldn't open %s\n", name );
+		return;
+	}
+
+	if ( (slash = strrchr( name, '/' )) != NULL )
+		shortname = slash + 1;
+	else
+		shortname = name;
+
+	Q_strncpyz( clc.demoName, shortname, sizeof( clc.demoName ) );
+	Q_strncpyz( clc.demoPath, name, sizeof( clc.demoPath ) );
+
+	Con_Close();
+
+	cls.state = CA_CONNECTED;
+	clc.demoplaying = qtrue;
+	Q_strncpyz( cls.servername, shortname, sizeof( cls.servername ) );
+
+	clc.compat = compat;
+
+	// read demo messages until connected
+#ifdef USE_CURL
+	while ( cls.state >= CA_CONNECTED && cls.state < CA_PRIMED && !Com_DL_InProgress( &download ) ) {
+#else
+	while ( cls.state >= CA_CONNECTED && cls.state < CA_PRIMED ) {
+#endif
+		CL_ReadDemoMessage();
+	}
+
+	// don't get the first snapshot this frame, to prevent the long
+	// time from the gamestate load from messing causing a time skip
+	clc.firstDemoFrameSkipped = qfalse;
+}
+
+
+/*
+====================
 CL_PlayDemo_f
 
 demo <demoname>
@@ -853,7 +911,6 @@ static void CL_PlayDemo_f( void ) {
 	char		*ext_test;
 	int			protocol, i;
 	char		retry[MAX_OSPATH];
-	const char	*shortname, *slash;
 	fileHandle_t hFile;
 
 	if ( Cmd_Argc() != 2 ) {
@@ -908,53 +965,50 @@ static void CL_PlayDemo_f( void ) {
 	}
 
 	FS_FCloseFile( hFile );
-	hFile = FS_INVALID_HANDLE;
+	CL_StartDemo( name, protocol <= OLD_PROTOCOL_VERSION );
+}
 
-	CL_Disconnect( qtrue );
 
-	// make sure a local server is killed
-	// 2 means don't force disconnect of local client
-	Cvar_Set( "sv_killserver", "2" );
-	SV_Frame( 0 );
+/*
+====================
+CL_DemoSeek_f
+====================
+*/
+static void CL_DemoSeek_f( void ) {
+	const char *arg = Cmd_Argv( 1 );
+	char *end;
+	double seconds;
+	int target;
 
-	// clc.demofile will be closed during CL_Disconnect so reopen it
-	if ( FS_FOpenFileRead( name, &clc.demofile, qtrue ) == -1 )
-	{
-		// drop this time
-		Com_Error( ERR_DROP, "couldn't open %s\n", name );
+	if ( !clc.demoplaying || clc.demofile == FS_INVALID_HANDLE ) {
+		Com_Printf( "Play a demo before you use demoseek.\n" );
 		return;
 	}
 
-	if ( (slash = strrchr( name, '/' )) != NULL )
-		shortname = slash + 1;
-	else
-		shortname = name;
-
-	Q_strncpyz( clc.demoName, shortname, sizeof( clc.demoName ) );
-
-	Con_Close();
-
-	cls.state = CA_CONNECTED;
-	clc.demoplaying = qtrue;
-	Q_strncpyz( cls.servername, shortname, sizeof( cls.servername ) );
-
-	if ( protocol <= OLD_PROTOCOL_VERSION )
-		clc.compat = qtrue;
-	else
-		clc.compat = qfalse;
-
-	// read demo messages until connected
-#ifdef USE_CURL
-	while ( cls.state >= CA_CONNECTED && cls.state < CA_PRIMED && !Com_DL_InProgress( &download ) ) {
-#else
-	while ( cls.state >= CA_CONNECTED && cls.state < CA_PRIMED ) {
-#endif
-		CL_ReadDemoMessage();
+	if ( com_timedemo->integer || clc.demorecording || CL_VideoRecording() ) {
+		Com_Printf( "Stop timedemo or recording before you use demoseek.\n" );
+		return;
 	}
 
-	// don't get the first snapshot this frame, to prevent the long
-	// time from the gamestate load from messing causing a time skip
-	clc.firstDemoFrameSkipped = qfalse;
+	seconds = strtod( arg, &end );
+	if ( Cmd_Argc() != 2 || arg[strspn( arg, "0123456789." )] ||
+	     end == arg || *end || seconds > INT_MAX / 1000.0 ) {
+		Com_Printf( "demoseek <seconds from the start of the demo>\n" );
+		return;
+	}
+	target = (int)(seconds * 1000.0 + 0.5);
+
+	if ( target < clc.demoTimeOffset || ( cls.state == CA_ACTIVE && target < CL_DemoTime() ) ) {
+		char path[ MAX_OSPATH ];
+
+		Q_strncpyz( path, clc.demoPath, sizeof( path ) );
+		CL_StartDemo( path, clc.compat );
+	}
+
+	if ( clc.demoplaying ) {
+		clc.demoSeekTime = target;
+		clc.demoSeeking = qtrue;
+	}
 }
 
 
@@ -4037,6 +4091,7 @@ void CL_Init( void ) {
 	Cmd_AddCommand ("record", CL_Record_f);
 	Cmd_SetCommandCompletionFunc( "record", CL_CompleteRecordName );
 	Cmd_AddCommand ("demo", CL_PlayDemo_f);
+	Cmd_AddCommand ("demoseek", CL_DemoSeek_f);
 	Cmd_SetCommandCompletionFunc( "demo", CL_CompleteDemoName );
 	Cmd_AddCommand ("cinematic", CL_PlayCinematic_f);
 	Cmd_AddCommand ("stoprecord", CL_StopRecord_f);
@@ -4116,6 +4171,7 @@ void CL_Shutdown( const char *finalmsg, qboolean quit ) {
 	Cmd_RemoveCommand ("disconnect");
 	Cmd_RemoveCommand ("record");
 	Cmd_RemoveCommand ("demo");
+	Cmd_RemoveCommand ("demoseek");
 	Cmd_RemoveCommand ("cinematic");
 	Cmd_RemoveCommand ("stoprecord");
 	Cmd_RemoveCommand ("connect");

@@ -1050,6 +1050,9 @@ static void CL_FirstSnapshot( void ) {
 	cl.oldServerTime = cl.snap.serverTime;
 
 	clc.timeDemoBaseTime = cl.snap.serverTime;
+	if ( clc.demoSeeking ) {
+		cl.serverTime = cl.snap.serverTime;
+	}
 
 	// if this is the first frame of active play,
 	// execute the contents of activeAction now
@@ -1126,6 +1129,39 @@ static int CL_TimeNudge( void ) {
 }
 
 
+int64_t CL_DemoTime( void ) {
+	return clc.demoTimeOffset + (int64_t)cl.serverTime - clc.timeDemoBaseTime;
+}
+
+
+static void CL_ReadDemoAhead( void ) {
+	while ( cl.serverTime - cl.snap.serverTime >= 0 ) {
+		CL_ReadDemoMessage();
+		if ( cls.state != CA_ACTIVE ) {
+			return;
+		}
+	}
+}
+
+
+static void CL_DemoSeekStep( void ) {
+	const int64_t target = clc.timeDemoBaseTime + (int64_t)clc.demoSeekTime - clc.demoTimeOffset;
+
+	// Advance one snapshot at a time so cgame can process its state.
+	cl.serverTime = (int)MIN( target, cl.snap.serverTime );
+	cl.oldServerTime = cl.serverTime;
+	cl.serverTimeDelta = cl.serverTime - cls.realtime + CL_TimeNudge();
+
+	if ( cl.serverTime >= target ) {
+		clc.demoSeeking = qfalse;
+		Com_Printf( "Demo position: %.3f seconds.\n", CL_DemoTime() / 1000.0 );
+		return;
+	}
+
+	CL_ReadDemoAhead();
+}
+
+
 /*
 ==================
 CL_SetCGameTime
@@ -1172,6 +1208,11 @@ void CL_SetCGameTime( void ) {
 		Com_Error( ERR_DROP, "cl.snap.serverTime < cl.oldFrameServerTime" );
 	}
 	cl.oldFrameServerTime = cl.snap.serverTime;
+
+	if ( clc.demoSeeking ) {
+		CL_DemoSeekStep();
+		return;
+	}
 
 	// get our current view of time
 	demoFreezed = clc.demoplaying && com_timescale->value == 0.0f;
@@ -1226,13 +1267,5 @@ void CL_SetCGameTime( void ) {
 		cl.serverTime = clc.timeDemoBaseTime + clc.timeDemoFrames * 50;
 	}
 
-	//while ( cl.serverTime >= cl.snap.serverTime ) {
-	while ( cl.serverTime - cl.snap.serverTime >= 0 ) {
-		// feed another message, which should change
-		// the contents of cl.snap
-		CL_ReadDemoMessage();
-		if ( cls.state != CA_ACTIVE ) {
-			return; // end of demo
-		}
-	}
+	CL_ReadDemoAhead();
 }

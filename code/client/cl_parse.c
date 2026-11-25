@@ -517,6 +517,10 @@ static void CL_ParseGamestate( msg_t *msg ) {
 	// clear old error message
 	Cvar_Set( "com_errorMessage", "" );
 
+	if ( clc.demoplaying && cls.state == CA_ACTIVE ) {
+		clc.demoTimeOffset += (int64_t)cl.snap.serverTime - clc.timeDemoBaseTime;
+	}
+
 	// wipe local client state
 	CL_ClearState();
 

@@ -219,6 +219,7 @@ typedef struct {
 
 	// demo information
 	char		demoName[MAX_OSPATH];
+	char		demoPath[MAX_OSPATH];
 	char		recordName[MAX_OSPATH]; // without extension
 	qboolean	explicitRecordName;
 	char		recordNameShort[TRUNCATE_LENGTH]; // for recording message
@@ -230,6 +231,10 @@ typedef struct {
 	qboolean	firstDemoFrameSkipped;
 	fileHandle_t	demofile;
 	fileHandle_t	recordfile;
+
+	int64_t		demoTimeOffset;	// duration before the current gamestate
+	int			demoSeekTime;	// target in milliseconds from the start of the demo
+	qboolean	demoSeeking;
 
 	int		timeDemoFrames;		// counter of rendered frames
 	int		timeDemoStart;		// cls.realtime before first frame
@@ -447,6 +452,7 @@ void CL_StartHunkUsers( void );
 
 void CL_Disconnect_f( void );
 void CL_ReadDemoMessage( void );
+int64_t CL_DemoTime( void );
 void CL_StopRecord_f( void );
 
 void CL_InitDownloads( void );
