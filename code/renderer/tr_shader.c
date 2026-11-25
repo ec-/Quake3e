@@ -1899,7 +1899,7 @@ static qboolean ParseShader( const char **text )
 			continue;
 		}
 		// no mip maps
-		else if ( !Q_stricmp( token, "nomipmaps" ) )
+		else if ( !Q_stricmp( token, "nomipmaps" ) || !Q_stricmp( token, "nomipmap" ) )
 		{
 			shader.noMipMaps = 1;
 			shader.noPicMip = 1;
