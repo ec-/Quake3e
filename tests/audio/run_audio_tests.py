@@ -12,8 +12,9 @@ and checks:
   occlusion   Loads q3dm1 and renders a sound with occlusion off and on, for a
               source in the open, one under the floor and one across the map
               (positions derived from the map's spawn points). Checks the
-              occlusion amount, that clear sounds are untouched and that
-              blocked ones are quieter and muffled.
+              occlusion amount, that clear sounds are untouched, that
+              blocked ones are quieter and muffled, and that several walls
+              block more (lows included) than one thin floor.
   reflection  With Steam Audio, loads q3dm1 and renders a footstep in two rooms
               as direct sound, direct plus reflections, and reflections only
               ("spatial-refl" variant). Checks the reverb level, decay time,
@@ -319,21 +320,22 @@ def test_occlusion(args, work, results, golden, variant):
     listener = (sx, sy, sz + EYE_HEIGHT)
     far = spawns[2]
     cases = {
-        # name: (source, expected occlusion range)
-        "open": ((sx, sy, sz), (0.0, 0.0)),
-        "floor": ((sx, sy, sz - 256), (0.8, 1.0)),
-        "across": ((far[0], far[1], far[2] + EYE_HEIGHT), (0.8, 1.0)),
+        # name: (source, expected occlusion range, expected overall level change in dB)
+        "open": ((sx, sy, sz), (0.0, 0.0), None),
+        "floor": ((sx, sy, sz - 256), (0.8, 1.0), (-24.0, -6.0)),      # one thin floor
+        "across": ((far[0], far[1], far[2] + EYE_HEIGHT), (0.8, 1.0), (-30.0, -10.0)),     # several walls (capped by s_occlusionMaxLoss)
     }
     home = os.path.join(work, f"occlusion-{variant}")
     shutil.rmtree(home, ignore_errors=True)
     os.makedirs(home)
     cmds = []
-    for name, (src, _) in cases.items():
+    for name, (src, _, _) in cases.items():
         cmds += [f"+s_occlusionTest {POSITIONAL_SOUND} occl-{name}.wav "
                  + " ".join("%g" % v for v in listener + src)]
     out = run_engine(args, home, VARIANTS[variant] + ["+set", "s_occlusion", "1", "+map", OCCLUSION_MAP] + cmds + ["+quit"])
-    found = {name: occl for occl, name in
-             re.findall(r"occlusiontest: occlusion=([0-9.]+) wrote occl-(\w+)\.wav", out)}
+    found = {name: (float(occl), [float(lo), float(mid), float(hi)]) for occl, lo, mid, hi, name in
+             re.findall(r"occlusiontest: occlusion=([0-9.]+) loss=([-0-9.]+)/([-0-9.]+)/([-0-9.]+) "
+                        r"trace=[0-9.]+us wrote occl-(\w+)\.wav", out)}
     if len(found) != len(cases):
         results.add(f"[{variant}] occlusion render", "FAIL", "missing output; engine log:\n" + out[-2000:])
         return
@@ -342,9 +344,11 @@ def test_occlusion(args, work, results, golden, variant):
         results.add(f"[{variant}] {name}", "PASS" if cond else "FAIL", detail)
 
     digest = hashlib.md5()
-    for name, (_, (lo, hi)) in cases.items():
-        occl = float(found[name])
-        ok(f"occlusion amount '{name}'", lo <= occl <= hi, "%.2f (expected %.1f-%.1f)" % (occl, lo, hi))
+    levels = {}
+    for name, (_, (lo, hi), expect) in cases.items():
+        occl, loss = found[name]
+        ok(f"occlusion amount '{name}'", lo <= occl <= hi, "%.2f (expected %.1f-%.1f), band losses %s dB"
+           % (occl, lo, hi, "/".join("%.1f" % v for v in loss)))
         wav = os.path.join(home, "baseq3", f"occl-{name}.wav")
         digest.update(open(wav, "rb").read())
         audio, rate = read_wav(wav)
@@ -356,9 +360,14 @@ def test_occlusion(args, work, results, golden, variant):
             level = 20 * np.log10(np.sqrt((wet ** 2).mean()) / np.sqrt((dry ** 2).mean()))
             low = 10 * np.log10(band_energy(wet, rate, 0, 300) / band_energy(dry, rate, 0, 300))
             high = 10 * np.log10(band_energy(wet, rate, 3000, 11000) / band_energy(dry, rate, 3000, 11000))
-            ok(f"'{name}' is quieter", -12.0 <= level <= -3.0, "%+.1f dB (expected -12 to -3)" % level)
+            levels[name] = (level, low)
+            ok(f"'{name}' is quieter", expect[0] <= level <= expect[1],
+               "%+.1f dB (expected %+.0f to %+.0f)" % (level, expect[0], expect[1]))
             ok(f"'{name}' is muffled (highs drop more than lows)", high < low - 10.0,
                "below 300 Hz %+.1f dB, 3-11 kHz %+.1f dB" % (low, high))
+    if "floor" in levels and "across" in levels:
+        ok("more wall blocks more, lows included", levels["across"][1] < levels["floor"][1] - 4.0,
+           "below 300 Hz: one floor %+.1f dB, several walls %+.1f dB" % (levels["floor"][1], levels["across"][1]))
     check_golden(results, golden, f"occlusion/{variant}", digest.hexdigest(), args.update_golden)
 
 

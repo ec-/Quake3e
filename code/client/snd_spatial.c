@@ -77,7 +77,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define SP_OCCL_RADIUS		24.0f		// apparent size of a sound source, in game units
 #define SP_OCCL_PULLBACK	4.0f		// stop short of the source so it doesn't block itself
 #define SP_OCCL_RATE		30			// traces per second per voice
-#define SP_OCCL_GLIDE		0.08f		// seconds for occlusion to change fully
+#define SP_OCCL_GLIDE		0.08f		// seconds for occlusion to change by 60 dB
+#define SP_OCCL_BANDS		3			// below 500 Hz, 500 Hz - 2 kHz, above 2 kHz
+#define SP_OCCL_STEP		8.0f		// stepping through walls, in game units
+#define SP_OCCL_MAX_WALLS	8
+#define SP_OCCL_MAX_THICK	256.0f		// thicker than this counts as this
+#define SP_OCCL_REF_THICK	16.0f		// the wall the reference losses are for (about 0.5 m)
 
 // reflections
 #define SP_REFL_SLOTS		32			// sound positions simulated at once
@@ -127,11 +132,12 @@ typedef struct {
 	void		*hrtf;				// binaural state, NULL without Steam Audio
 	qboolean	tail;				// binaural state may still have output after the input stopped
 	// occlusion
-	float		occlTarget;			// 0 = clear line of sight, 1 = fully blocked
-	float		occlCurrent;		// smoothed value applied at the end of the last block
+	float		occlAmount;			// fraction of rays blocked (for reporting)
+	float		occlTarget[3];		// loss per band in dB: below 500 Hz, to 2 kHz, above
+	float		occlCurrent[3];		// smoothed values applied at the end of the last block
 	int			occlTime;			// sp_mixtime of the last trace
 	qboolean	occlEngaged;		// filter running (state valid)
-	float		occlState[2][2];	// two one-pole stages per channel
+	float		occlState[2][4];	// band-split filter state per channel
 	// reflections
 	vec3_t		origin;				// world position (the listener's for head-locked sounds)
 	int			reflKey;			// voices with the same key share reflections; 0 = none
@@ -212,8 +218,8 @@ static cvar_t		*s_spatialHRTF;
 static cvar_t		*s_steamAudioLib;
 static cvar_t		*s_hrtfFile;
 static cvar_t		*s_occlusion;
-static cvar_t		*s_occlusionGain;
-static cvar_t		*s_occlusionCutoff;
+static cvar_t		*s_occlusionStrength;
+static cvar_t		*s_occlusionMaxLoss;
 static cvar_t		*s_reflections;
 static cvar_t		*s_reflectionGain;
 static cvar_t		*s_reflectionType;
@@ -487,20 +493,119 @@ static void SP_FreeAllSfx( void ) {
 
 /*
 ================
+SP_WallThickness
+
+Distance from entry (just inside a wall) along dir until the point is no
+longer solid, up to maxDist.
+================
+*/
+static float SP_WallThickness( const vec3_t entry, const vec3_t dir, float maxDist ) {
+	vec3_t p;
+	float inside = 0.0f, outside, step = SP_OCCL_STEP;
+	int i;
+
+	for ( outside = step; outside < maxDist; outside += step ) {
+		VectorMA( entry, outside, dir, p );
+		if ( !( CM_PointContents( p, 0 ) & CONTENTS_SOLID ) )
+			break;
+		inside = outside;
+	}
+	if ( outside >= maxDist )
+		return maxDist;
+	// narrow down the exit
+	for ( i = 0; i < 3; i++ ) {
+		const float mid = 0.5f * ( inside + outside );
+		VectorMA( entry, mid, dir, p );
+		if ( CM_PointContents( p, 0 ) & CONTENTS_SOLID )
+			inside = mid;
+		else
+			outside = mid;
+	}
+	return 0.5f * ( inside + outside );
+}
+
+
+/*
+================
+SP_RayLoss
+
+Sound lost along one ray, per band (dB), from every wall it passes through.
+Each wall follows the mass law: 6 dB more per octave and per doubling of
+mass (thickness times density). A 16-unit stone wall costs 6/18/30 dB in
+the low/mid/high bands. Returns qfalse if the ray starts inside a wall.
+================
+*/
+static const float sp_wallRefLoss[SP_OCCL_BANDS] = { 6.0f, 18.0f, 30.0f };
+
+static qboolean SP_RayLoss( const vec3_t start, const vec3_t end, float loss[SP_OCCL_BANDS], qboolean *blocked ) {
+	vec3_t dir, pos;
+	trace_t tr;
+	float remaining;
+	int walls, b;
+
+	for ( b = 0; b < SP_OCCL_BANDS; b++ )
+		loss[b] = 0.0f;
+	*blocked = qfalse;
+
+	VectorSubtract( end, start, dir );
+	remaining = VectorNormalize( dir );
+	VectorCopy( start, pos );
+
+	for ( walls = 0; walls < SP_OCCL_MAX_WALLS && remaining > 0.0f; walls++ ) {
+		vec3_t entry;
+		float travelled, thick, mass;
+
+		CM_BoxTrace( &tr, pos, end, vec3_origin, vec3_origin, 0, CONTENTS_SOLID, qfalse );
+		if ( tr.startsolid && walls == 0 )
+			return qfalse;
+		if ( tr.fraction >= 1.0f )
+			break;
+		*blocked = qtrue;
+
+		travelled = Distance( pos, tr.endpos );
+		remaining -= travelled;
+		VectorMA( tr.endpos, 0.5f, dir, entry );
+		thick = SP_WallThickness( entry, dir, MIN( remaining, SP_OCCL_MAX_THICK ) );
+		if ( thick < 1.0f )
+			thick = 1.0f;
+
+		// metal surfaces count as denser
+		mass = thick * ( ( tr.surfaceFlags & SURF_METALSTEPS ) ? 2.0f : 1.0f );
+		for ( b = 0; b < SP_OCCL_BANDS; b++ ) {
+			const float l = sp_wallRefLoss[b] + 20.0f * log10f( mass / SP_OCCL_REF_THICK );
+			if ( l > 0.0f )
+				loss[b] += l;
+		}
+
+		VectorMA( entry, thick + 0.5f, dir, pos );
+		remaining -= thick + 1.0f;
+	}
+	return qtrue;
+}
+
+
+/*
+================
 SP_Occlusion
 
 How much of a sound at source is hidden from the listener by world
-geometry: traces from the listener to the source and to four points on a
-disc around it (facing the listener). Returns the fraction of rays blocked.
-Only the world is traced, not doors or other brush entities.
+geometry, per band: traces from the listener to the source and to four
+points on a disc around it (facing the listener), and averages what gets
+through each ray by energy, so open rays dominate. Fills loss[] in dB and
+returns the fraction of rays blocked. Only the world is traced, not doors
+or other brush entities.
 ================
 */
-static float SP_Occlusion( const vec3_t listener, const vec3_t source ) {
+static float SP_Occlusion( const vec3_t listener, const vec3_t source, float loss[SP_OCCL_BANDS] ) {
+	const float strength = s_occlusionStrength->value, maxLoss = s_occlusionMaxLoss->value;
 	vec3_t dir, side, up, end;
-	trace_t tr;
-	float dist;
-	int i, rays = 0, blocked = 0;
+	double through[SP_OCCL_BANDS] = { 0.0, 0.0, 0.0 };
+	float dist, rayLoss[SP_OCCL_BANDS];
+	qboolean blockedRay;
+	int i, b, rays = 0, blocked = 0;
 
+	for ( b = 0; b < SP_OCCL_BANDS; b++ )
+		loss[b] = 0.0f;
 	if ( CM_NumInlineModels() <= 0 )
 		return 0.0f;	// no map loaded
 
@@ -523,15 +628,32 @@ static float SP_Occlusion( const vec3_t listener, const vec3_t source ) {
 			continue;
 
 		VectorMA( end, -SP_OCCL_PULLBACK, dir, end );
-		CM_BoxTrace( &tr, listener, end, vec3_origin, vec3_origin, 0, CONTENTS_SOLID, qfalse );
-		if ( tr.startsolid )
+		if ( !SP_RayLoss( listener, end, rayLoss, &blockedRay ) ) {
+			for ( b = 0; b < SP_OCCL_BANDS; b++ )
+				loss[b] = 0.0f;
 			return 0.0f;	// listener inside geometry (noclip): don't muffle everything
+		}
 		rays++;
-		if ( tr.fraction < 1.0f )
+		if ( blockedRay )
 			blocked++;
+		// cap the loss but keep its tilt, so heavily blocked sounds stay
+		// audible and still sound muffled rather than just quiet
+		{
+			float worst = 0.0f, scale = strength;
+			for ( b = 0; b < SP_OCCL_BANDS; b++ )
+				worst = MAX( worst, rayLoss[b] * strength );
+			if ( worst > maxLoss )
+				scale *= maxLoss / worst;
+			for ( b = 0; b < SP_OCCL_BANDS; b++ )
+				through[b] += pow( 10.0, -rayLoss[b] * scale / 10.0 );
+		}
 	}
+	if ( !rays )
+		return 0.0f;
 
-	return rays ? (float)blocked / rays : 0.0f;
+	for ( b = 0; b < SP_OCCL_BANDS; b++ )
+		loss[b] = (float)MAX( 0.0, -10.0 * log10( through[b] / rays ) ) + 0.0f;	// no -0
+	return (float)blocked / rays;
 }
 
 
@@ -539,55 +661,63 @@ static float SP_Occlusion( const vec3_t listener, const vec3_t source ) {
 ================
 SP_Occlude
 
-Applies occlusion to one block of a voice (a, and b when stereo): moves the
-smoothed amount towards the target, then low-passes (two one-pole stages,
-cutoff sliding from 20 kHz down to s_occlusionCutoff) and attenuates (down
-to s_occlusionGain), ramping across the block. Unoccluded voices are left
-untouched.
+Applies occlusion to one block of a voice (a, and b when stereo): moves
+each band's loss towards its target (gliding, in dB), then splits the
+signal into low/mid/high (complementary one-pole pairs at 500 Hz and 2 kHz,
+which add back to the input exactly) and weights the bands, ramping
+across the block. Unoccluded voices are left untouched.
 ================
 */
 static void SP_Occlude( spSpatial_t *sp, float *a, float *b ) {
-	const float maxStep = (float)SP_BLOCK / ( SP_OCCL_GLIDE * dma.speed );
-	const float occlGain = s_occlusionGain->value;
-	float o0 = sp->occlCurrent, o1, d, fc, coef, g0, dg;
+	const float maxStep = 60.0f * SP_BLOCK / ( SP_OCCL_GLIDE * dma.speed );
+	float g0[SP_OCCL_BANDS], dg[SP_OCCL_BANDS];
+	float c1, c2;
 	float *chans[2];
-	int c, i;
+	qboolean any = qfalse;
+	int c, i, k;
 
-	d = sp->occlTarget - o0;
-	if ( d > maxStep ) d = maxStep;
-	else if ( d < -maxStep ) d = -maxStep;
-	o1 = o0 + d;
-	if ( o1 < 1e-4f ) o1 = 0.0f;
-	sp->occlCurrent = o1;
-
-	if ( o0 <= 0.0f && o1 <= 0.0f ) {
+	for ( k = 0; k < SP_OCCL_BANDS; k++ ) {
+		float from = sp->occlCurrent[k], to, d;
+		d = sp->occlTarget[k] - from;
+		if ( d > maxStep ) d = maxStep;
+		else if ( d < -maxStep ) d = -maxStep;
+		to = from + d;
+		if ( to < 0.01f ) to = 0.0f;
+		sp->occlCurrent[k] = to;
+		if ( from > 0.0f || to > 0.0f )
+			any = qtrue;
+		g0[k] = powf( 10.0f, -from / 20.0f );
+		dg[k] = ( powf( 10.0f, -to / 20.0f ) - g0[k] ) / SP_BLOCK;
+	}
+	if ( !any ) {
 		sp->occlEngaged = qfalse;
 		return;
 	}
 
-	fc = expf( logf( MIN( 20000.0f, 0.45f * dma.speed ) ) * ( 1.0f - o1 ) + logf( s_occlusionCutoff->value ) * o1 );
-	coef = 1.0f - expf( -2.0f * (float)M_PI * fc / dma.speed );
-	g0 = 1.0f - o0 * ( 1.0f - occlGain );
-	dg = ( ( 1.0f - o1 * ( 1.0f - occlGain ) ) - g0 ) / SP_BLOCK;
+	c1 = 1.0f - expf( -2.0f * (float)M_PI * 500.0f / dma.speed );
+	c2 = 1.0f - expf( -2.0f * (float)M_PI * 2000.0f / dma.speed );
 
 	chans[0] = a;
 	chans[1] = b;
 	for ( c = 0; c < 2 && chans[c]; c++ ) {
 		float *x = chans[c];
-		float z1, z2;
+		float *st = sp->occlState[c];
 		if ( !sp->occlEngaged ) {
-			// start the filter settled on the signal to avoid a click
-			sp->occlState[c][0] = sp->occlState[c][1] = x[0];
+			// start settled on the signal to avoid a click
+			st[0] = st[1] = x[0];
+			st[2] = st[3] = 0.0f;
 		}
-		z1 = sp->occlState[c][0];
-		z2 = sp->occlState[c][1];
 		for ( i = 0; i < SP_BLOCK; i++ ) {
-			z1 += coef * ( x[i] - z1 );
-			z2 += coef * ( z1 - z2 );
-			x[i] = z2 * ( g0 + dg * i );
+			float low, rest, mid;
+			st[0] += c1 * ( x[i] - st[0] );
+			st[1] += c1 * ( st[0] - st[1] );
+			low = st[1];
+			rest = x[i] - low;
+			st[2] += c2 * ( rest - st[2] );
+			st[3] += c2 * ( st[2] - st[3] );
+			mid = st[3];
+			x[i] = low * ( g0[0] + dg[0] * i ) + mid * ( g0[1] + dg[1] * i ) + ( rest - mid ) * ( g0[2] + dg[2] * i );
 		}
-		sp->occlState[c][0] = z1;
-		sp->occlState[c][1] = z2;
 	}
 	sp->occlEngaged = qtrue;
 }
@@ -798,10 +928,11 @@ static void SP_Spatialize( spSpatial_t *sp, const spListener_t *listener, const 
 	}
 
 	if ( headLocked || !s_occlusion->integer ) {
-		sp->occlTarget = 0.0f;
+		sp->occlAmount = 0.0f;
+		VectorClear( sp->occlTarget );
 	} else if ( !sp->primed || sp_mixtime - sp->occlTime >= dma.speed / SP_OCCL_RATE || sp_mixtime - sp->occlTime < 0 ) {
 		// tracing is the expensive part, so each voice re-traces a few times a second
-		sp->occlTarget = SP_Occlusion( listener->origin, origin );
+		sp->occlAmount = SP_Occlusion( listener->origin, origin, sp->occlTarget );
 		sp->occlTime = sp_mixtime;
 	}
 
@@ -810,7 +941,7 @@ static void SP_Spatialize( spSpatial_t *sp, const spListener_t *listener, const 
 		sp->current[1] = sp->target[1];
 		sp->monoCurrent = sp->monoTarget;
 		sp->reflCurrent = sp->reflTarget;
-		sp->occlCurrent = sp->occlTarget;
+		VectorCopy( sp->occlTarget, sp->occlCurrent );
 		sp->occlEngaged = qfalse;
 		sp->primed = qtrue;
 	}
@@ -1974,7 +2105,7 @@ static void S_Spatial_OcclusionTest_f( void ) {
 	vec3_t source;
 	spSfx_t *sfx;
 	fileHandle_t f;
-	float *buf, occl = 0.0f;
+	float *buf, occl = 0.0f, loss[SP_OCCL_BANDS] = { 0.0f, 0.0f, 0.0f }, usec;
 	short *pcm;
 	void *hrtf;
 	int segment, total, p, i;
@@ -2022,13 +2153,23 @@ static void S_Spatial_OcclusionTest_f( void ) {
 		sp.hrtf = hrtf;
 		SPH_ResetVoice( hrtf );
 		SP_Spatialize( &sp, &listener, source, SP_MASTER_VOL, qfalse );
-		if ( p )
-			occl = sp.occlTarget;
+		if ( p ) {
+			occl = sp.occlAmount;
+			VectorCopy( sp.occlTarget, loss );
+		}
 		for ( b = 0; b < segment; b += SP_BLOCK )
 			SP_MixVoice( sfx, &phase, 1.0, qfalse, &sp, buf + ( p * segment + b ) * 2 );
 	}
 	Cvar_Set( "s_occlusion", va( "%i", saved ) );
 	SPH_ReleaseVoice( &hrtf );
+
+	{	// cost of one occlusion update for this pair
+		float scratch[SP_OCCL_BANDS];
+		const int start = Sys_Milliseconds();
+		for ( i = 0; i < 2000; i++ )
+			SP_Occlusion( listener.origin, source, scratch );
+		usec = ( Sys_Milliseconds() - start ) * 1000.0f / 2000;
+	}
 
 	for ( i = 0; i < total * 2; i++ ) {
 		float s = buf[i];
@@ -2045,7 +2186,7 @@ static void S_Spatial_OcclusionTest_f( void ) {
 		FS_Write( pcm, total * 2 * sizeof( short ), f );
 		FS_FCloseFile( f );
 	}
-	Com_Printf( "occlusiontest: occlusion=%.3f wrote %s (%s)\n", occl, Cmd_Argv( 2 ),
+	Com_Printf( "occlusiontest: occlusion=%.3f loss=%.1f/%.1f/%.1f trace=%.1fus wrote %s (%s)\n", occl, loss[0], loss[1], loss[2], usec, Cmd_Argv( 2 ),
 		( SPH_Active() && s_spatialHRTF->integer ) ? "HRTF" : "stereo pan" );
 
 	free( pcm );
@@ -2206,12 +2347,12 @@ qboolean S_Spatial_Init( soundInterface_t *si ) {
 	s_occlusion = Cvar_Get( "s_occlusion", "1", CVAR_ARCHIVE_ND );
 	Cvar_CheckRange( s_occlusion, "0", "1", CV_INTEGER );
 	Cvar_SetDescription( s_occlusion, "Spatial backend: muffle sounds hidden behind world geometry." );
-	s_occlusionGain = Cvar_Get( "s_occlusionGain", "0.5", CVAR_ARCHIVE_ND );
-	Cvar_CheckRange( s_occlusionGain, "0", "1", CV_FLOAT );
-	Cvar_SetDescription( s_occlusionGain, "Spatial backend: volume of a fully occluded sound (1 = no change)." );
-	s_occlusionCutoff = Cvar_Get( "s_occlusionCutoff", "1000", CVAR_ARCHIVE_ND );
-	Cvar_CheckRange( s_occlusionCutoff, "100", "20000", CV_FLOAT );
-	Cvar_SetDescription( s_occlusionCutoff, "Spatial backend: low-pass cutoff in Hz for a fully occluded sound (higher = less muffled)." );
+	s_occlusionStrength = Cvar_Get( "s_occlusionStrength", "1", CVAR_ARCHIVE_ND );
+	Cvar_CheckRange( s_occlusionStrength, "0", "3", CV_FLOAT );
+	Cvar_SetDescription( s_occlusionStrength, "Spatial backend: scales how much sound walls block (1 = mass law: thicker walls block more, highs more than lows)." );
+	s_occlusionMaxLoss = Cvar_Get( "s_occlusionMaxLoss", "30", CVAR_ARCHIVE_ND );
+	Cvar_CheckRange( s_occlusionMaxLoss, "0", "100", CV_FLOAT );
+	Cvar_SetDescription( s_occlusionMaxLoss, "Spatial backend: most a sound can lose through walls, in dB (highest band; lower bands are scaled down with it), so sounds behind thick walls stay audible." );
 	s_reflections = Cvar_Get( "s_reflections", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	Cvar_CheckRange( s_reflections, "0", "1", CV_INTEGER );
 	Cvar_SetDescription( s_reflections, "Spatial backend: sound reflections and reverb from the level's geometry (needs Steam Audio). Requires snd_restart." );
