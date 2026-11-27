@@ -25,28 +25,61 @@ originals. Processed id Software sounds are for personal use only.
   instead of the whole sound. Loudness stays within ±3 dB of the original
   (median −0.1 dB).
 
-Setup (outside the repo; Python 3.11, PyTorch for your GPU):
+## Generating the higher-quality sounds
+
+You need your own copy of Quake III Arena (`baseq3/pak0.pk3` to `pak8.pk3`)
+and a GPU that PyTorch supports (CUDA or ROCm). Without a GPU, `--no-sr`
+still adds bass in seconds, but the top end is not extended.
+
+**1. Set up AudioSR** in its own environment, outside the repo (Python 3.11):
 
 ```
-python3.11 -m venv venv
-venv/bin/pip install torch torchaudio torchvision   # pick the right index for your GPU (ROCm/CUDA)
-venv/bin/pip install --no-deps audiosr==0.0.7
-venv/bin/pip install tqdm pyyaml einops chardet "numpy==1.26.4" soundfile "librosa==0.9.2" scipy pandas \
+python3.11 -m venv ~/audiosr-venv
+~/audiosr-venv/bin/pip install torch torchaudio torchvision   # use the index for your GPU, see pytorch.org
+~/audiosr-venv/bin/pip install --no-deps audiosr==0.0.7
+~/audiosr-venv/bin/pip install tqdm pyyaml einops chardet "numpy==1.26.4" soundfile "librosa==0.9.2" scipy pandas \
     unidecode "torchlibrosa>=0.0.9" "transformers==4.30.2" "huggingface_hub<0.26" progressbar ftfy timm \
     phonemizer matplotlib
 ```
 
 AMD Strix Halo (gfx1151): PyTorch wheels from `https://rocm.nightlies.amd.com/v2/gfx1151/`.
+The first run downloads the AudioSR model weights from Hugging Face.
 
-Usage: extract the sounds to process into a directory (keeping `sound/...`
-paths), then
+**2. Extract the game's sounds.** Later pk3s override earlier ones, as in
+the game. By default this includes sounds from any custom maps in that
+directory; `--retail` takes only id's pak0–pak8 (598 sounds):
 
 ```
-venv/bin/python bandwidth_extend.py <dir> zz-hd-sounds.pk3 [--work dir] [--no-sr] [--no-bass] [--steps 50]
+python3 tools/audio/extract_sounds.py --retail /path/to/quake3/baseq3 ~/q3-sounds
 ```
 
-and copy the pk3 into `baseq3` (home path is fine). About 15 s per sound on a
-Radeon 8060S (all 602 retail sounds: ≈2.5 h). Each result is cached in the
+**3. Process them.** About 15 s per sound on a Radeon 8060S, so ≈2.5 h for
+all ~600; it can be stopped and restarted, and picks up where it left off:
+
+```
+~/audiosr-venv/bin/python tools/audio/bandwidth_extend.py ~/q3-sounds ~/zz-hd-sounds.pk3
+```
+
+**4. Install** the pack into your home `baseq3` (it sorts after the retail
+paks, so it overrides their sounds):
+
+```
+cp ~/zz-hd-sounds.pk3 ~/.q3a/baseq3/          # Linux; on Windows, your Quake3e home or install baseq3
+```
+
+Then play with the spatial backend, e.g. `+set s_steamAudioLib <path to libphonon> +set s_hrtfFile <SOFA file> +s_profile reflections`.
+Remove the pk3 to go back to the original sounds. Use the pack on servers with
+`sv_pure 0` (pure servers only allow their own paks). The processed sounds are
+derived from id Software's assets: keep them for personal use and don't
+redistribute them.
+
+## Options and details
+
+```
+bandwidth_extend.py <dir> zz-hd-sounds.pk3 [--work dir] [--no-sr] [--no-bass] [--steps 50]
+```
+
+Each result is cached in the
 work directory (default `<pk3 name>-work`), so an interrupted run picks up
 where it stopped; delete it to reprocess. Rerunning with a warm cache only
 redoes bass and peaks (seconds). `--no-sr` skips AudioSR entirely. A CSV report is written next to the pk3.
