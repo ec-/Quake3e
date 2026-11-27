@@ -9,6 +9,11 @@ and checks:
               listener through the spatial backend. Checks left/right
               behaviour, reports whether height is audible, and compares the
               WAV against a golden hash.
+  occlusion   Loads q3dm1 and renders a sound with occlusion off and on, for a
+              source in the open, one under the floor and one across the map
+              (positions derived from the map's spawn points). Checks the
+              occlusion amount, that clear sounds are untouched and that
+              blocked ones are quieter and muffled.
   demo        Plays a demo with video capture (fixed frame time, so audio is
               deterministic) through each backend and extracts the audio.
               Checks run-to-run determinism, golden hashes, and that the
@@ -34,11 +39,13 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import struct
 import subprocess
 import sys
 import tempfile
+import zipfile
 
 import numpy as np
 
@@ -48,10 +55,14 @@ GOLDEN = os.path.join(HERE, "golden.json")
 
 POSITIONAL_SOUND = "sound/player/footsteps/boot1.wav"
 DEMO = "four"
-# name -> extra engine arguments; "spatial" is pinned to stereo panning
+OCCLUSION_MAP = "q3dm1"
+EYE_HEIGHT = 26
+
+# name -> extra engine arguments. "spatial" is pinned to stereo panning with
+# occlusion off, so it stays directly comparable with the classic mixer.
 VARIANTS = {
     "base": ["+set", "s_backend", "base"],
-    "spatial": ["+set", "s_backend", "spatial", "+set", "s_spatialHRTF", "0"],
+    "spatial": ["+set", "s_backend", "spatial", "+set", "s_spatialHRTF", "0", "+set", "s_occlusion", "0"],
 }
 
 # A/B thresholds between the classic and spatial backends on the demo
@@ -255,6 +266,86 @@ def test_positional(args, work, results, golden, variant):
     check_golden(results, golden, f"positional/{variant}", md5(wav), args.update_golden)
 
 
+def spawn_points(basepath, mapname):
+    """info_player_deathmatch origins from a map inside baseq3 pk3s."""
+    for pk3 in sorted(os.listdir(os.path.join(basepath, "baseq3")), reverse=True):
+        if not pk3.endswith(".pk3"):
+            continue
+        with zipfile.ZipFile(os.path.join(basepath, "baseq3", pk3)) as z:
+            name = f"maps/{mapname}.bsp"
+            if name not in z.namelist():
+                continue
+            d = z.read(name)
+            ofs, ln = struct.unpack("<ii", d[8:16])
+            ents = d[ofs:ofs + ln].decode("latin1")
+            pts = []
+            for block in re.findall(r"\{([^}]*)\}", ents):
+                kv = dict(re.findall(r'"([^"]+)" "([^"]*)"', block))
+                if kv.get("classname") == "info_player_deathmatch" and "origin" in kv:
+                    pts.append(tuple(float(v) for v in kv["origin"].split()))
+            return pts
+    return []
+
+
+def band_energy(x, rate, lo, hi):
+    f = np.abs(np.fft.rfft(x)) ** 2
+    fr = np.fft.rfftfreq(len(x), 1 / rate)
+    return f[(fr >= lo) & (fr < hi)].sum()
+
+
+def test_occlusion(args, work, results, golden, variant):
+    print(f"occlusion test ({variant})")
+    spawns = spawn_points(args.basepath, OCCLUSION_MAP)
+    if len(spawns) < 3:
+        results.add(f"[{variant}] occlusion setup", "FAIL", f"no spawn points found in {OCCLUSION_MAP}")
+        return
+    sx, sy, sz = spawns[0]
+    listener = (sx, sy, sz + EYE_HEIGHT)
+    far = spawns[2]
+    cases = {
+        # name: (source, expected occlusion range)
+        "open": ((sx, sy, sz), (0.0, 0.0)),
+        "floor": ((sx, sy, sz - 256), (0.8, 1.0)),
+        "across": ((far[0], far[1], far[2] + EYE_HEIGHT), (0.8, 1.0)),
+    }
+    home = os.path.join(work, f"occlusion-{variant}")
+    shutil.rmtree(home, ignore_errors=True)
+    os.makedirs(home)
+    cmds = []
+    for name, (src, _) in cases.items():
+        cmds += [f"+s_occlusionTest {POSITIONAL_SOUND} occl-{name}.wav "
+                 + " ".join("%g" % v for v in listener + src)]
+    out = run_engine(args, home, VARIANTS[variant] + ["+set", "s_occlusion", "1", "+map", OCCLUSION_MAP] + cmds + ["+quit"])
+    found = {name: occl for occl, name in
+             re.findall(r"occlusiontest: occlusion=([0-9.]+) wrote occl-(\w+)\.wav", out)}
+    if len(found) != len(cases):
+        results.add(f"[{variant}] occlusion render", "FAIL", "missing output; engine log:\n" + out[-2000:])
+        return
+
+    def ok(name, cond, detail):
+        results.add(f"[{variant}] {name}", "PASS" if cond else "FAIL", detail)
+
+    digest = hashlib.md5()
+    for name, (_, (lo, hi)) in cases.items():
+        occl = float(found[name])
+        ok(f"occlusion amount '{name}'", lo <= occl <= hi, "%.2f (expected %.1f-%.1f)" % (occl, lo, hi))
+        wav = os.path.join(home, "baseq3", f"occl-{name}.wav")
+        digest.update(open(wav, "rb").read())
+        audio, rate = read_wav(wav)
+        seg = len(audio) // 2
+        dry, wet = audio[:seg].mean(axis=1), audio[seg:].mean(axis=1)
+        if hi == 0.0:
+            ok(f"'{name}' is untouched by occlusion", np.array_equal(dry, wet), "")
+        else:
+            level = 20 * np.log10(np.sqrt((wet ** 2).mean()) / np.sqrt((dry ** 2).mean()))
+            low = 10 * np.log10(band_energy(wet, rate, 0, 300) / band_energy(dry, rate, 0, 300))
+            high = 10 * np.log10(band_energy(wet, rate, 3000, 11000) / band_energy(dry, rate, 3000, 11000))
+            ok(f"'{name}' is quieter", -12.0 <= level <= -3.0, "%+.1f dB (expected -12 to -3)" % level)
+            ok(f"'{name}' is muffled (highs drop more than lows)", high < low - 10.0,
+               "below 300 Hz %+.1f dB, 3-11 kHz %+.1f dB" % (low, high))
+    check_golden(results, golden, f"occlusion/{variant}", digest.hexdigest(), args.update_golden)
+
+
 def capture_demo(args, work, backend, run):
     home = os.path.join(work, f"demo-{backend}-{run}")
     shutil.rmtree(home, ignore_errors=True)
@@ -323,7 +414,7 @@ def main():
     ap.add_argument("--basepath", default=os.environ.get("Q3_BASEPATH", os.path.expanduser("~/Downloads/q3a")),
                     help="directory containing baseq3/ with retail pak files (env Q3_BASEPATH)")
     ap.add_argument("--workdir", help="where to put engine home dirs and captures (default: temporary)")
-    ap.add_argument("--only", choices=("positional", "demo"), help="run one test group")
+    ap.add_argument("--only", choices=("positional", "occlusion", "demo"), help="run one test group")
     ap.add_argument("--repeat", action="store_true", help="capture each demo twice to check determinism")
     ap.add_argument("--update-golden", action="store_true", help="record current outputs as golden")
     ap.add_argument("--steamaudio", default=os.environ.get("STEAMAUDIO_LIB"),
@@ -362,6 +453,10 @@ def main():
         for variant in VARIANTS:
             if variant != "base":
                 test_positional(args, work, results, golden, variant)
+    if args.only in (None, "occlusion"):
+        for variant in VARIANTS:
+            if variant != "base":
+                test_occlusion(args, work, results, golden, variant)
     if args.only in (None, "demo"):
         test_demo(args, work, results, golden)
 

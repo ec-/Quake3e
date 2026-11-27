@@ -72,6 +72,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // startup (SPH_FrontResponse), since datasets are normalised differently.
 #define SP_HRTF_FRONT_LEVEL	0.5f
 
+// occlusion
+#define SP_OCCL_RAYS		5			// centre plus four around the source
+#define SP_OCCL_RADIUS		24.0f		// apparent size of a sound source, in game units
+#define SP_OCCL_PULLBACK	4.0f		// stop short of the source so it doesn't block itself
+#define SP_OCCL_RATE		30			// traces per second per voice
+#define SP_OCCL_GLIDE		0.08f		// seconds for occlusion to change fully
+
 #ifdef _WIN32
 #define SP_STEAMAUDIO_LIB	"phonon.dll"
 #else
@@ -114,6 +121,12 @@ typedef struct {
 	qboolean	primed;				// current values are valid
 	void		*hrtf;				// binaural state, NULL without Steam Audio
 	qboolean	tail;				// binaural state may still have output after the input stopped
+	// occlusion
+	float		occlTarget;			// 0 = clear line of sight, 1 = fully blocked
+	float		occlCurrent;		// smoothed value applied at the end of the last block
+	int			occlTime;			// sp_mixtime of the last trace
+	qboolean	occlEngaged;		// filter running (state valid)
+	float		occlState[2][2];	// two one-pole stages per channel
 } spSpatial_t;
 
 typedef struct {
@@ -188,6 +201,9 @@ static cvar_t		*s_spatialShow;
 static cvar_t		*s_spatialHRTF;
 static cvar_t		*s_steamAudioLib;
 static cvar_t		*s_hrtfFile;
+static cvar_t		*s_occlusion;
+static cvar_t		*s_occlusionGain;
+static cvar_t		*s_occlusionCutoff;
 static float		sp_hrtfGain = SP_HRTF_FRONT_LEVEL;
 extern cvar_t		*s_khz;
 extern cvar_t		*s_show;
@@ -452,6 +468,114 @@ static void SP_FreeAllSfx( void ) {
 
 /*
 ================
+SP_Occlusion
+
+How much of a sound at source is hidden from the listener by world
+geometry: traces from the listener to the source and to four points on a
+disc around it (facing the listener). Returns the fraction of rays blocked.
+Only the world is traced, not doors or other brush entities.
+================
+*/
+static float SP_Occlusion( const vec3_t listener, const vec3_t source ) {
+	vec3_t dir, side, up, end;
+	trace_t tr;
+	float dist;
+	int i, rays = 0, blocked = 0;
+
+	if ( CM_NumInlineModels() <= 0 )
+		return 0.0f;	// no map loaded
+
+	VectorSubtract( source, listener, dir );
+	dist = VectorNormalize( dir );
+	if ( dist <= SP_OCCL_PULLBACK * 2.0f )
+		return 0.0f;
+	PerpendicularVector( side, dir );
+	CrossProduct( dir, side, up );
+
+	for ( i = 0; i < SP_OCCL_RAYS; i++ ) {
+		VectorCopy( source, end );
+		if ( i == 1 ) VectorMA( end, SP_OCCL_RADIUS, side, end );
+		else if ( i == 2 ) VectorMA( end, -SP_OCCL_RADIUS, side, end );
+		else if ( i == 3 ) VectorMA( end, SP_OCCL_RADIUS, up, end );
+		else if ( i == 4 ) VectorMA( end, -SP_OCCL_RADIUS, up, end );
+
+		// an offset point inside a wall says nothing about the path to the sound
+		if ( i > 0 && ( CM_PointContents( end, 0 ) & CONTENTS_SOLID ) )
+			continue;
+
+		VectorMA( end, -SP_OCCL_PULLBACK, dir, end );
+		CM_BoxTrace( &tr, listener, end, vec3_origin, vec3_origin, 0, CONTENTS_SOLID, qfalse );
+		if ( tr.startsolid )
+			return 0.0f;	// listener inside geometry (noclip): don't muffle everything
+		rays++;
+		if ( tr.fraction < 1.0f )
+			blocked++;
+	}
+
+	return rays ? (float)blocked / rays : 0.0f;
+}
+
+
+/*
+================
+SP_Occlude
+
+Applies occlusion to one block of a voice (a, and b when stereo): moves the
+smoothed amount towards the target, then low-passes (two one-pole stages,
+cutoff sliding from 20 kHz down to s_occlusionCutoff) and attenuates (down
+to s_occlusionGain), ramping across the block. Unoccluded voices are left
+untouched.
+================
+*/
+static void SP_Occlude( spSpatial_t *sp, float *a, float *b ) {
+	const float maxStep = (float)SP_BLOCK / ( SP_OCCL_GLIDE * dma.speed );
+	const float occlGain = s_occlusionGain->value;
+	float o0 = sp->occlCurrent, o1, d, fc, coef, g0, dg;
+	float *chans[2];
+	int c, i;
+
+	d = sp->occlTarget - o0;
+	if ( d > maxStep ) d = maxStep;
+	else if ( d < -maxStep ) d = -maxStep;
+	o1 = o0 + d;
+	if ( o1 < 1e-4f ) o1 = 0.0f;
+	sp->occlCurrent = o1;
+
+	if ( o0 <= 0.0f && o1 <= 0.0f ) {
+		sp->occlEngaged = qfalse;
+		return;
+	}
+
+	fc = expf( logf( MIN( 20000.0f, 0.45f * dma.speed ) ) * ( 1.0f - o1 ) + logf( s_occlusionCutoff->value ) * o1 );
+	coef = 1.0f - expf( -2.0f * (float)M_PI * fc / dma.speed );
+	g0 = 1.0f - o0 * ( 1.0f - occlGain );
+	dg = ( ( 1.0f - o1 * ( 1.0f - occlGain ) ) - g0 ) / SP_BLOCK;
+
+	chans[0] = a;
+	chans[1] = b;
+	for ( c = 0; c < 2 && chans[c]; c++ ) {
+		float *x = chans[c];
+		float z1, z2;
+		if ( !sp->occlEngaged ) {
+			// start the filter settled on the signal to avoid a click
+			sp->occlState[c][0] = sp->occlState[c][1] = x[0];
+		}
+		z1 = sp->occlState[c][0];
+		z2 = sp->occlState[c][1];
+		for ( i = 0; i < SP_BLOCK; i++ ) {
+			z1 += coef * ( x[i] - z1 );
+			z2 += coef * ( z1 - z2 );
+			x[i] = z2 * ( g0 + dg * i );
+		}
+		sp->occlState[c][0] = z1;
+		sp->occlState[c][1] = z2;
+	}
+	sp->occlEngaged = qtrue;
+}
+
+
+/*
+================
 SP_Spatialize
 
 Sets the targets for the next block of a voice of volume masterVol (0..255)
@@ -502,10 +626,20 @@ static void SP_Spatialize( spSpatial_t *sp, const spListener_t *listener, const 
 		sp->monoTarget = masterVol * atten * sp_hrtfGain / 256.0f;
 	}
 
+	if ( headLocked || !s_occlusion->integer ) {
+		sp->occlTarget = 0.0f;
+	} else if ( !sp->primed || sp_mixtime - sp->occlTime >= dma.speed / SP_OCCL_RATE || sp_mixtime - sp->occlTime < 0 ) {
+		// tracing is the expensive part, so each voice re-traces a few times a second
+		sp->occlTarget = SP_Occlusion( listener->origin, origin );
+		sp->occlTime = sp_mixtime;
+	}
+
 	if ( !sp->primed ) {
 		sp->current[0] = sp->target[0];
 		sp->current[1] = sp->target[1];
 		sp->monoCurrent = sp->monoTarget;
+		sp->occlCurrent = sp->occlTarget;
+		sp->occlEngaged = qfalse;
 		sp->primed = qtrue;
 	}
 }
@@ -615,6 +749,7 @@ static int SP_MixVoice( const spSfx_t *sfx, double *phase, double rate, qboolean
 		float l[SP_BLOCK], r[SP_BLOCK];
 		const float g0 = sp->monoCurrent, dg = ( sp->monoTarget - sp->monoCurrent ) * step;
 		n = SP_Read( sfx, phase, rate, loop, a, NULL );
+		SP_Occlude( sp, a, NULL );
 		for ( i = 0; i < SP_BLOCK; i++ )
 			a[i] *= g0 + dg * i;
 		SPH_Process( sp->hrtf, a, sp->dir, l, r );
@@ -627,6 +762,7 @@ static int SP_MixVoice( const spSfx_t *sfx, double *phase, double rate, qboolean
 		const float l0 = sp->current[0], dl = ( sp->target[0] - sp->current[0] ) * step;
 		const float r0 = sp->current[1], dr = ( sp->target[1] - sp->current[1] ) * step;
 		n = SP_Read( sfx, phase, rate, loop, a, b );
+		SP_Occlude( sp, a, b );
 		for ( i = 0; i < SP_BLOCK; i++ ) {
 			out[i * 2] += a[i] * ( l0 + dl * i );
 			out[i * 2 + 1] += b[i] * ( r0 + dr * i );
@@ -1474,6 +1610,7 @@ static void S_Spatial_Shutdown( void ) {
 	sp_started = qfalse;
 
 	Cmd_RemoveCommand( "s_spatialTest" );
+	Cmd_RemoveCommand( "s_occlusionTest" );
 
 	cls.soundRegistered = qfalse;
 }
@@ -1624,6 +1761,100 @@ static void S_Spatial_Test_f( void ) {
 	free( buf );
 }
 
+/*
+================
+S_Spatial_OcclusionTest_f
+
+s_occlusionTest <sound> <output.wav> <lx> <ly> <lz> <sx> <sy> <sz>
+
+Needs a loaded map. Renders <sound> at source position s heard from l
+twice: first with occlusion off, then with it on. Prints the occlusion
+amount. Uses the current HRTF/pan mode and occlusion cvars.
+================
+*/
+static void S_Spatial_OcclusionTest_f( void ) {
+	spListener_t listener;
+	vec3_t source;
+	spSfx_t *sfx;
+	fileHandle_t f;
+	float *buf, occl = 0.0f;
+	short *pcm;
+	void *hrtf;
+	int segment, total, p, i;
+	const int saved = s_occlusion->integer;
+
+	if ( Cmd_Argc() < 9 ) {
+		Com_Printf( "usage: s_occlusionTest <sound> <output.wav> <lx> <ly> <lz> <sx> <sy> <sz>\n" );
+		return;
+	}
+	if ( !sp_started ) {
+		Com_Printf( "s_occlusionTest: sound system not started\n" );
+		return;
+	}
+	if ( CM_NumInlineModels() <= 0 ) {
+		Com_Printf( "s_occlusionTest: no map loaded\n" );
+		return;
+	}
+	sfx = SP_FindSfx( Cmd_Argv( 1 ) );
+	if ( !sfx || sfx->defaultSound || !sfx->data ) {
+		Com_Printf( S_COLOR_YELLOW "s_occlusionTest: couldn't load %s\n", Cmd_Argv( 1 ) );
+		return;
+	}
+
+	Com_Memset( &listener, 0, sizeof( listener ) );
+	listener.entnum = ENTITYNUM_NONE;
+	listener.axis[0][0] = listener.axis[1][1] = listener.axis[2][2] = 1.0f;
+	for ( i = 0; i < 3; i++ ) {
+		listener.origin[i] = atof( Cmd_Argv( 3 + i ) );
+		source[i] = atof( Cmd_Argv( 6 + i ) );
+	}
+
+	segment = ( ( sfx->frames + dma.speed / 4 + SP_BLOCK - 1 ) / SP_BLOCK ) * SP_BLOCK;
+	total = segment * 2;
+	buf = calloc( total * 2, sizeof( float ) );
+	pcm = malloc( total * 2 * sizeof( short ) );
+	hrtf = SPH_CreateVoice();
+
+	for ( p = 0; p < 2; p++ ) {
+		spSpatial_t sp;
+		double phase = 0.0;
+		int b;
+
+		Cvar_Set( "s_occlusion", p ? "1" : "0" );
+		Com_Memset( &sp, 0, sizeof( sp ) );
+		sp.hrtf = hrtf;
+		SPH_ResetVoice( hrtf );
+		SP_Spatialize( &sp, &listener, source, SP_MASTER_VOL, qfalse );
+		if ( p )
+			occl = sp.occlTarget;
+		for ( b = 0; b < segment; b += SP_BLOCK )
+			SP_MixVoice( sfx, &phase, 1.0, qfalse, &sp, buf + ( p * segment + b ) * 2 );
+	}
+	Cvar_Set( "s_occlusion", va( "%i", saved ) );
+	SPH_ReleaseVoice( &hrtf );
+
+	for ( i = 0; i < total * 2; i++ ) {
+		float s = buf[i];
+		if ( s > 1.0f ) s = 1.0f;
+		else if ( s < -1.0f ) s = -1.0f;
+		pcm[i] = LittleShort( (short)lrintf( s * 32767.0f ) );
+	}
+
+	f = FS_FOpenFileWrite( Cmd_Argv( 2 ) );
+	if ( f == FS_INVALID_HANDLE ) {
+		Com_Printf( S_COLOR_YELLOW "s_occlusionTest: couldn't open %s for writing\n", Cmd_Argv( 2 ) );
+	} else {
+		SP_WriteWavHeader( f, total, dma.speed );
+		FS_Write( pcm, total * 2 * sizeof( short ), f );
+		FS_FCloseFile( f );
+	}
+	Com_Printf( "occlusiontest: occlusion=%.3f wrote %s (%s)\n", occl, Cmd_Argv( 2 ),
+		( SPH_Active() && s_spatialHRTF->integer ) ? "HRTF" : "stereo pan" );
+
+	free( pcm );
+	free( buf );
+}
+
 // =======================================================================
 // Init
 // =======================================================================
@@ -1651,6 +1882,15 @@ qboolean S_Spatial_Init( soundInterface_t *si ) {
 	Cvar_SetDescription( s_spatialHRTF, "Spatial backend: 1 = 3D sound with HRTF (headphones, needs Steam Audio), 0 = classic left/right panning." );
 	s_steamAudioLib = Cvar_Get( "s_steamAudioLib", SP_STEAMAUDIO_LIB, CVAR_ARCHIVE_ND | CVAR_LATCH );
 	Cvar_SetDescription( s_steamAudioLib, "Spatial backend: Steam Audio library to load for HRTF, a file name (searched by the system and next to the executable) or a full path. Requires snd_restart." );
+	s_occlusion = Cvar_Get( "s_occlusion", "1", CVAR_ARCHIVE_ND );
+	Cvar_CheckRange( s_occlusion, "0", "1", CV_INTEGER );
+	Cvar_SetDescription( s_occlusion, "Spatial backend: muffle sounds hidden behind world geometry." );
+	s_occlusionGain = Cvar_Get( "s_occlusionGain", "0.5", CVAR_ARCHIVE_ND );
+	Cvar_CheckRange( s_occlusionGain, "0", "1", CV_FLOAT );
+	Cvar_SetDescription( s_occlusionGain, "Spatial backend: volume of a fully occluded sound (1 = no change)." );
+	s_occlusionCutoff = Cvar_Get( "s_occlusionCutoff", "1000", CVAR_ARCHIVE_ND );
+	Cvar_CheckRange( s_occlusionCutoff, "100", "20000", CV_FLOAT );
+	Cvar_SetDescription( s_occlusionCutoff, "Spatial backend: low-pass cutoff in Hz for a fully occluded sound (higher = less muffled)." );
 	s_hrtfFile = Cvar_Get( "s_hrtfFile", "", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	Cvar_SetDescription( s_hrtfFile, "Spatial backend: path to an HRTF in SOFA format (SimpleFreeFieldHRIR), e.g. a full-sphere dataset such as SADIE II. Empty uses Steam Audio's built-in HRTF, which has no data below about 45 degrees down. Requires snd_restart." );
 
@@ -1694,6 +1934,7 @@ qboolean S_Spatial_Init( soundInterface_t *si ) {
 	S_Spatial_StopAllSounds();
 
 	Cmd_AddCommand( "s_spatialTest", S_Spatial_Test_f );
+	Cmd_AddCommand( "s_occlusionTest", S_Spatial_OcclusionTest_f );
 
 	si->Shutdown = S_Spatial_Shutdown;
 	si->StartSound = S_Spatial_StartSound;
