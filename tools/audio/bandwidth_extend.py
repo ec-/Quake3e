@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Bandwidth-extend Quake III sounds to 48 kHz with AudioSR.
+Bandwidth-extend Quake III sounds to 48 kHz with AudioSR, and add bass.
 
 The retail sounds are 22.05 kHz, so nothing above ~11 kHz exists, and much of
 the HRTF height cue lives at 6-16 kHz. AudioSR (MIT, Liu et al. 2023,
@@ -16,17 +16,29 @@ so only its new high band is used:
            and gated by the original's own high-frequency envelope so the
            model cannot add hiss where the original is silent.
 
+Bass (no ML): thin sounds get a subharmonic one octave below their lowest
+strong band, like a hardware bass enhancer: that band is band-passed, its
+frequency halved with a zero-crossing flip-flop, and the result shaped by
+the band's own envelope, so it follows the sound and stays silent when the
+sound is. How much depends on the kind of sound (see bass_amount): most
+for footsteps, some for weapons and impacts, none for voices and clicks,
+and none for sounds that already have plenty of sub-bass.
+
 The output is a pk3 to drop into baseq3 (it overrides the originals) plus a
-CSV report. Processed id Software sounds are for personal use only.
+CSV report. Processed id Software sounds are for personal use only. The
+AudioSR result for each sound is cached in the work directory, so an
+interrupted run resumes and the bass can be retuned without the GPU.
 
 Needs a Python environment with torch and audiosr (see tools/audio/README.md).
 
-usage: bandwidth_extend.py <input dir of sound/...wav> <output.pk3> [--steps 50] [--seed 42]
+usage: bandwidth_extend.py <input dir of sound/...wav> <output.pk3> [--work dir] [--no-sr] [--no-bass]
 """
 
 import argparse
 import csv
+import json
 import os
+import re
 import sys
 import time
 import wave
@@ -34,6 +46,7 @@ import zipfile
 
 import numpy as np
 from scipy import signal
+from scipy.ndimage import minimum_filter1d
 
 OUT_RATE = 48000
 CHUNK = int(5.12 * OUT_RATE)    # AudioSR works in 5.12 s windows
@@ -43,11 +56,15 @@ def read_wav(path):
     with wave.open(path) as w:
         rate, ch, width, n = w.getframerate(), w.getnchannels(), w.getsampwidth(), w.getnframes()
         raw = w.readframes(n)
-    if width != 2:
-        raise ValueError(f"{path}: only 16-bit PCM supported")
-    x = np.frombuffer(raw, "<i2").astype(np.float64) / 32768.0
+    if width == 2:
+        x = np.frombuffer(raw, "<i2").astype(np.float64) / 32768.0
+    elif width == 1:
+        x = ( np.frombuffer(raw, "u1").astype(np.float64) - 128.0 ) / 128.0
+    else:
+        raise ValueError(f"{path}: only 8- and 16-bit PCM supported")
     if ch > 1:
         x = x.reshape(-1, ch).mean(axis=1)
+    read_wav.bits = 8 * width
     return x, rate
 
 
@@ -60,11 +77,22 @@ def write_wav(path, x, rate):
         w.writeframes(pcm.tobytes())
 
 
-def cutoff_frequency(x, rate):
-    """Highest frequency holding real content: where cumulative spectral energy reaches 99.9%."""
+def cutoff_frequency(x, rate, bits=16):
+    """Upper edge of the recorded band: the highest frequency whose level is
+    clearly above the noise floor. (An energy percentile misjudges sounds
+    whose energy is mostly bass.)"""
     f, p = signal.welch(x, rate, nperseg=min(2048, len(x)))
-    c = np.cumsum(p) / max(p.sum(), 1e-20)
-    return float(f[min(np.searchsorted(c, 0.999), len(f) - 1)])
+    # average power in 250 Hz bands, so stray bins don't count
+    edges = np.arange(0, 0.5 * rate + 250, 250)
+    bands = np.array([p[(f >= a) & (f < a + 250)].mean() if np.any((f >= a) & (f < a + 250)) else 0.0
+                      for a in edges[:-1]])
+    db = 10 * np.log10(bands + 1e-20)
+    # quantisation noise density, the floor of anything recorded
+    floor = 10 * np.log10((1.0 / 2 ** (bits - 1)) ** 2 / 12 / (0.5 * rate))
+    threshold = max(floor + 20.0, db.max() - 90.0)
+    above = np.nonzero(db > threshold)[0]
+    edge = float(edges[above[-1] + 1]) if len(above) else 0.5 * rate
+    return float(np.clip(edge, 3000.0, 0.97 * 0.5 * rate))
 
 
 def zero_phase(x, kind, freq, rate, order=8):
@@ -77,6 +105,96 @@ def envelope(x, rate, ms=5.0):
     return np.sqrt(np.convolve(x * x, np.ones(n) / n, mode="same"))
 
 
+# ---------------------------------------------------------------------------
+# bass
+
+def bass_amount(rel):
+    """Subharmonic level relative to the whole sound (dB), or None for none."""
+    r = rel.lower()
+    if r.startswith("sound/player/footsteps/"):
+        return -8.0
+    if r.startswith("sound/player/") and r.count("/") == 2:
+        # land1, gibs, fry: impacts; talk, gurp, water: leave alone
+        return -10.0 if re.search(r"/(land|gib|fry)", r) else None
+    if r.startswith(("sound/player/", "sound/feedback/", "sound/teamplay/voc_", "sound/misc/menu")):
+        return None     # voices, announcer, UI
+    if r.startswith("sound/weapons/"):
+        return None if re.search(r"/(change|noammo)\.wav$", r) else -10.0
+    return -14.0        # world, movers, items, other
+
+
+# source bands for the subharmonic: the result lands an octave lower, so
+# starting at 80 Hz keeps it at 40 Hz and up, where headphones still play
+OCTAVES = ((80, 160), (160, 320), (320, 640), (640, 1280))
+
+
+def add_bass(x, rate, level_db):
+    """Adds a subharmonic an octave below the lowest strong band.
+    Returns (signal, added dB relative to the whole sound, source band or "")."""
+    if level_db is None or len(x) < rate // 20:
+        return x, None, ""
+    f, p = signal.welch(x, rate, nperseg=min(8192, len(x)))
+    total = p.sum()
+    if total <= 0:
+        return x, None, ""
+    if p[f < 60].sum() / total >= 0.20:
+        return x, None, "has deep bass"
+    energy = [p[(f >= lo) & (f < hi)].sum() for lo, hi in OCTAVES]
+    strongest = max(energy)
+    if strongest <= 0:
+        return x, None, ""
+    lo, hi = next(b for b, e in zip(OCTAVES, energy) if e >= strongest * 10 ** (-20 / 10))
+    if lo >= 320:
+        lo, hi = 160, 320               # no low end at all: work from 160-320 Hz
+
+    band = zero_phase(x, "bandpass", (lo, hi), rate, order=4)
+    env = envelope(band, rate, ms=15.0)
+    # halve the frequency: flip at every upward zero crossing
+    up = np.zeros(len(band))
+    up[1:] = (band[:-1] < 0) & (band[1:] >= 0)
+    square = np.where(np.cumsum(up) % 2 == 0, 1.0, -1.0)
+    sub = zero_phase(square * env, "bandpass", (lo / 2, hi / 2), rate, order=4)
+    # set the amount relative to the whole sound
+    ratio = np.sqrt(np.sum(x ** 2) / max(np.sum(sub ** 2), 1e-20))
+    sub *= ratio * 10 ** (level_db / 20)
+    sub = zero_phase(sub, "highpass", 20.0, rate, order=2)
+    # make room: turn the whole sound down by up to 2 dB if the bass needs it,
+    # then turn only the bass down wherever it would still clip
+    peak = np.max(np.abs(x + sub))
+    if peak > 0.98:
+        scale = max(0.98 / peak, 10 ** (-2 / 20))
+        x = x * scale
+        sub = sub * scale
+    headroom = np.maximum(0.98 - np.abs(x), 0.0)
+    g = np.where(np.abs(x + sub) > 0.98, headroom / (np.abs(sub) + 1e-9), 1.0)
+    g = np.clip(g, 0.0, 1.0)
+    w = max(1, int(rate * 0.01))
+    g = minimum_filter1d(g, 2 * w + 1, mode="nearest")
+    g = np.convolve(np.pad(g, w, mode="edge"), np.ones(w) / w, mode="same")[w:-w]
+    sub *= g
+    out = x + sub
+    added = 10 * np.log10(max(np.mean(sub ** 2), 1e-20) / max(np.mean(x ** 2), 1e-20))
+    return out, added, "%d-%d Hz" % (lo, hi)
+
+
+def limit_peaks(x, rate, ceiling=0.98, ms=10.0):
+    """Look-ahead peak limiter: turns down only around peaks above the
+    ceiling, so the sound keeps its loudness. Many retail sounds are clipped
+    at full scale; resampling and the new top end overshoot that by up to
+    9 dB. Returns (signal, deepest gain reduction in dB)."""
+    need = np.minimum(1.0, ceiling / np.maximum(np.abs(x), 1e-9))
+    if need.min() >= 1.0:
+        return x, 0.0
+    w = max(1, int(rate * ms / 1000))
+    # a box average inside a window twice its size never exceeds the window's minimum
+    g = minimum_filter1d(need, 2 * w + 1, mode="nearest")
+    g = np.convolve(np.pad(g, w, mode="edge"), np.ones(w) / w, mode="same")[w:-w]
+    return x * g, 20 * np.log10(g.min())
+
+
+# ---------------------------------------------------------------------------
+# AudioSR
+
 def combine(orig48, sr_out, rate, cutoff):
     """Original below the crossover, AudioSR above it."""
     n = len(orig48)
@@ -85,13 +203,23 @@ def combine(orig48, sr_out, rate, cutoff):
         sr_out = np.pad(sr_out, (0, n - len(sr_out)))
     xover = 0.92 * cutoff
 
-    # level and polarity from the band both signals share
-    band = (0.45 * cutoff, 0.9 * cutoff)
-    ob = zero_phase(orig48, "bandpass", band, rate, order=4)
+    # alignment: where every sound has energy
+    oa = zero_phase(orig48, "bandpass", (200, min(4000, 0.9 * xover)), rate, order=4)
+    sa = zero_phase(sr_out, "bandpass", (200, min(4000, 0.9 * xover)), rate, order=4)
+    corr = float(np.dot(oa, sa) / np.sqrt(max(np.dot(oa, oa) * np.dot(sa, sa), 1e-30)))
+
+    # level: the highest octave below the crossover that has real content
+    total = float(np.dot(orig48, orig48))
+    hi = 0.9 * xover
+    while True:
+        band = (hi / 2, hi)
+        ob = zero_phase(orig48, "bandpass", band, rate, order=4)
+        if np.dot(ob, ob) > total * 1e-5 or hi / 2 <= 500:
+            break
+        hi /= 2
     sb = zero_phase(sr_out, "bandpass", band, rate, order=4)
     denom = float(np.dot(sb, sb))
     gain = float(np.dot(ob, sb)) / denom if denom > 0 else 0.0
-    corr = float(np.dot(ob, sb) / np.sqrt(max(np.dot(ob, ob) * denom, 1e-30)))
 
     low = zero_phase(orig48, "lowpass", xover, rate)
     high = gain * (sr_out - zero_phase(sr_out, "lowpass", xover, rate))
@@ -105,9 +233,6 @@ def combine(orig48, sr_out, rate, cutoff):
     high *= limit
 
     out = low + high
-    peak = np.max(np.abs(out))
-    if peak > 0.999:
-        out *= 0.999 / peak
     added_db = 10 * np.log10(max(np.mean(high ** 2), 1e-20) / max(np.mean(orig48 ** 2), 1e-20))
     return out, gain, corr, added_db
 
@@ -116,26 +241,13 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("indir")
     ap.add_argument("pk3")
+    ap.add_argument("--work", help="cache directory for per-sound results (resumes an interrupted run)")
+    ap.add_argument("--no-sr", action="store_true", help="skip AudioSR (bass only, resampled to 48 kHz)")
+    ap.add_argument("--no-bass", action="store_true", help="skip bass extension")
     ap.add_argument("--steps", type=int, default=50, help="DDIM steps (AudioSR default 200)")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--guidance", type=float, default=3.5)
-    ap.add_argument("--keep", help="also write the raw AudioSR outputs and results to this directory")
     args = ap.parse_args()
-
-    # AudioSR pins librosa 0.9.2, which still uses aliases removed from NumPy
-    for alias, real in (("float", float), ("int", int), ("complex", complex), ("bool", bool)):
-        if not hasattr(np, alias):
-            setattr(np, alias, real)
-
-    import torch
-    import audiosr
-    import soundfile
-
-    # torchaudio >= 2.9 needs torchcodec for load(); AudioSR only reads plain WAVs
-    def _load(path, *a, **k):
-        data, rate = soundfile.read(path, dtype="float32", always_2d=True)
-        return torch.from_numpy(data.T.copy()), rate
-    audiosr.utils.torchaudio.load = _load
 
     files = []
     for root, _, names in os.walk(args.indir):
@@ -145,52 +257,100 @@ def main():
     files.sort()
     if not files:
         sys.exit("no .wav files found")
+    work = args.work or os.path.splitext(args.pk3)[0] + "-work"
+    os.makedirs(work, exist_ok=True)
 
-    model = audiosr.build_model(model_name="basic", device="auto")
-    report = []
+    model = None
+    if not args.no_sr:
+        # AudioSR pins librosa 0.9.2, which still uses aliases removed from NumPy
+        for alias, real in (("float", float), ("int", int), ("complex", complex), ("bool", bool)):
+            if not hasattr(np, alias):
+                setattr(np, alias, real)
+        import torch
+        import audiosr
+        import soundfile
+
+        # torchaudio >= 2.9 needs torchcodec for load(); AudioSR only reads plain WAVs
+        def _load(path, *a, **k):
+            data, rate = soundfile.read(path, dtype="float32", always_2d=True)
+            return torch.from_numpy(data.T.copy()), rate
+        audiosr.utils.torchaudio.load = _load
+
     start = time.time()
-    with zipfile.ZipFile(args.pk3 + ".tmp", "w", zipfile.ZIP_DEFLATED) as z:
-        for i, rel in enumerate(files):
-            src = os.path.join(args.indir, rel)
-            x, rate = read_wav(src)
-            orig48 = signal.resample_poly(x, OUT_RATE, rate)
-            cutoff = min(cutoff_frequency(x, rate), 0.5 * rate * 0.97)
-            t0 = time.time()
+    tmp = os.path.join(work, "_input.wav")
+    srdir = os.path.join(work, "sr")
+
+    # pass 1: top end (slow, cached per sound)
+    for i, rel in enumerate(files):
+        cached = os.path.join(srdir, rel + ".npy")
+        cached_row = os.path.join(srdir, rel + ".json")
+        if os.path.exists(cached) and os.path.exists(cached_row):
+            continue
+        t0 = time.time()
+        try:
+            x, rate = read_wav(os.path.join(args.indir, rel))
+        except Exception as e:      # noqa: BLE001
+            print("[%d/%d] %s  SKIPPED: %s" % (i + 1, len(files), rel, e), flush=True)
+            continue
+        orig48 = signal.resample_poly(x, OUT_RATE, rate)
+        cutoff = cutoff_frequency(x, rate, read_wav.bits)
+        row = dict(file=rel, seconds="%.2f" % (len(x) / rate), cutoff_hz="%.0f" % cutoff,
+                   match_corr="", sr_added_db="", note="")
+        out = orig48
+        if not args.no_sr:
+            if model is None:
+                model = audiosr.build_model(model_name="basic", device="auto")
             # hand AudioSR a 48 kHz input padded to whole windows: its own
             # resampling and padding are off by a frame for some lengths
-            tmp = args.pk3 + ".wav"
             padded = np.pad(orig48, (0, -len(orig48) % CHUNK))
             write_wav(tmp, padded * (0.5 / max(np.max(np.abs(padded)), 1e-9)), OUT_RATE)
             try:
                 sr = audiosr.super_resolution(model, tmp, seed=args.seed, ddim_steps=args.steps,
                                               guidance_scale=args.guidance)
                 sr = np.asarray(sr, dtype=np.float64).reshape(-1)
-                out, gain, corr, added = combine(orig48, sr, OUT_RATE, cutoff)
+                result, gain, corr, added = combine(orig48, sr, OUT_RATE, cutoff)
+                row["match_corr"] = "%.3f" % corr
                 if corr < 0.9:
-                    raise RuntimeError("AudioSR output doesn't line up with the original (corr %.2f)" % corr)
-            except Exception as e:
-                print("[%d/%d] %s  FAILED, kept the original: %s" % (i + 1, len(files), rel, e), flush=True)
-                report.append(dict(file=rel, seconds="%.2f" % (len(x) / rate), cutoff_hz="%.0f" % cutoff,
-                                   match_corr="", gain="", added_db="failed"))
+                    row["note"] = "AudioSR output didn't line up (corr %.2f), top end not extended" % corr
+                else:
+                    out = result
+                    row["sr_added_db"] = "%.1f" % added
+            except Exception as e:      # noqa: BLE001
+                row["note"] = "AudioSR failed, top end not extended: %s" % str(e)[:120]
+        os.makedirs(os.path.dirname(cached), exist_ok=True)
+        np.save(cached, out.astype(np.float32))    # unclipped
+        json.dump(row, open(cached_row, "w"))
+        print("[%d/%d] %s  cutoff %.0f Hz  top %s dB %s (%.1f s)"
+              % (i + 1, len(files), rel, cutoff, row["sr_added_db"] or "-", row["note"], time.time() - t0),
+              flush=True)
+
+    # pass 2: bass and levels (fast), written straight into the pk3
+    report = []
+    with zipfile.ZipFile(args.pk3 + ".tmp", "w", zipfile.ZIP_DEFLATED) as z:
+        for rel in files:
+            cached = os.path.join(srdir, rel)
+            if not os.path.exists(cached + ".json"):
                 continue
+            row = dict(json.load(open(cached + ".json")), bass_band="", bass_added_db="", peak_limited_db="")
+            out = np.load(cached + ".npy").astype(np.float64)
+            if not args.no_bass:
+                out, bass, band = add_bass(out, OUT_RATE, bass_amount(rel))
+                row["bass_band"] = band
+                if bass is not None:
+                    row["bass_added_db"] = "%.1f" % bass
+            out, reduction = limit_peaks(out, OUT_RATE)
+            row["peak_limited_db"] = "%.1f" % reduction if reduction < -0.05 else ""
             write_wav(tmp, out, OUT_RATE)
             z.write(tmp, rel)
-            if args.keep:
-                for sub, data in (("audiosr", sr), ("result", out), ("original", orig48)):
-                    p = os.path.join(args.keep, sub, rel)
-                    os.makedirs(os.path.dirname(p), exist_ok=True)
-                    write_wav(p, data[:len(orig48)] if sub == "audiosr" else data, OUT_RATE)
-            report.append(dict(file=rel, seconds="%.2f" % (len(x) / rate), cutoff_hz="%.0f" % cutoff,
-                               match_corr="%.3f" % corr, gain="%.3f" % gain, added_db="%.1f" % added))
-            print("[%d/%d] %s  cutoff %.0f Hz  corr %.2f  added %.1f dB  (%.1f s)"
-                  % (i + 1, len(files), rel, cutoff, corr, added, time.time() - t0), flush=True)
-    os.remove(args.pk3 + ".wav")
+            report.append(row)
+    if os.path.exists(tmp):
+        os.remove(tmp)
     os.replace(args.pk3 + ".tmp", args.pk3)
     with open(os.path.splitext(args.pk3)[0] + ".csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(report[0]))
         w.writeheader()
         w.writerows(report)
-    print("wrote %s (%d sounds) in %.0f s" % (args.pk3, len(files), time.time() - start))
+    print("wrote %s (%d sounds) in %.0f s" % (args.pk3, len(report), time.time() - start), flush=True)
 
 
 if __name__ == "__main__":
