@@ -18,6 +18,10 @@ Golden hashes depend on the compiler and CPU (floating point), so they are
 per environment: regenerate with --update-golden after an intended change.
 The determinism and A/B checks are portable.
 
+With --steamaudio (or STEAMAUDIO_LIB) pointing at libphonon.so, the
+spatial backend is also tested with HRTF ("spatial-hrtf"), and height must
+then be audible.
+
 Needs: python3, numpy, retail Quake 3 data (pak0.pk3 ... pak8.pk3).
 
 Example:
@@ -42,11 +46,17 @@ GOLDEN = os.path.join(HERE, "golden.json")
 
 POSITIONAL_SOUND = "sound/player/footsteps/boot1.wav"
 DEMO = "four"
-BACKENDS = ("base", "spatial")
+# name -> extra engine arguments; "spatial" is pinned to stereo panning
+VARIANTS = {
+    "base": ["+set", "s_backend", "base"],
+    "spatial": ["+set", "s_backend", "spatial", "+set", "s_spatialHRTF", "0"],
+}
 
 # A/B thresholds between the classic and spatial backends on the demo
 AB_MIN_ENVELOPE_CORR = 0.93
 AB_MAX_LEVEL_DIFF_DB = 0.5
+AB_HRTF_MIN_ENVELOPE_CORR = 0.85
+AB_HRTF_MAX_LEVEL_DIFF_DB = 2.0
 
 
 # ---------------------------------------------------------------------------
@@ -171,16 +181,19 @@ def check_golden(results, golden, key, digest, update):
 # ---------------------------------------------------------------------------
 # tests
 
-def test_positional(args, work, results, golden):
-    print("positional test (spatial backend)")
-    home = os.path.join(work, "positional")
+def test_positional(args, work, results, golden, variant):
+    hrtf = variant.endswith("hrtf")
+    print(f"positional test ({variant})")
+    home = os.path.join(work, f"positional-{variant}")
     shutil.rmtree(home, ignore_errors=True)
     os.makedirs(home)
-    out = run_engine(args, home, [
-        "+set", "s_backend", "spatial",
+    out = run_engine(args, home, VARIANTS[variant] + [
         "+s_spatialTest", POSITIONAL_SOUND, "positional.wav",
         "+quit",
     ])
+    if hrtf and "HRTF)" not in out:
+        results.add(f"[{variant}] HRTF active", "FAIL", "Steam Audio did not load; engine log:\n" + out[-2000:])
+        return
     rms = {}
     for line in out.splitlines():
         if line.startswith("spatialtest: ") and "rmsL=" in line:
@@ -188,18 +201,23 @@ def test_positional(args, work, results, golden):
             rms[name] = (float(l.split("=")[1]), float(r.split("=")[1]))
     wav = os.path.join(home, "baseq3", "positional.wav")
     if not rms or not os.path.exists(wav):
-        results.add("positional render", "FAIL", "no output; engine log:\n" + out[-2000:])
+        results.add(f"[{variant}] positional render", "FAIL", "no output; engine log:\n" + out[-2000:])
         return
-    results.add("positional render", "PASS", f"{len(rms)} placements")
+    results.add(f"[{variant}] positional render", "PASS", f"{len(rms)} placements")
 
     def ok(name, cond, detail):
-        results.add(name, "PASS" if cond else "FAIL", detail)
+        results.add(f"[{variant}] {name}", "PASS" if cond else "FAIL", detail)
 
-    ok("left/right: 'right' is louder in the right ear", rms["right"][1] > 2 * rms["right"][0],
+    # HRTF separates the ears with level, spectrum and delay, so broadband
+    # level differences are much smaller than with hard panning.
+    ratio = 1.2 if hrtf else 2.0
+    tol = 0.05 if hrtf else 1e-6
+    ok("left/right: 'right' is louder in the right ear", rms["right"][1] > ratio * rms["right"][0],
        "L=%.4f R=%.4f" % rms["right"])
-    ok("left/right: 'left' mirrors 'right'", abs(rms["left"][0] - rms["right"][1]) < 1e-6
-       and abs(rms["left"][1] - rms["right"][0]) < 1e-6, "")
-    ok("front is centred", abs(rms["front"][0] - rms["front"][1]) < 1e-6, "L=%.4f R=%.4f" % rms["front"])
+    ok("left/right: 'left' mirrors 'right'",
+       abs(rms["left"][0] - rms["right"][1]) <= tol * rms["right"][1]
+       and abs(rms["left"][1] - rms["right"][0]) <= tol * rms["right"][1] + 1e-9, "")
+    ok("front is centred", abs(rms["front"][0] - rms["front"][1]) <= tol * rms["front"][0], "L=%.4f R=%.4f" % rms["front"])
 
     # Height: with only per-ear gains, sounds above/below/level are identical.
     # Compare the rendered audio itself, not just levels (HRTF changes spectra).
@@ -214,21 +232,21 @@ def test_positional(args, work, results, golden):
     d_updown = differs("above", "below")
     detail = "rms diff above-front %.5f, below-front %.5f, above-below %.5f" % (d_above, d_below, d_updown)
     height_ok = min(d_above, d_below, d_updown) > 1e-4
-    if args.expect_height:
+    if hrtf:
         ok("height is audible (above/below/level differ)", height_ok, detail)
+        ok("front/back differ", differs("front", "back") > 1e-4, "rms diff %.5f" % differs("front", "back"))
     else:
-        results.add("height is audible (above/below/level differ)",
-                    "PASS" if height_ok else "XFAIL", detail + ("" if height_ok else " (expected until HRTF, stage 3)"))
+        results.add(f"[{variant}] height is audible (above/below/level differ)",
+                    "PASS" if height_ok else "XFAIL", detail + ("" if height_ok else " (expected: stereo panning)"))
 
-    check_golden(results, golden, "positional/spatial", md5(wav), args.update_golden)
+    check_golden(results, golden, f"positional/{variant}", md5(wav), args.update_golden)
 
 
 def capture_demo(args, work, backend, run):
     home = os.path.join(work, f"demo-{backend}-{run}")
     shutil.rmtree(home, ignore_errors=True)
     os.makedirs(home)
-    out = run_engine(args, home, [
-        "+set", "s_backend", backend,
+    out = run_engine(args, home, VARIANTS[backend] + [
         "+set", "cl_aviFrameRate", "50",
         "+set", "cl_aviMotionJpeg", "1",
         "+set", "nextdemo", "quit",
@@ -246,8 +264,8 @@ def capture_demo(args, work, backend, run):
 
 def test_demo(args, work, results, golden):
     captures = {}
-    for backend in BACKENDS:
-        print(f"demo test ({backend} backend)")
+    for backend in VARIANTS:
+        print(f"demo test ({backend})")
         try:
             a1, rate, d1 = capture_demo(args, work, backend, 1)
             results.add(f"demo capture {backend}", "PASS", "%.1f s at %d Hz" % (len(a1) / rate, rate))
@@ -260,19 +278,28 @@ def test_demo(args, work, results, golden):
         except Exception as e:  # noqa: BLE001 - report and continue
             results.add(f"demo capture {backend}", "FAIL", str(e))
 
-    if len(captures) == 2:
-        (a, ra), (b, rb) = captures["base"], captures["spatial"]
+    if "base" not in captures:
+        return
+    a, ra = captures["base"]
+    for other in captures:
+        if other == "base":
+            continue
+        b, rb = captures[other]
+        # HRTF legitimately changes per-ear levels and spectra; only the
+        # stereo-pan variant is held to the tight A/B limits
+        corr_min, level_max = (AB_HRTF_MIN_ENVELOPE_CORR, AB_HRTF_MAX_LEVEL_DIFF_DB) if other.endswith("hrtf") \
+            else (AB_MIN_ENVELOPE_CORR, AB_MAX_LEVEL_DIFF_DB)
         ea, eb = envelope(a, ra), envelope(b, rb)
         m = min(len(ea), len(eb))
         corr = min(np.corrcoef(ea[:m, c], eb[:m, c])[0, 1] for c in range(2))
-        results.add("A/B envelope correlation (timing and dynamics)", "PASS" if corr >= AB_MIN_ENVELOPE_CORR else "FAIL",
-                    "%.3f (min %.2f)" % (corr, AB_MIN_ENVELOPE_CORR))
+        results.add(f"A/B base vs {other}: envelope correlation (timing and dynamics)",
+                    "PASS" if corr >= corr_min else "FAIL", "%.3f (min %.2f)" % (corr, corr_min))
         diffs = [20 * np.log10(np.sqrt((b[:, c] ** 2).mean()) / np.sqrt((a[:, c] ** 2).mean())) for c in range(2)]
         worst = max(abs(d) for d in diffs)
-        results.add("A/B loudness", "PASS" if worst <= AB_MAX_LEVEL_DIFF_DB else "FAIL",
-                    "L %+.2f dB, R %+.2f dB (max %.1f)" % (diffs[0], diffs[1], AB_MAX_LEVEL_DIFF_DB))
+        results.add(f"A/B base vs {other}: loudness", "PASS" if worst <= level_max else "FAIL",
+                    "L %+.2f dB, R %+.2f dB (max %.1f)" % (diffs[0], diffs[1], level_max))
         dur = abs(len(a) / ra - len(b) / rb)
-        results.add("A/B duration", "PASS" if dur < 0.05 else "FAIL", "%.3f s apart" % dur)
+        results.add(f"A/B base vs {other}: duration", "PASS" if dur < 0.05 else "FAIL", "%.3f s apart" % dur)
 
 
 # ---------------------------------------------------------------------------
@@ -286,7 +313,8 @@ def main():
     ap.add_argument("--only", choices=("positional", "demo"), help="run one test group")
     ap.add_argument("--repeat", action="store_true", help="capture each demo twice to check determinism")
     ap.add_argument("--update-golden", action="store_true", help="record current outputs as golden")
-    ap.add_argument("--expect-height", action="store_true", help="fail (not xfail) if height is inaudible")
+    ap.add_argument("--steamaudio", default=os.environ.get("STEAMAUDIO_LIB"),
+                    help="path to libphonon.so; adds the spatial-hrtf variant (env STEAMAUDIO_LIB)")
     ap.add_argument("--keep", action="store_true", help="keep AVI captures")
     ap.add_argument("--timeout", type=int, default=600)
     args = ap.parse_args()
@@ -300,10 +328,20 @@ def main():
     os.makedirs(work, exist_ok=True)
     print(f"work dir: {work}")
 
+    if args.steamaudio:
+        if not os.path.exists(args.steamaudio):
+            sys.exit(f"Steam Audio library not found: {args.steamaudio}")
+        VARIANTS["spatial-hrtf"] = ["+set", "s_backend", "spatial", "+set", "s_spatialHRTF", "1",
+                                    "+set", "s_steamAudioLib", os.path.abspath(args.steamaudio)]
+    else:
+        print("note: no --steamaudio given, HRTF not tested")
+
     golden = load_golden()
     results = Results()
     if args.only in (None, "positional"):
-        test_positional(args, work, results, golden)
+        for variant in VARIANTS:
+            if variant != "base":
+                test_positional(args, work, results, golden, variant)
     if args.only in (None, "demo"):
         test_demo(args, work, results, golden)
 

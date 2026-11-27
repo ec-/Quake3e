@@ -1,5 +1,7 @@
 {
   "demo/base": "80c008474f2494e5d905bfc85cc11bf5",
   "demo/spatial": "b1f6a4bf0808434d66dda97bcc4c268f",
-  "positional/spatial": "e8920827626aa6797fd96341c9d3f176"
+  "demo/spatial-hrtf": "2c7c0011cf9a3bfcbd3ac2708bf75e40",
+  "positional/spatial": "e8920827626aa6797fd96341c9d3f176",
+  "positional/spatial-hrtf": "29ae4de3c53ac25bce86be087772e270"
 }

@@ -1096,6 +1096,7 @@ Q3OBJ = \
   \
   $(B)/client/snd_main.o \
   $(B)/client/snd_spatial.o \
+  $(B)/client/snd_steamaudio.o \
   $(B)/client/snd_codec.o \
   $(B)/client/snd_codec_wav.o \
   \

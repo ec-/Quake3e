@@ -236,6 +236,18 @@ extern int	   sfxScratchIndex;
 qboolean S_Base_Init( soundInterface_t *si );
 qboolean S_Spatial_Init( soundInterface_t *si );
 
+// HRTF for the spatial backend (snd_steamaudio.c). A voice is one sound's
+// binaural filter state; blocks are frameSize frames of mono input.
+qboolean	SPH_Init( const char *libName, int rate, int frameSize );
+void		SPH_Shutdown( void );
+qboolean	SPH_Active( void );
+const char	*SPH_Describe( void );
+void		*SPH_CreateVoice( void );
+void		SPH_ReleaseVoice( void **voice );
+void		SPH_ResetVoice( void *voice );
+void		SPH_Process( void *voice, float *mono, const vec3_t dir, float *outL, float *outR );
+qboolean	SPH_Tail( void *voice, float *outL, float *outR );
+
 // Optional requests from the active backend to the device layer, read by
 // SNDDMA_Init. Zero means "no preference". Drivers may ignore them.
 typedef struct {

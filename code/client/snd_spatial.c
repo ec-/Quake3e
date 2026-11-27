@@ -38,9 +38,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *    windowed-sinc filter (the classic loader uses nearest-sample, which
  *    adds aliasing above the source Nyquist frequency).
  *  - Gains are ramped across each block, so moving sounds do not click.
- *  - All positional processing goes through SP_SpatialTargets() and
- *    SP_PaintVoice(). Stage 2 uses the classic stereo pan law there
- *    (left/right only); stage 3 replaces it with HRTF.
+ *  - All positional processing goes through SP_Spatialize() and
+ *    SP_MixVoice(). With Steam Audio loaded (snd_steamaudio.c) each
+ *    positioned voice gets its own HRTF filter, so height and front/back
+ *    are audible on headphones. Without it, the classic left/right pan law.
  *
  * Quake's up axis is Z. The listener axis is forward, left, up.
  */
@@ -65,6 +66,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define SP_ATTENUATE		0.0008f
 #define SP_MASTER_VOL		127.0f
 #define SP_SPHERE_VOL		90.0f
+
+// HRTF mode gain, relative to masterVol * attenuation. Calibrated with
+// s_spatialTest so a sound straight ahead has the same per-ear RMS level as
+// with the classic pan law (Steam Audio 4.8.1 default HRTF, RMS normalised).
+#define SP_HRTF_GAIN		0.566f
+
+#ifdef _WIN32
+#define SP_STEAMAUDIO_LIB	"phonon.dll"
+#else
+#define SP_STEAMAUDIO_LIB	"libphonon" DLL_EXT
+#endif
 
 // resampler
 #define SP_RS_HALFWIDTH		12			// input samples each side of the centre
@@ -91,11 +103,17 @@ typedef struct {
 	int		entnum;
 } spListener_t;
 
-// per-voice spatial state; this is what HRTF will extend
+// per-voice spatial state
 typedef struct {
-	float		target[2];			// gains wanted after the next block
-	float		current[2];			// gains applied at the end of the last block
-	qboolean	primed;				// current[] is valid
+	float		target[2];			// per-ear gains wanted after the next block (pan mode, head-locked sounds)
+	float		current[2];			// per-ear gains applied at the end of the last block
+	float		monoTarget;			// distance gain for HRTF mode
+	float		monoCurrent;
+	vec3_t		dir;				// direction to the source in the listener frame (forward, left, up)
+	qboolean	headLocked;			// the listener's own sounds: not positioned
+	qboolean	primed;				// current values are valid
+	void		*hrtf;				// binaural state, NULL without Steam Audio
+	qboolean	tail;				// binaural state may still have output after the input stopped
 } spSpatial_t;
 
 typedef struct {
@@ -167,6 +185,8 @@ static char			sp_musicLoop[MAX_QPATH];
 
 static cvar_t		*s_spatialMixAhead;
 static cvar_t		*s_spatialShow;
+static cvar_t		*s_spatialHRTF;
+static cvar_t		*s_steamAudioLib;
 extern cvar_t		*s_khz;
 extern cvar_t		*s_show;
 
@@ -423,159 +443,233 @@ static void SP_FreeAllSfx( void ) {
 // Spatialization
 //
 // Everything that decides how a positioned sound reaches the two ears lives
-// here. Stage 2: the classic pan law (left/right only, height discarded).
+// here. With Steam Audio loaded (and s_spatialHRTF 1) every positioned voice
+// goes through its own HRTF filter, which carries height and front/back.
+// Otherwise the classic pan law is used (left/right only).
 // =======================================================================
 
 /*
 ================
-SP_SpatialTargets
+SP_Spatialize
 
-Computes the per-ear gains (before s_volume) for a sound of volume
-masterVol (0..255) at origin, heard by listener.
+Sets the targets for the next block of a voice of volume masterVol (0..255)
+at origin. Head-locked voices (the listener's own sounds) are centred at
+full volume, as in the classic mixer.
 ================
 */
-static void SP_SpatialTargets( const spListener_t *listener, const vec3_t origin, float masterVol, float out[2] ) {
-	vec3_t dir, local;
-	float dist, dot, lscale, rscale, atten;
+static void SP_Spatialize( spSpatial_t *sp, const spListener_t *listener, const vec3_t origin, float masterVol, qboolean headLocked ) {
+	vec3_t dir;
+	float dist, atten, lscale, rscale, dot;
 
-	VectorSubtract( origin, listener->origin, dir );
-	dist = VectorNormalize( dir );
-	dist -= SP_FULLVOLUME;
-	if ( dist < 0.0f )
-		dist = 0.0f;
-	atten = 1.0f - dist * SP_ATTENUATE;
-	if ( atten <= 0.0f ) {
-		out[0] = out[1] = 0.0f;
-		return;
-	}
+	sp->headLocked = headLocked;
 
-	VectorRotate( dir, listener->axis, local );
-	dot = -local[1];	// +1 = fully right, -1 = fully left
-
-	if ( dma.channels == 1 ) {
-		lscale = rscale = 1.0f;
+	if ( headLocked ) {
+		sp->target[0] = sp->target[1] = masterVol / 256.0f;
+		sp->monoTarget = 0.0f;
+		VectorSet( sp->dir, 1.0f, 0.0f, 0.0f );
 	} else {
-		rscale = 0.5f * ( 1.0f + dot );
-		lscale = 0.5f * ( 1.0f - dot );
-		if ( rscale < 0.0f ) rscale = 0.0f;
-		if ( lscale < 0.0f ) lscale = 0.0f;
+		VectorSubtract( origin, listener->origin, dir );
+		dist = VectorNormalize( dir );
+
+		if ( dist < 1.0f ) {
+			// on top of the listener: no meaningful direction
+			VectorSet( sp->dir, 1.0f, 0.0f, 0.0f );
+		} else {
+			VectorRotate( dir, listener->axis, sp->dir );
+		}
+
+		dist -= SP_FULLVOLUME;
+		if ( dist < 0.0f )
+			dist = 0.0f;
+		atten = 1.0f - dist * SP_ATTENUATE;
+		if ( atten < 0.0f )
+			atten = 0.0f;
+
+		dot = -sp->dir[1];	// +1 = fully right, -1 = fully left
+		if ( dma.channels == 1 ) {
+			lscale = rscale = 1.0f;
+		} else {
+			rscale = 0.5f * ( 1.0f + dot );
+			lscale = 0.5f * ( 1.0f - dot );
+			if ( rscale < 0.0f ) rscale = 0.0f;
+			if ( lscale < 0.0f ) lscale = 0.0f;
+		}
+
+		sp->target[0] = masterVol * atten * lscale / 256.0f;
+		sp->target[1] = masterVol * atten * rscale / 256.0f;
+		sp->monoTarget = masterVol * atten * SP_HRTF_GAIN / 256.0f;
 	}
 
-	out[0] = masterVol * atten * lscale / 256.0f;
-	out[1] = masterVol * atten * rscale / 256.0f;
-}
-
-
-static void SP_SetTargets( spSpatial_t *sp, const float target[2] ) {
-	sp->target[0] = target[0];
-	sp->target[1] = target[1];
 	if ( !sp->primed ) {
-		sp->current[0] = target[0];
-		sp->current[1] = target[1];
+		sp->current[0] = sp->target[0];
+		sp->current[1] = sp->target[1];
+		sp->monoCurrent = sp->monoTarget;
 		sp->primed = qtrue;
 	}
 }
 
 
-/*
-================
-SP_PaintVoice
-
-Mixes frames [0, count) of a voice into out (interleaved stereo float),
-starting at block frame offset 'offset', ramping gains from current to
-target across the whole block. Reads the sound from *phase advancing by
-rate per frame. Returns the number of frames painted (less than count only
-for a one-shot that ended).
-================
-*/
-static int SP_PaintVoice( const spSfx_t *sfx, double *phase, double rate, qboolean loop,
-	const spSpatial_t *sp, float *out, int offset, int count ) {
-	const short *data = sfx->data;
-	const int frames = sfx->frames;
-	const float inv = 1.0f / ( 32768.0f * SP_BLOCK );
-	float g0[2], dg[2];
-	int i, painted = 0;
-
-	if ( !data || frames <= 0 )
-		return 0;
-
-	// gain at block frame j = current + (target - current) * j / SP_BLOCK, pre-scaled to normalise samples
-	g0[0] = sp->current[0] * SP_BLOCK * inv;
-	g0[1] = sp->current[1] * SP_BLOCK * inv;
-	dg[0] = ( sp->target[0] - sp->current[0] ) * inv;
-	dg[1] = ( sp->target[1] - sp->current[1] ) * inv;
-
-	if ( rate == 1.0 && !loop ) {
-		// one-shot at native rate: integer stepping
-		int p = (int)*phase;
-		int n = count;
-		if ( p + n > frames )
-			n = frames - p;
-		if ( n < 0 )
-			n = 0;
-		for ( i = 0; i < n; i++ ) {
-			const int j = offset + i;
-			const float gl = g0[0] + dg[0] * j;
-			const float gr = g0[1] + dg[1] * j;
-			float l, r;
-			if ( sfx->channels == 2 ) {
-				l = data[( p + i ) * 2];
-				r = data[( p + i ) * 2 + 1];
-			} else {
-				l = r = data[p + i];
-			}
-			out[j * 2] += l * gl;
-			out[j * 2 + 1] += r * gr;
-		}
-		*phase = p + n;
-		return n;
-	}
-
-	// looping and/or resampled (doppler): linear interpolation
-	for ( i = 0; i < count; i++ ) {
-		const int j = offset + i;
-		const float gl = g0[0] + dg[0] * j;
-		const float gr = g0[1] + dg[1] * j;
-		double ph = *phase;
-		int a, b;
-		float f, l, r;
-
-		if ( ph >= frames ) {
-			if ( !loop )
-				break;
-			ph = fmod( ph, frames );
-		}
-		a = (int)ph;
-		b = a + 1;
-		if ( b >= frames )
-			b = loop ? 0 : a;
-		f = (float)( ph - a );
-
-		if ( sfx->channels == 2 ) {
-			l = data[a * 2] + f * ( data[b * 2] - data[a * 2] );
-			r = data[a * 2 + 1] + f * ( data[b * 2 + 1] - data[a * 2 + 1] );
-		} else {
-			l = r = data[a] + f * ( data[b] - data[a] );
-		}
-		out[j * 2] += l * gl;
-		out[j * 2 + 1] += r * gr;
-		*phase = ph + rate;
-		painted++;
-	}
-	return painted;
+static qboolean SP_UseHRTF( const spSpatial_t *sp ) {
+	return sp->hrtf && !sp->headLocked && s_spatialHRTF->integer && dma.channels == 2;
 }
 
 
-static void SP_EndBlock( spSpatial_t *sp ) {
+/*
+================
+SP_Read
+
+Reads up to SP_BLOCK frames of a voice from *phase, advancing by rate per
+frame, into left/right (or mono when right is NULL, stereo sounds are
+averaged). Unread frames are zeroed. Returns the frames read (less than
+SP_BLOCK only for a one-shot that ended).
+================
+*/
+static int SP_Read( const spSfx_t *sfx, double *phase, double rate, qboolean loop, float *left, float *right ) {
+	const short *data = sfx->data;
+	const int frames = sfx->frames;
+	const float scale = 1.0f / 32768.0f;
+	int i, n = 0;
+
+	if ( data && frames > 0 && rate == 1.0 && !loop ) {
+		// one-shot at native rate: integer stepping
+		const int p = (int)*phase;
+		n = frames - p;
+		if ( n > SP_BLOCK ) n = SP_BLOCK;
+		if ( n < 0 ) n = 0;
+		for ( i = 0; i < n; i++ ) {
+			float l, r;
+			if ( sfx->channels == 2 ) {
+				l = data[( p + i ) * 2] * scale;
+				r = data[( p + i ) * 2 + 1] * scale;
+			} else {
+				l = r = data[p + i] * scale;
+			}
+			if ( right ) {
+				left[i] = l;
+				right[i] = r;
+			} else {
+				left[i] = 0.5f * ( l + r );
+			}
+		}
+		*phase = p + n;
+	} else if ( data && frames > 0 ) {
+		// looping and/or resampled (doppler): linear interpolation
+		for ( i = 0; i < SP_BLOCK; i++ ) {
+			double ph = *phase;
+			int a, b;
+			float f, l, r;
+
+			if ( ph >= frames ) {
+				if ( !loop )
+					break;
+				ph = fmod( ph, frames );
+			}
+			a = (int)ph;
+			b = a + 1;
+			if ( b >= frames )
+				b = loop ? 0 : a;
+			f = (float)( ph - a );
+
+			if ( sfx->channels == 2 ) {
+				l = ( data[a * 2] + f * ( data[b * 2] - data[a * 2] ) ) * scale;
+				r = ( data[a * 2 + 1] + f * ( data[b * 2 + 1] - data[a * 2 + 1] ) ) * scale;
+			} else {
+				l = r = ( data[a] + f * ( data[b] - data[a] ) ) * scale;
+			}
+			if ( right ) {
+				left[i] = l;
+				right[i] = r;
+			} else {
+				left[i] = 0.5f * ( l + r );
+			}
+			*phase = ph + rate;
+			n++;
+		}
+	}
+
+	for ( i = n; i < SP_BLOCK; i++ ) {
+		left[i] = 0.0f;
+		if ( right )
+			right[i] = 0.0f;
+	}
+	return n;
+}
+
+
+/*
+================
+SP_MixVoice
+
+Mixes one block of a voice into out (interleaved stereo), ramping gains
+from the previous block's values to the targets. Returns the frames read.
+================
+*/
+static int SP_MixVoice( const spSfx_t *sfx, double *phase, double rate, qboolean loop, spSpatial_t *sp, float *out ) {
+	float a[SP_BLOCK], b[SP_BLOCK];
+	const float step = 1.0f / SP_BLOCK;
+	int i, n;
+
+	if ( SP_UseHRTF( sp ) ) {
+		float l[SP_BLOCK], r[SP_BLOCK];
+		const float g0 = sp->monoCurrent, dg = ( sp->monoTarget - sp->monoCurrent ) * step;
+		n = SP_Read( sfx, phase, rate, loop, a, NULL );
+		for ( i = 0; i < SP_BLOCK; i++ )
+			a[i] *= g0 + dg * i;
+		SPH_Process( sp->hrtf, a, sp->dir, l, r );
+		for ( i = 0; i < SP_BLOCK; i++ ) {
+			out[i * 2] += l[i];
+			out[i * 2 + 1] += r[i];
+		}
+		sp->tail = qtrue;
+	} else {
+		const float l0 = sp->current[0], dl = ( sp->target[0] - sp->current[0] ) * step;
+		const float r0 = sp->current[1], dr = ( sp->target[1] - sp->current[1] ) * step;
+		n = SP_Read( sfx, phase, rate, loop, a, b );
+		for ( i = 0; i < SP_BLOCK; i++ ) {
+			out[i * 2] += a[i] * ( l0 + dl * i );
+			out[i * 2 + 1] += b[i] * ( r0 + dr * i );
+		}
+	}
+
 	sp->current[0] = sp->target[0];
 	sp->current[1] = sp->target[1];
+	sp->monoCurrent = sp->monoTarget;
+	return n;
+}
+
+
+/*
+================
+SP_MixTail
+
+Mixes the remaining output of a voice's HRTF filter after its sound ended.
+================
+*/
+static void SP_MixTail( spSpatial_t *sp, float *out ) {
+	float l[SP_BLOCK], r[SP_BLOCK];
+	int i;
+	if ( !sp->hrtf || !sp->tail )
+		return;
+	sp->tail = SPH_Tail( sp->hrtf, l, r );
+	for ( i = 0; i < SP_BLOCK; i++ ) {
+		out[i * 2] += l[i];
+		out[i * 2 + 1] += r[i];
+	}
 }
 
 // =======================================================================
 // Mixing
 // =======================================================================
 
+// one binaural state per channel slot, kept across sounds so tails can finish
+static spSpatial_t	sp_chanTail[MAX_CHANNELS];
+static void			*sp_chanHRTF[MAX_CHANNELS];
+
 static void SP_ChannelFree( spChannel_t *ch ) {
+	const int i = ch - sp_channels;
+	// hand the filter over so its tail can play out
+	sp_chanTail[i].hrtf = ch->spatial.hrtf;
+	sp_chanTail[i].tail = ch->spatial.tail;
 	Com_Memset( ch, 0, sizeof( *ch ) );
 }
 
@@ -611,12 +705,13 @@ static void SP_MixBlock( float *out ) {
 		// one-shot sounds
 		for ( i = 0, ch = sp_channels; i < MAX_CHANNELS; i++, ch++ ) {
 			double phase;
-			if ( !ch->sfx )
+			if ( !ch->sfx ) {
+				SP_MixTail( &sp_chanTail[i], tmp );
 				continue;
+			}
 			phase = ch->pos;
-			SP_PaintVoice( ch->sfx, &phase, 1.0, qfalse, &ch->spatial, tmp, 0, SP_BLOCK );
+			SP_MixVoice( ch->sfx, &phase, 1.0, qfalse, &ch->spatial, tmp );
 			ch->pos = (int)phase;
-			SP_EndBlock( &ch->spatial );
 			if ( ch->pos >= ch->sfx->frames )
 				SP_ChannelFree( ch );
 		}
@@ -628,10 +723,11 @@ static void SP_MixBlock( float *out ) {
 				continue;
 			if ( !ent->active ) {
 				ent->spatial.target[0] = ent->spatial.target[1] = 0.0f;
+				ent->spatial.monoTarget = 0.0f;
 			}
-			SP_PaintVoice( ent->playing, &ent->phase, rate, qtrue, &ent->spatial, tmp, 0, SP_BLOCK );
-			SP_EndBlock( &ent->spatial );
-			if ( !ent->active && ent->spatial.current[0] == 0.0f && ent->spatial.current[1] == 0.0f ) {
+			SP_MixVoice( ent->playing, &ent->phase, rate, qtrue, &ent->spatial, tmp );
+			if ( !ent->active && ent->spatial.current[0] == 0.0f && ent->spatial.current[1] == 0.0f
+				&& ent->spatial.monoCurrent == 0.0f ) {
 				// faded out
 				ent->playing = NULL;
 				ent->spatial.primed = qfalse;
@@ -926,8 +1022,11 @@ static void SP_UpdateBackgroundTrack( void ) {
 
 static void SP_StopAll( void ) {
 	int i;
-	for ( i = 0; i < MAX_CHANNELS; i++ )
+	for ( i = 0; i < MAX_CHANNELS; i++ ) {
 		SP_ChannelFree( &sp_channels[i] );
+		sp_chanTail[i].tail = qfalse;
+		SPH_ResetVoice( sp_chanHRTF[i] );
+	}
 	for ( i = 0; i < MAX_GENTITIES; i++ ) {
 		sp_entities[i].active = qfalse;
 		sp_entities[i].kill = qfalse;
@@ -1060,16 +1159,14 @@ static void S_Spatial_StartSound( const vec3_t origin, int entityNum, int entcha
 		ch->fixedOrigin = qtrue;
 	}
 
+	// this slot's HRTF filter: drop any tail from its previous sound
+	ch->spatial.hrtf = sp_chanHRTF[chosen];
+	sp_chanTail[chosen].tail = qfalse;
+	SPH_ResetVoice( ch->spatial.hrtf );
+
 	// spatialize now so the first block has the right gains
-	{
-		float target[2];
-		if ( entityNum == sp_listener.entnum ) {
-			target[0] = target[1] = ch->masterVol / 256.0f;
-		} else {
-			SP_SpatialTargets( &sp_listener, ch->fixedOrigin ? ch->origin : sp_entities[entityNum].origin, ch->masterVol, target );
-		}
-		SP_SetTargets( &ch->spatial, target );
-	}
+	SP_Spatialize( &ch->spatial, &sp_listener, ch->fixedOrigin ? ch->origin : sp_entities[entityNum].origin,
+		ch->masterVol, entityNum == sp_listener.entnum );
 }
 
 
@@ -1171,7 +1268,6 @@ static void S_Spatial_UpdateEntityPosition( int entityNum, const vec3_t origin )
 static void S_Spatial_Respatialize( int entityNum, const vec3_t head, vec3_t axis[3], int inwater ) {
 	spChannel_t *ch;
 	spEntity_t *ent;
-	float target[2];
 	int i;
 
 	if ( !sp_started || sp_muted )
@@ -1189,13 +1285,9 @@ static void S_Spatial_Respatialize( int entityNum, const vec3_t head, vec3_t axi
 	for ( i = 0, ch = sp_channels; i < MAX_CHANNELS; i++, ch++ ) {
 		if ( !ch->sfx )
 			continue;
-		if ( ch->entnum == entityNum ) {
-			// the listener's own sounds are always full volume and centred
-			target[0] = target[1] = ch->masterVol / 256.0f;
-		} else {
-			SP_SpatialTargets( &sp_listener, ch->fixedOrigin ? ch->origin : sp_entities[ch->entnum].origin, ch->masterVol, target );
-		}
-		SP_SetTargets( &ch->spatial, target );
+		// the listener's own sounds are always full volume and centred
+		SP_Spatialize( &ch->spatial, &sp_listener, ch->fixedOrigin ? ch->origin : sp_entities[ch->entnum].origin,
+			ch->masterVol, ch->entnum == entityNum );
 	}
 
 	for ( i = 0, ent = sp_entities; i < MAX_GENTITIES; i++, ent++ ) {
@@ -1205,13 +1297,15 @@ static void S_Spatial_Respatialize( int entityNum, const vec3_t head, vec3_t axi
 				ent->playing = ent->sfx;
 				ent->phase = sp_mixtime % ent->sfx->frames;
 				ent->spatial.primed = qfalse;
+				if ( !ent->spatial.hrtf )
+					ent->spatial.hrtf = SPH_CreateVoice();
+				SPH_ResetVoice( ent->spatial.hrtf );
 			}
-			SP_SpatialTargets( &sp_listener, ent->origin, ent->kill ? SP_MASTER_VOL : SP_SPHERE_VOL, target );
-			SP_SetTargets( &ent->spatial, target );
+			SP_Spatialize( &ent->spatial, &sp_listener, ent->origin, ent->kill ? SP_MASTER_VOL : SP_SPHERE_VOL, qfalse );
 		} else if ( ent->playing ) {
 			// fade out over the next block instead of cutting off
-			target[0] = target[1] = 0.0f;
-			SP_SetTargets( &ent->spatial, target );
+			ent->spatial.target[0] = ent->spatial.target[1] = 0.0f;
+			ent->spatial.monoTarget = 0.0f;
 		}
 	}
 }
@@ -1327,7 +1421,8 @@ static void S_Spatial_SoundInfo( void ) {
 	if ( !sp_started ) {
 		Com_Printf( "sound system not started\n" );
 	} else {
-		Com_Printf( "backend: spatial (stage 2: stereo pan)\n" );
+		Com_Printf( "backend: spatial\n" );
+		Com_Printf( "HRTF: %s%s\n", SPH_Describe(), ( SPH_Active() && !s_spatialHRTF->integer ) ? " (disabled by s_spatialHRTF 0)" : "" );
 		Com_Printf( "%5d channels\n", dma.channels );
 		Com_Printf( "%5d samples\n", dma.samples );
 		Com_Printf( "%5d samplebits (%s)\n", dma.samplebits, dma.isfloat ? "float" : "int" );
@@ -1359,6 +1454,17 @@ static void S_Spatial_Shutdown( void ) {
 		return;
 
 	SNDDMA_Shutdown();
+	{
+		int i;
+		for ( i = 0; i < MAX_CHANNELS; i++ ) {
+			SPH_ReleaseVoice( &sp_chanHRTF[i] );
+			sp_chanTail[i].hrtf = NULL;
+			sp_chanTail[i].tail = qfalse;
+		}
+		for ( i = 0; i < MAX_GENTITIES; i++ )
+			SPH_ReleaseVoice( &sp_entities[i].spatial.hrtf );
+	}
+	SPH_Shutdown();
 	SP_FreeAllSfx();
 	free( sp_rsPoly );
 	sp_rsPoly = NULL;
@@ -1432,6 +1538,7 @@ static void S_Spatial_Test_f( void ) {
 	spListener_t listener;
 	spSfx_t *sfx;
 	fileHandle_t f;
+	void *hrtf;
 	float distance, *buf;
 	short *pcm;
 	int gap, segment, total, p, i;
@@ -1463,10 +1570,11 @@ static void S_Spatial_Test_f( void ) {
 	buf = calloc( total * 2, sizeof( float ) );
 	pcm = malloc( total * 2 * sizeof( short ) );
 
+	hrtf = SPH_CreateVoice();
+
 	for ( p = 0; p < numPlacements; p++ ) {
 		spSpatial_t sp;
 		vec3_t origin;
-		float target[2];
 		double phase = 0.0;
 		double sum[2] = { 0.0, 0.0 };
 		float *seg = buf + p * segment * 2;
@@ -1474,12 +1582,13 @@ static void S_Spatial_Test_f( void ) {
 
 		VectorScale( placements[p].dir, distance, origin );
 		Com_Memset( &sp, 0, sizeof( sp ) );
-		SP_SpatialTargets( &listener, origin, SP_MASTER_VOL, target );
-		SP_SetTargets( &sp, target );
+		sp.hrtf = hrtf;
+		SPH_ResetVoice( hrtf );
+		SP_Spatialize( &sp, &listener, origin, SP_MASTER_VOL, qfalse );
 
+		// keep processing after the sound ends so the filter tail is included
 		for ( b = 0; b < segment; b += SP_BLOCK ) {
-			SP_PaintVoice( sfx, &phase, 1.0, qfalse, &sp, seg + b * 2, 0, SP_BLOCK );
-			SP_EndBlock( &sp );
+			SP_MixVoice( sfx, &phase, 1.0, qfalse, &sp, seg + b * 2 );
 		}
 		for ( i = 0; i < segment; i++ ) {
 			sum[0] += seg[i * 2] * seg[i * 2];
@@ -1488,6 +1597,8 @@ static void S_Spatial_Test_f( void ) {
 		Com_Printf( "spatialtest: %s rmsL=%.6f rmsR=%.6f\n", placements[p].name,
 			sqrt( sum[0] / sfx->frames ), sqrt( sum[1] / sfx->frames ) );
 	}
+
+	SPH_ReleaseVoice( &hrtf );
 
 	for ( i = 0; i < total * 2; i++ ) {
 		float s = buf[i];
@@ -1503,7 +1614,8 @@ static void S_Spatial_Test_f( void ) {
 		SP_WriteWavHeader( f, total, dma.speed );
 		FS_Write( pcm, total * 2 * sizeof( short ), f );
 		FS_FCloseFile( f );
-		Com_Printf( "spatialtest: wrote %s (%i placements, %i Hz, distance %.0f)\n", Cmd_Argv( 2 ), numPlacements, dma.speed, distance );
+		Com_Printf( "spatialtest: wrote %s (%i placements, %i Hz, distance %.0f, %s)\n", Cmd_Argv( 2 ), numPlacements, dma.speed, distance,
+			( SPH_Active() && s_spatialHRTF->integer ) ? "HRTF" : "stereo pan" );
 	}
 
 	free( pcm );
@@ -1532,6 +1644,11 @@ qboolean S_Spatial_Init( soundInterface_t *si ) {
 	Cvar_SetDescription( s_spatialMixAhead, "Spatial backend: seconds of audio mixed ahead of the playback position. Lower values reduce latency; raise it if you hear crackling (see s_info for underruns)." );
 	s_spatialShow = Cvar_Get( "s_spatialShow", "0", 0 );
 	Cvar_SetDescription( s_spatialShow, "Spatial backend: print underruns as they happen." );
+	s_spatialHRTF = Cvar_Get( "s_spatialHRTF", "1", CVAR_ARCHIVE_ND );
+	Cvar_CheckRange( s_spatialHRTF, "0", "1", CV_INTEGER );
+	Cvar_SetDescription( s_spatialHRTF, "Spatial backend: 1 = 3D sound with HRTF (headphones, needs Steam Audio), 0 = classic left/right panning." );
+	s_steamAudioLib = Cvar_Get( "s_steamAudioLib", SP_STEAMAUDIO_LIB, CVAR_ARCHIVE_ND | CVAR_LATCH );
+	Cvar_SetDescription( s_steamAudioLib, "Spatial backend: Steam Audio library to load for HRTF, a file name (searched by the system and next to the executable) or a full path. Requires snd_restart." );
 
 	// ask the device for a high rate and a small buffer; ignored by drivers that can't
 	dmaHints.minSpeed = 48000;
@@ -1560,6 +1677,12 @@ qboolean S_Spatial_Init( soundInterface_t *si ) {
 	sp_stageStart = sp_stageEnd = 0;
 	sp_underruns = 0;
 	sp_clockValid = qfalse;
+
+	if ( dma.channels == 2 && SPH_Init( s_steamAudioLib->string, dma.speed, SP_BLOCK ) ) {
+		int i;
+		for ( i = 0; i < MAX_CHANNELS; i++ )
+			sp_chanHRTF[i] = SPH_CreateVoice();
+	}
 
 	S_Spatial_StopAllSounds();
 
