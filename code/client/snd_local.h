@@ -249,6 +249,54 @@ void		SPH_ResetVoice( void *voice );
 void		SPH_Process( void *voice, float *mono, const vec3_t dir, float *outL, float *outR );
 qboolean	SPH_Tail( void *voice, float *outL, float *outR );
 
+// level geometry for reflections (snd_geometry.c), in game coordinates
+typedef enum {
+	SP_MAT_STONE,			// default: concrete, brick, rock
+	SP_MAT_METAL,
+	SP_MAT_WOOD,
+	SP_MAT_GLASS,
+	SP_MAT_TILE,
+	SP_MAT_SOFT,			// earth, grass, organic
+	SP_MAT_FABRIC,
+	SP_NUM_MATERIALS
+} spMaterial_t;
+
+typedef struct {
+	char	name[MAX_QPATH];
+	vec3_t	*verts;
+	int		numVerts;
+	int		(*tris)[3];			// wound so the right-hand normal faces out of the surface
+	int		*materials;			// spMaterial_t per triangle
+	int		numTris;
+} spGeometry_t;
+
+spGeometry_t	*SP_LoadMapGeometry( const char *bspName );
+void			SP_FreeGeometry( spGeometry_t *geom );
+
+// reflections through Steam Audio (snd_steamaudio.c). Each slot is one
+// sound position; the mixer feeds each slot's mono input per block and
+// gets one stereo reflection signal for all of them.
+typedef struct {
+	int			numSlots;			// sound positions simulated at once
+	float		duration;			// seconds of impulse response simulated
+	qboolean	convolution;		// convolve the whole response, or only the start (hybrid)
+	int			rays;
+	qboolean	embree;				// Intel Embree ray tracer instead of Steam Audio's own
+} sphReflSettings_t;
+
+qboolean	SPH_ReflectionsInit( const sphReflSettings_t *settings );
+void		SPH_ReflectionsSetLive( int bounces, int intervalMs );
+void		SPH_ReflectionsShutdown( void );
+qboolean	SPH_ReflectionsActive( void );
+const char	*SPH_ReflectionsDescribe( void );
+void		SPH_ReflectionsSetGeometry( spGeometry_t *geom );	// takes ownership; NULL = no level
+void		SPH_ReflectionsSetSync( qboolean sync );
+void		SPH_ReflectionsSimulate( void );
+void		SPH_ReflectionsUpdate( const vec3_t listener, vec3_t axis[3], const vec3_t *origins, const qboolean *active );
+void		SPH_ReflectionsReset( int slot );
+qboolean	SPH_ReflectionsProcess( int slot, const float *mono );
+void		SPH_ReflectionsOutput( float *outL, float *outR, qboolean binaural );
+
 // Optional requests from the active backend to the device layer, read by
 // SNDDMA_Init. Zero means "no preference". Drivers may ignore them.
 typedef struct {

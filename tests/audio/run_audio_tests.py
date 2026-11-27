@@ -14,6 +14,13 @@ and checks:
               (positions derived from the map's spawn points). Checks the
               occlusion amount, that clear sounds are untouched and that
               blocked ones are quieter and muffled.
+  reflection  With Steam Audio, loads q3dm1 and renders a footstep in two rooms
+              as direct sound, direct plus reflections, and reflections only
+              ("spatial-refl" variant). Checks the reverb level, decay time,
+              that the tail is diffuse (ears decorrelated above 1 kHz) and that
+              a second run measures the same. Steam Audio's ray tracing is
+              randomised, so this compares measurements, not hashes; the other
+              HRTF variants run with s_reflections 0 to stay bit-exact.
   demo        Plays a demo with video capture (fixed frame time, so audio is
               deterministic) through each backend and extracts the audio.
               Checks run-to-run determinism, golden hashes, and that the
@@ -56,6 +63,15 @@ GOLDEN = os.path.join(HERE, "golden.json")
 POSITIONAL_SOUND = "sound/player/footsteps/boot1.wav"
 DEMO = "four"
 OCCLUSION_MAP = "q3dm1"
+REFL_VARIANT = "spatial-refl"
+REFL_SPAWNS = (0, 3)                 # q3dm1 spawn points with open space 128 units ahead
+REFL_LEVEL_DB = (-20.0, 3.0)         # reflections relative to the direct sound, default s_reflectionGain
+REFL_T60 = (0.2, 3.0)                # seconds
+REFL_MAX_HF_CORR = 0.75              # ear correlation of the tail above 1 kHz (diffuse field)
+REFL_REPEAT_DB = 1.5                 # run-to-run tolerance (ray tracing is randomised)
+REFL_REPEAT_T60 = 0.2                # relative
+AB_REFL_MIN_ENVELOPE_CORR = 0.75
+AB_REFL_MAX_LEVEL_DIFF_DB = 3.0
 EYE_HEIGHT = 26
 
 # name -> extra engine arguments. "spatial" is pinned to stereo panning with
@@ -346,6 +362,68 @@ def test_occlusion(args, work, results, golden, variant):
     check_golden(results, golden, f"occlusion/{variant}", digest.hexdigest(), args.update_golden)
 
 
+def reflection_metrics(path):
+    audio, rate = read_wav(path)
+    seg = len(audio) // 3
+    dry, refl = audio[:seg], audio[2 * seg:]
+    e_dry, e_refl = (dry ** 2).sum(), (refl ** 2).sum()
+    level = 10 * np.log10(e_refl / e_dry) if e_refl > 0 and e_dry > 0 else -999.0
+    # Schroeder backward integration, T20 extrapolated to 60 dB
+    m = (refl ** 2).sum(axis=1)
+    sch = np.cumsum(m[::-1])[::-1]
+    sch_db = 10 * np.log10(sch / max(sch[0], 1e-30) + 1e-30)
+    def cross(db):
+        i = int(np.argmax(sch_db < db))
+        return i / rate if i > 0 else float("nan")
+    t60 = (cross(-25) - cross(-5)) * 3
+    # ear correlation of the late tail above 1 kHz
+    tail = refl[int(0.15 * rate):int(0.8 * rate)]
+    spec = np.fft.rfft(tail, axis=0)
+    spec[np.fft.rfftfreq(len(tail), 1 / rate) < 1000] = 0
+    hf = np.fft.irfft(spec, n=len(tail), axis=0)
+    corr = float(np.corrcoef(hf[:, 0], hf[:, 1])[0, 1]) if (hf ** 2).sum() > 0 else 1.0
+    return level, t60, corr
+
+
+def test_reflections(args, work, results):
+    variant = REFL_VARIANT
+    print(f"reflection test ({variant})")
+    spawns = spawn_points(args.basepath, OCCLUSION_MAP)
+    if len(spawns) <= max(REFL_SPAWNS):
+        results.add(f"[{variant}] reflection setup", "FAIL", f"not enough spawn points in {OCCLUSION_MAP}")
+        return
+    home = os.path.join(work, f"reflection-{variant}")
+    shutil.rmtree(home, ignore_errors=True)
+    os.makedirs(home)
+    cmds = []
+    for run in (1, 2):
+        for i in REFL_SPAWNS:
+            x, y, z = spawns[i]
+            pos = (x, y, z + EYE_HEIGHT, x + 128, y, z + EYE_HEIGHT)
+            cmds.append(f"+s_reflectionTest {POSITIONAL_SOUND} refl-{i}-{run}.wav " + " ".join("%g" % v for v in pos))
+    out = run_engine(args, home, VARIANTS[variant] + ["+map", OCCLUSION_MAP] + cmds + ["+quit"])
+    if out.count("reflectiontest: wrote") != len(cmds):
+        results.add(f"[{variant}] reflection render", "FAIL", "missing output; engine log:\n" + out[-2000:])
+        return
+
+    def ok(name, cond, detail):
+        results.add(f"[{variant}] {name}", "PASS" if cond else "FAIL", detail)
+
+    for i in REFL_SPAWNS:
+        m1 = reflection_metrics(os.path.join(home, "baseq3", f"refl-{i}-1.wav"))
+        m2 = reflection_metrics(os.path.join(home, "baseq3", f"refl-{i}-2.wav"))
+        level, t60, corr = m1
+        where = f"spawn {i}"
+        ok(f"{where}: reverb level", REFL_LEVEL_DB[0] <= level <= REFL_LEVEL_DB[1],
+           "%+.1f dB vs direct (expected %+.0f to %+.0f)" % (level, *REFL_LEVEL_DB))
+        ok(f"{where}: decay time", REFL_T60[0] <= t60 <= REFL_T60[1],
+           "T60 %.2f s (expected %.1f-%.1f)" % (t60, *REFL_T60))
+        ok(f"{where}: tail is diffuse", corr <= REFL_MAX_HF_CORR,
+           "ear correlation above 1 kHz %.2f (max %.2f)" % (corr, REFL_MAX_HF_CORR))
+        ok(f"{where}: repeatable", abs(m2[0] - level) <= REFL_REPEAT_DB and abs(m2[1] - t60) <= REFL_REPEAT_T60 * t60,
+           "second run %+.1f dB, T60 %.2f s" % (m2[0], m2[1]))
+
+
 def capture_demo(args, work, backend, run):
     home = os.path.join(work, f"demo-{backend}-{run}")
     shutil.rmtree(home, ignore_errors=True)
@@ -373,6 +451,10 @@ def test_demo(args, work, results, golden):
         try:
             a1, rate, d1 = capture_demo(args, work, backend, 1)
             results.add(f"demo capture {backend}", "PASS", "%.1f s at %d Hz" % (len(a1) / rate, rate))
+            if backend == REFL_VARIANT:
+                # randomised ray tracing: neither bit-exact nor golden
+                captures[backend] = (a1, rate)
+                continue
             if args.repeat:
                 _, _, d2 = capture_demo(args, work, backend, 2)
                 results.add(f"demo determinism {backend}", "PASS" if d1 == d2 else "FAIL",
@@ -393,6 +475,8 @@ def test_demo(args, work, results, golden):
         # stereo-pan variant is held to the tight A/B limits
         corr_min, level_max = (AB_HRTF_MIN_ENVELOPE_CORR, AB_HRTF_MAX_LEVEL_DIFF_DB) if other != "spatial" \
             else (AB_MIN_ENVELOPE_CORR, AB_MAX_LEVEL_DIFF_DB)
+        if other == REFL_VARIANT:
+            corr_min, level_max = AB_REFL_MIN_ENVELOPE_CORR, AB_REFL_MAX_LEVEL_DIFF_DB
         ea, eb = envelope(a, ra), envelope(b, rb)
         m = min(len(ea), len(eb))
         corr = min(np.corrcoef(ea[:m, c], eb[:m, c])[0, 1] for c in range(2))
@@ -414,7 +498,7 @@ def main():
     ap.add_argument("--basepath", default=os.environ.get("Q3_BASEPATH", os.path.expanduser("~/Downloads/q3a")),
                     help="directory containing baseq3/ with retail pak files (env Q3_BASEPATH)")
     ap.add_argument("--workdir", help="where to put engine home dirs and captures (default: temporary)")
-    ap.add_argument("--only", choices=("positional", "occlusion", "demo"), help="run one test group")
+    ap.add_argument("--only", choices=("positional", "occlusion", "reflection", "demo"), help="run one test group")
     ap.add_argument("--repeat", action="store_true", help="capture each demo twice to check determinism")
     ap.add_argument("--update-golden", action="store_true", help="record current outputs as golden")
     ap.add_argument("--steamaudio", default=os.environ.get("STEAMAUDIO_LIB"),
@@ -437,26 +521,33 @@ def main():
     if args.steamaudio:
         if not os.path.exists(args.steamaudio):
             sys.exit(f"Steam Audio library not found: {args.steamaudio}")
-        VARIANTS["spatial-hrtf"] = ["+set", "s_backend", "spatial", "+set", "s_spatialHRTF", "1",
-                                    "+set", "s_steamAudioLib", os.path.abspath(args.steamaudio),
-                                    "+set", "s_hrtfFile", ""]
+        def hrtf_variant(sofa, reflections):
+            return ["+set", "s_backend", "spatial", "+set", "s_spatialHRTF", "1",
+                    "+set", "s_steamAudioLib", os.path.abspath(args.steamaudio),
+                    "+set", "s_hrtfFile", sofa, "+set", "s_reflections", str(reflections)]
+        VARIANTS["spatial-hrtf"] = hrtf_variant("", 0)
+        sofa = ""
         if args.hrtf_file:
             if not os.path.exists(args.hrtf_file):
                 sys.exit(f"HRTF file not found: {args.hrtf_file}")
-            VARIANTS["spatial-sofa"] = VARIANTS["spatial-hrtf"][:-1] + [os.path.abspath(args.hrtf_file)]
+            sofa = os.path.abspath(args.hrtf_file)
+            VARIANTS["spatial-sofa"] = hrtf_variant(sofa, 0)
+        VARIANTS[REFL_VARIANT] = hrtf_variant(sofa, 1)
     else:
         print("note: no --steamaudio given, HRTF not tested")
 
     golden = load_golden()
     results = Results()
+    # reflections don't change the direct path these test
+    direct_variants = [v for v in VARIANTS if v not in ("base", REFL_VARIANT)]
     if args.only in (None, "positional"):
-        for variant in VARIANTS:
-            if variant != "base":
-                test_positional(args, work, results, golden, variant)
+        for variant in direct_variants:
+            test_positional(args, work, results, golden, variant)
     if args.only in (None, "occlusion"):
-        for variant in VARIANTS:
-            if variant != "base":
-                test_occlusion(args, work, results, golden, variant)
+        for variant in direct_variants:
+            test_occlusion(args, work, results, golden, variant)
+    if args.only in (None, "reflection") and REFL_VARIANT in VARIANTS:
+        test_reflections(args, work, results)
     if args.only in (None, "demo"):
         test_demo(args, work, results, golden)
 

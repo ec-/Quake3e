@@ -79,6 +79,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define SP_OCCL_RATE		30			// traces per second per voice
 #define SP_OCCL_GLIDE		0.08f		// seconds for occlusion to change fully
 
+// reflections
+#define SP_REFL_SLOTS		32			// sound positions simulated at once
+#define SP_REFL_HOLD		4.0f		// longest a slot may ring out after its last input
+#define SP_REFL_GROUP		160.0f		// sounds this close (about 5 m) share reflections
+
 #ifdef _WIN32
 #define SP_STEAMAUDIO_LIB	"phonon.dll"
 #else
@@ -127,6 +132,11 @@ typedef struct {
 	int			occlTime;			// sp_mixtime of the last trace
 	qboolean	occlEngaged;		// filter running (state valid)
 	float		occlState[2][2];	// two one-pole stages per channel
+	// reflections
+	vec3_t		origin;				// world position (the listener's for head-locked sounds)
+	int			reflKey;			// voices with the same key share reflections; 0 = none
+	float		reflTarget;			// send level into the reflection simulation
+	float		reflCurrent;
 } spSpatial_t;
 
 typedef struct {
@@ -204,6 +214,15 @@ static cvar_t		*s_hrtfFile;
 static cvar_t		*s_occlusion;
 static cvar_t		*s_occlusionGain;
 static cvar_t		*s_occlusionCutoff;
+static cvar_t		*s_reflections;
+static cvar_t		*s_reflectionGain;
+static cvar_t		*s_reflectionType;
+static cvar_t		*s_reflectionRays;
+static cvar_t		*s_reflectionDuration;
+static cvar_t		*s_reflectionBounces;
+static cvar_t		*s_reflectionInterval;
+static cvar_t		*s_reflectionEmbree;
+static cvar_t		*s_reflectionSources;
 static float		sp_hrtfGain = SP_HRTF_FRONT_LEVEL;
 extern cvar_t		*s_khz;
 extern cvar_t		*s_show;
@@ -576,6 +595,155 @@ static void SP_Occlude( spSpatial_t *sp, float *a, float *b ) {
 
 /*
 ================
+Reflection slots
+
+Each slot is one sound position in the reflection simulation. Sounds close
+together reflect almost the same way, so voices within SP_REFL_GROUP of a
+slot are summed into it, and the slot sits at their level-weighted centre.
+At most s_reflectionSources slots run; beyond that, sounds join the nearest
+one. A slot keeps running after its last input until its reverb has rung
+out.
+================
+*/
+typedef struct {
+	qboolean	used;
+	vec3_t		origin;
+	vec3_t		sumPos;				// this block's voices, weighted by level
+	float		sumWeight;
+	int			lastFed;			// sp_mixtime of the last block with input
+	qboolean	fed;				// has input this block
+	float		in[SP_BLOCK];
+} spReflSlot_t;
+
+static spReflSlot_t	sp_refl[SP_REFL_SLOTS];
+static qboolean		sp_reflActive;
+static char			sp_reflMap[MAX_QPATH];
+
+
+static spReflSlot_t *SP_ReflSlot( const vec3_t origin ) {
+	const int limit = MIN( s_reflectionSources->integer, SP_REFL_SLOTS );
+	spReflSlot_t *slot, *nearest = NULL, *free = NULL;
+	float best = 0.0f;
+	int i, used = 0;
+
+	for ( i = 0, slot = sp_refl; i < SP_REFL_SLOTS; i++, slot++ ) {
+		float d;
+		if ( !slot->used ) {
+			if ( !free )
+				free = slot;
+			continue;
+		}
+		used++;
+		d = DistanceSquared( slot->origin, origin );
+		if ( !nearest || d < best ) {
+			nearest = slot;
+			best = d;
+		}
+	}
+	if ( nearest && ( best < SP_REFL_GROUP * SP_REFL_GROUP || used >= limit || !free ) )
+		return nearest;
+	if ( !free )
+		return NULL;
+
+	free->used = qtrue;
+	free->fed = qfalse;
+	free->sumWeight = 0.0f;
+	free->lastFed = sp_mixtime;
+	VectorCopy( origin, free->origin );
+	SPH_ReflectionsReset( free - sp_refl );
+	return free;
+}
+
+
+static void SP_ReflSend( spSpatial_t *sp, const float *src ) {
+	const float g0 = sp->reflCurrent, dg = ( sp->reflTarget - sp->reflCurrent ) / SP_BLOCK;
+	spReflSlot_t *slot;
+	int i;
+
+	if ( !sp_reflActive || !sp->reflKey || ( g0 == 0.0f && sp->reflTarget == 0.0f ) )
+		return;
+	slot = SP_ReflSlot( sp->origin );
+	if ( !slot )
+		return;
+	if ( !slot->fed ) {
+		Com_Memset( slot->in, 0, sizeof( slot->in ) );
+		slot->fed = qtrue;
+	}
+	for ( i = 0; i < SP_BLOCK; i++ )
+		slot->in[i] += src[i] * ( g0 + dg * i );
+	VectorMA( slot->sumPos, sp->reflTarget + 1e-6f, sp->origin, slot->sumPos );
+	slot->sumWeight += sp->reflTarget + 1e-6f;
+	slot->lastFed = sp_mixtime;
+}
+
+
+/*
+Runs every live slot through its reflections and adds the decoded result
+to out (interleaved stereo), then tells the simulation where everything is.
+*/
+static void SP_MixReflections( float *out ) {
+	const int hold = (int)( SP_REFL_HOLD * dma.speed );
+	vec3_t origins[SP_REFL_SLOTS];
+	qboolean active[SP_REFL_SLOTS];
+	float l[SP_BLOCK], r[SP_BLOCK];
+	spReflSlot_t *slot;
+	int i;
+
+	if ( !sp_reflActive )
+		return;
+
+	SPH_ReflectionsSetLive( s_reflectionBounces->integer, s_reflectionInterval->integer );
+	for ( i = 0, slot = sp_refl; i < SP_REFL_SLOTS; i++, slot++ ) {
+		if ( slot->used && !slot->fed && sp_mixtime - slot->lastFed > hold )
+			slot->used = qfalse;		// rung out
+		if ( slot->sumWeight > 0.0f ) {
+			VectorScale( slot->sumPos, 1.0f / slot->sumWeight, slot->origin );
+			VectorClear( slot->sumPos );
+			slot->sumWeight = 0.0f;
+		}
+		active[i] = slot->used;
+		VectorCopy( slot->origin, origins[i] );
+		if ( !slot->used )
+			continue;
+		if ( !SPH_ReflectionsProcess( i, slot->fed ? slot->in : NULL ) )
+			slot->used = qfalse;		// rung out
+		slot->fed = qfalse;
+	}
+
+	SPH_ReflectionsOutput( l, r, s_spatialHRTF->integer != 0 );
+	for ( i = 0; i < SP_BLOCK; i++ ) {
+		out[i * 2] += l[i];
+		out[i * 2 + 1] += r[i];
+	}
+
+	SPH_ReflectionsUpdate( sp_listener.origin, sp_listener.axis, (const vec3_t *)origins, active );
+}
+
+
+/*
+Keeps the reflection scene on the level being played. Main thread.
+*/
+static void SP_ReflUpdateLevel( const char *override ) {
+	const char *want = override ? override : ( cls.state >= CA_LOADING && cl.mapname[0] ) ? cl.mapname : "";
+
+	if ( !sp_reflActive || !Q_stricmp( want, sp_reflMap ) )
+		return;
+	Q_strncpyz( sp_reflMap, want, sizeof( sp_reflMap ) );
+	if ( want[0] ) {
+		spGeometry_t *geom = SP_LoadMapGeometry( want );
+		if ( geom )
+			Com_Printf( "reflections: %s, %i triangles\n", want, geom->numTris );
+		else
+			Com_Printf( S_COLOR_YELLOW "reflections: no usable geometry in %s\n", want );
+		SPH_ReflectionsSetGeometry( geom );
+	} else {
+		SPH_ReflectionsSetGeometry( NULL );
+	}
+}
+
+
+/*
+================
 SP_Spatialize
 
 Sets the targets for the next block of a voice of volume masterVol (0..255)
@@ -588,6 +756,9 @@ static void SP_Spatialize( spSpatial_t *sp, const spListener_t *listener, const 
 	float dist, atten, lscale, rscale, dot;
 
 	sp->headLocked = headLocked;
+	VectorCopy( headLocked ? listener->origin : origin, sp->origin );
+	// reflections handle their own distance falloff
+	sp->reflTarget = masterVol * s_reflectionGain->value * sp_hrtfGain / 256.0f;
 
 	if ( headLocked ) {
 		sp->target[0] = sp->target[1] = masterVol / 256.0f;
@@ -638,6 +809,7 @@ static void SP_Spatialize( spSpatial_t *sp, const spListener_t *listener, const 
 		sp->current[0] = sp->target[0];
 		sp->current[1] = sp->target[1];
 		sp->monoCurrent = sp->monoTarget;
+		sp->reflCurrent = sp->reflTarget;
 		sp->occlCurrent = sp->occlTarget;
 		sp->occlEngaged = qfalse;
 		sp->primed = qtrue;
@@ -749,6 +921,7 @@ static int SP_MixVoice( const spSfx_t *sfx, double *phase, double rate, qboolean
 		float l[SP_BLOCK], r[SP_BLOCK];
 		const float g0 = sp->monoCurrent, dg = ( sp->monoTarget - sp->monoCurrent ) * step;
 		n = SP_Read( sfx, phase, rate, loop, a, NULL );
+		SP_ReflSend( sp, a );
 		SP_Occlude( sp, a, NULL );
 		for ( i = 0; i < SP_BLOCK; i++ )
 			a[i] *= g0 + dg * i;
@@ -762,6 +935,12 @@ static int SP_MixVoice( const spSfx_t *sfx, double *phase, double rate, qboolean
 		const float l0 = sp->current[0], dl = ( sp->target[0] - sp->current[0] ) * step;
 		const float r0 = sp->current[1], dr = ( sp->target[1] - sp->current[1] ) * step;
 		n = SP_Read( sfx, phase, rate, loop, a, b );
+		if ( sp_reflActive && sp->reflKey ) {
+			float m[SP_BLOCK];
+			for ( i = 0; i < SP_BLOCK; i++ )
+				m[i] = 0.5f * ( a[i] + b[i] );
+			SP_ReflSend( sp, m );
+		}
 		SP_Occlude( sp, a, b );
 		for ( i = 0; i < SP_BLOCK; i++ ) {
 			out[i * 2] += a[i] * ( l0 + dl * i );
@@ -772,6 +951,7 @@ static int SP_MixVoice( const spSfx_t *sfx, double *phase, double rate, qboolean
 	sp->current[0] = sp->target[0];
 	sp->current[1] = sp->target[1];
 	sp->monoCurrent = sp->monoTarget;
+	sp->reflCurrent = sp->reflTarget;
 	return n;
 }
 
@@ -862,15 +1042,18 @@ static void SP_MixBlock( float *out ) {
 			if ( !ent->active ) {
 				ent->spatial.target[0] = ent->spatial.target[1] = 0.0f;
 				ent->spatial.monoTarget = 0.0f;
+				ent->spatial.reflTarget = 0.0f;
 			}
 			SP_MixVoice( ent->playing, &ent->phase, rate, qtrue, &ent->spatial, tmp );
 			if ( !ent->active && ent->spatial.current[0] == 0.0f && ent->spatial.current[1] == 0.0f
-				&& ent->spatial.monoCurrent == 0.0f ) {
+				&& ent->spatial.monoCurrent == 0.0f && ent->spatial.reflCurrent == 0.0f ) {
 				// faded out
 				ent->playing = NULL;
 				ent->spatial.primed = qfalse;
 			}
 		}
+
+		SP_MixReflections( tmp );
 
 		for ( i = 0; i < SP_BLOCK * 2; i++ )
 			out[i] += tmp[i] * master;
@@ -1010,6 +1193,7 @@ static void SP_WriteVideoFrame( void ) {
 	int done;
 
 	clc.aviSoundFrameRemainder = frameDuration - n;
+	SPH_ReflectionsSimulate();
 
 	for ( done = 0; done < n; ) {
 		int k = n - done;
@@ -1302,6 +1486,9 @@ static void S_Spatial_StartSound( const vec3_t origin, int entityNum, int entcha
 	sp_chanTail[chosen].tail = qfalse;
 	SPH_ResetVoice( ch->spatial.hrtf );
 
+	// reflections are shared per entity, or per channel for sounds at a fixed spot
+	ch->spatial.reflKey = 1 + ( ch->fixedOrigin ? MAX_GENTITIES + chosen : entityNum );
+
 	// spatialize now so the first block has the right gains
 	SP_Spatialize( &ch->spatial, &sp_listener, ch->fixedOrigin ? ch->origin : sp_entities[entityNum].origin,
 		ch->masterVol, entityNum == sp_listener.entnum );
@@ -1435,6 +1622,7 @@ static void S_Spatial_Respatialize( int entityNum, const vec3_t head, vec3_t axi
 				ent->playing = ent->sfx;
 				ent->phase = sp_mixtime % ent->sfx->frames;
 				ent->spatial.primed = qfalse;
+				ent->spatial.reflKey = 1 + i;
 				if ( !ent->spatial.hrtf )
 					ent->spatial.hrtf = SPH_CreateVoice();
 				SPH_ResetVoice( ent->spatial.hrtf );
@@ -1444,6 +1632,7 @@ static void S_Spatial_Respatialize( int entityNum, const vec3_t head, vec3_t axi
 			// fade out over the next block instead of cutting off
 			ent->spatial.target[0] = ent->spatial.target[1] = 0.0f;
 			ent->spatial.monoTarget = 0.0f;
+			ent->spatial.reflTarget = 0.0f;
 		}
 	}
 }
@@ -1469,11 +1658,16 @@ static void S_Spatial_Update( int msec ) {
 		Com_Printf( "----(%i)---- mixed: %i\n", total, sp_mixtime );
 	}
 
+	SP_ReflUpdateLevel( NULL );
+
 	if ( CL_VideoRecording() ) {
+		// simulate in step with the capture so it is repeatable
+		SPH_ReflectionsSetSync( qtrue );
 		SP_UpdateBackgroundTrack();
 		SP_WriteVideoFrame();
 		return;
 	}
+	SPH_ReflectionsSetSync( qfalse );
 
 	SP_GetSoundtime();
 
@@ -1561,6 +1755,7 @@ static void S_Spatial_SoundInfo( void ) {
 	} else {
 		Com_Printf( "backend: spatial\n" );
 		Com_Printf( "HRTF: %s%s\n", SPH_Describe(), ( SPH_Active() && !s_spatialHRTF->integer ) ? " (disabled by s_spatialHRTF 0)" : "" );
+		Com_Printf( "reflections: %s\n", SPH_ReflectionsDescribe() );
 		Com_Printf( "%5d channels\n", dma.channels );
 		Com_Printf( "%5d samples\n", dma.samples );
 		Com_Printf( "%5d samplebits (%s)\n", dma.samplebits, dma.isfloat ? "float" : "int" );
@@ -1603,6 +1798,7 @@ static void S_Spatial_Shutdown( void ) {
 			SPH_ReleaseVoice( &sp_entities[i].spatial.hrtf );
 	}
 	SPH_Shutdown();
+	sp_reflActive = qfalse;
 	SP_FreeAllSfx();
 	free( sp_rsPoly );
 	sp_rsPoly = NULL;
@@ -1611,6 +1807,7 @@ static void S_Spatial_Shutdown( void ) {
 
 	Cmd_RemoveCommand( "s_spatialTest" );
 	Cmd_RemoveCommand( "s_occlusionTest" );
+	Cmd_RemoveCommand( "s_reflectionTest" );
 
 	cls.soundRegistered = qfalse;
 }
@@ -1855,6 +2052,130 @@ static void S_Spatial_OcclusionTest_f( void ) {
 	free( buf );
 }
 
+/*
+================
+S_Spatial_ReflectionTest_f
+
+s_reflectionTest <sound> <output.wav> <lx> <ly> <lz> <sx> <sy> <sz>
+
+Needs a loaded map and reflections. Renders <sound> at source position s
+heard from l (facing +x) three times, each followed by time for the reverb
+to ring out: direct only, direct plus reflections, reflections only.
+Simulates synchronously, so the output is repeatable.
+================
+*/
+static void S_Spatial_ReflectionTest_f( void ) {
+	const int slot = SP_REFL_SLOTS - 1;
+	spListener_t listener;
+	vec3_t source, origins[SP_REFL_SLOTS];
+	qboolean active[SP_REFL_SLOTS];
+	spSfx_t *sfx;
+	fileHandle_t f;
+	float *buf;
+	short *pcm;
+	void *hrtf;
+	int segment, total, p, i;
+
+	if ( Cmd_Argc() < 9 ) {
+		Com_Printf( "usage: s_reflectionTest <sound> <output.wav> <lx> <ly> <lz> <sx> <sy> <sz>\n" );
+		return;
+	}
+	if ( !sp_started || !sp_reflActive ) {
+		Com_Printf( "s_reflectionTest: reflections not active (needs s_backend spatial, Steam Audio, s_reflections 1)\n" );
+		return;
+	}
+	// the client may not have the map yet when run straight after +map
+	SP_ReflUpdateLevel( cl.mapname[0] ? cl.mapname
+		: Cvar_VariableString( "mapname" )[0] ? va( "maps/%s.bsp", Cvar_VariableString( "mapname" ) ) : NULL );
+	if ( !sp_reflMap[0] ) {
+		Com_Printf( "s_reflectionTest: no map loaded\n" );
+		return;
+	}
+	sfx = SP_FindSfx( Cmd_Argv( 1 ) );
+	if ( !sfx || sfx->defaultSound || !sfx->data ) {
+		Com_Printf( S_COLOR_YELLOW "s_reflectionTest: couldn't load %s\n", Cmd_Argv( 1 ) );
+		return;
+	}
+
+	Com_Memset( &listener, 0, sizeof( listener ) );
+	listener.entnum = ENTITYNUM_NONE;
+	listener.axis[0][0] = listener.axis[1][1] = listener.axis[2][2] = 1.0f;
+	for ( i = 0; i < 3; i++ ) {
+		listener.origin[i] = atof( Cmd_Argv( 3 + i ) );
+		source[i] = atof( Cmd_Argv( 6 + i ) );
+	}
+
+	// simulate just this position, in step with the test
+	Com_Memset( active, 0, sizeof( active ) );
+	Com_Memset( origins, 0, sizeof( origins ) );
+	active[slot] = qtrue;
+	VectorCopy( source, origins[slot] );
+	SPH_ReflectionsSetSync( qtrue );
+	SPH_ReflectionsUpdate( listener.origin, listener.axis, (const vec3_t *)origins, active );
+
+	segment = ( ( sfx->frames + (int)( 2.0f * dma.speed ) + SP_BLOCK - 1 ) / SP_BLOCK ) * SP_BLOCK;
+	total = segment * 3;
+	buf = calloc( total * 2, sizeof( float ) );
+	pcm = malloc( total * 2 * sizeof( short ) );
+	hrtf = SPH_CreateVoice();
+
+	for ( p = 0; p < 3; p++ ) {
+		spSpatial_t sp;
+		double phase = 0.0, sendPhase = 0.0;
+		float *out;
+		int b;
+
+		Com_Memset( &sp, 0, sizeof( sp ) );
+		sp.hrtf = hrtf;
+		SPH_ResetVoice( hrtf );
+		SPH_ReflectionsReset( slot );
+		SPH_ReflectionsSimulate();		// also picks up the level if it is new
+		SP_Spatialize( &sp, &listener, source, SP_MASTER_VOL, qfalse );
+		if ( p == 2 )
+			sp.monoTarget = sp.monoCurrent = sp.target[0] = sp.target[1] = sp.current[0] = sp.current[1] = 0.0f;
+
+		for ( b = 0; b < segment; b += SP_BLOCK ) {
+			out = buf + ( p * segment + b ) * 2;
+			SP_MixVoice( sfx, &phase, 1.0, qfalse, &sp, out );
+			if ( p > 0 ) {
+				float mono[SP_BLOCK], l[SP_BLOCK], r[SP_BLOCK];
+				const int n = SP_Read( sfx, &sendPhase, 1.0, qfalse, mono, NULL );
+				for ( i = 0; i < SP_BLOCK; i++ )
+					mono[i] *= sp.reflTarget;
+				SPH_ReflectionsProcess( slot, n > 0 ? mono : NULL );
+				SPH_ReflectionsOutput( l, r, s_spatialHRTF->integer != 0 );
+				for ( i = 0; i < SP_BLOCK; i++ ) {
+					out[i * 2] += l[i];
+					out[i * 2 + 1] += r[i];
+				}
+			}
+		}
+	}
+	SPH_ReleaseVoice( &hrtf );
+	SPH_ReflectionsReset( slot );
+	sp_refl[slot].used = qfalse;
+
+	for ( i = 0; i < total * 2; i++ ) {
+		float v = buf[i];
+		if ( v > 1.0f ) v = 1.0f;
+		else if ( v < -1.0f ) v = -1.0f;
+		pcm[i] = LittleShort( (short)lrintf( v * 32767.0f ) );
+	}
+	f = FS_FOpenFileWrite( Cmd_Argv( 2 ) );
+	if ( f == FS_INVALID_HANDLE ) {
+		Com_Printf( S_COLOR_YELLOW "s_reflectionTest: couldn't open %s for writing\n", Cmd_Argv( 2 ) );
+	} else {
+		SP_WriteWavHeader( f, total, dma.speed );
+		FS_Write( pcm, total * 2 * sizeof( short ), f );
+		FS_FCloseFile( f );
+	}
+	Com_Printf( "reflectiontest: wrote %s (%s, %s)\n", Cmd_Argv( 2 ),
+		( SPH_Active() && s_spatialHRTF->integer ) ? "HRTF" : "stereo pan", SPH_ReflectionsDescribe() );
+
+	free( pcm );
+	free( buf );
+}
+
 // =======================================================================
 // Init
 // =======================================================================
@@ -1891,6 +2212,32 @@ qboolean S_Spatial_Init( soundInterface_t *si ) {
 	s_occlusionCutoff = Cvar_Get( "s_occlusionCutoff", "1000", CVAR_ARCHIVE_ND );
 	Cvar_CheckRange( s_occlusionCutoff, "100", "20000", CV_FLOAT );
 	Cvar_SetDescription( s_occlusionCutoff, "Spatial backend: low-pass cutoff in Hz for a fully occluded sound (higher = less muffled)." );
+	s_reflections = Cvar_Get( "s_reflections", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	Cvar_CheckRange( s_reflections, "0", "1", CV_INTEGER );
+	Cvar_SetDescription( s_reflections, "Spatial backend: sound reflections and reverb from the level's geometry (needs Steam Audio). Requires snd_restart." );
+	s_reflectionGain = Cvar_Get( "s_reflectionGain", "0.5", CVAR_ARCHIVE_ND );
+	Cvar_CheckRange( s_reflectionGain, "0", "4", CV_FLOAT );
+	Cvar_SetDescription( s_reflectionGain, "Spatial backend: level of reflections and reverb. 1 is physically based relative to a sound 1 m away; the default is quieter so nearby sounds stay clear." );
+	s_reflectionType = Cvar_Get( "s_reflectionType", "convolution", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	Cvar_SetDescription( s_reflectionType, "Spatial backend: \"convolution\" convolves each whole reflection response; \"hybrid\" convolves the first 0.2 s and models the rest (usually slower with few positions). Requires snd_restart." );
+	s_reflectionRays = Cvar_Get( "s_reflectionRays", "2048", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	Cvar_CheckRange( s_reflectionRays, "256", "16384", CV_INTEGER );
+	Cvar_SetDescription( s_reflectionRays, "Spatial backend: rays traced per reflection simulation (more = smoother, slower). Requires snd_restart." );
+	s_reflectionDuration = Cvar_Get( "s_reflectionDuration", "1.0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	Cvar_CheckRange( s_reflectionDuration, "0.2", "3", CV_FLOAT );
+	Cvar_SetDescription( s_reflectionDuration, "Spatial backend: seconds of each reflection response simulated. Requires snd_restart." );
+	s_reflectionBounces = Cvar_Get( "s_reflectionBounces", "8", CVAR_ARCHIVE_ND );
+	Cvar_CheckRange( s_reflectionBounces, "1", "64", CV_INTEGER );
+	Cvar_SetDescription( s_reflectionBounces, "Spatial backend: bounces per ray (more = longer, more accurate reverb tails, slower)." );
+	s_reflectionInterval = Cvar_Get( "s_reflectionInterval", "100", CVAR_ARCHIVE_ND );
+	Cvar_CheckRange( s_reflectionInterval, "10", "1000", CV_INTEGER );
+	Cvar_SetDescription( s_reflectionInterval, "Spatial backend: milliseconds between reflection simulations (lower = follows movement faster, more CPU)." );
+	s_reflectionEmbree = Cvar_Get( "s_reflectionEmbree", "1", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	Cvar_CheckRange( s_reflectionEmbree, "0", "1", CV_INTEGER );
+	Cvar_SetDescription( s_reflectionEmbree, "Spatial backend: trace reflections with Intel Embree (faster) instead of Steam Audio's own ray tracer. Requires snd_restart." );
+	s_reflectionSources = Cvar_Get( "s_reflectionSources", "12", CVAR_ARCHIVE_ND );
+	Cvar_CheckRange( s_reflectionSources, "1", va( "%i", SP_REFL_SLOTS ), CV_INTEGER );
+	Cvar_SetDescription( s_reflectionSources, "Spatial backend: most sound positions with their own reflections (each costs CPU); further sounds share the nearest one." );
 	s_hrtfFile = Cvar_Get( "s_hrtfFile", "", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	Cvar_SetDescription( s_hrtfFile, "Spatial backend: path to an HRTF in SOFA format (SimpleFreeFieldHRIR), e.g. a full-sphere dataset such as SADIE II. Empty uses Steam Audio's built-in HRTF, which has no data below about 45 degrees down. Requires snd_restart." );
 
@@ -1929,12 +2276,24 @@ qboolean S_Spatial_Init( soundInterface_t *si ) {
 		Com_Printf( "HRTF front response %.3f, gain %.3f\n", response, sp_hrtfGain );
 		for ( i = 0; i < MAX_CHANNELS; i++ )
 			sp_chanHRTF[i] = SPH_CreateVoice();
+		if ( s_reflections->integer ) {
+			sphReflSettings_t rs;
+			rs.numSlots = SP_REFL_SLOTS;
+			rs.duration = s_reflectionDuration->value;
+			rs.convolution = !Q_stricmp( s_reflectionType->string, "convolution" );
+			rs.rays = s_reflectionRays->integer;
+			rs.embree = s_reflectionEmbree->integer != 0;
+			sp_reflActive = SPH_ReflectionsInit( &rs );
+		}
 	}
+	Com_Memset( sp_refl, 0, sizeof( sp_refl ) );
+	sp_reflMap[0] = '\0';
 
 	S_Spatial_StopAllSounds();
 
 	Cmd_AddCommand( "s_spatialTest", S_Spatial_Test_f );
 	Cmd_AddCommand( "s_occlusionTest", S_Spatial_OcclusionTest_f );
+	Cmd_AddCommand( "s_reflectionTest", S_Spatial_ReflectionTest_f );
 
 	si->Shutdown = S_Spatial_Shutdown;
 	si->StartSound = S_Spatial_StartSound;

@@ -405,6 +405,97 @@ static void S_StopMusic_f( void )
 S_Init
 =================
 */
+/*
+=================
+Sound profiles
+
+Named sets of sound cvars, from the classic mixer up to full reflections.
+Settings that need a restart are applied with snd_restart afterwards.
+Paths (s_steamAudioLib, s_hrtfFile) are never changed by a profile.
+=================
+*/
+typedef struct {
+	const char	*name;
+	const char	*description;
+	const char	*cvars;			// "name value name value ..."
+} soundProfile_t;
+
+static const soundProfile_t s_profiles[] = {
+	{ "classic", "original Quake 3 mixer",
+		"s_backend base" },
+	{ "pan", "new mixer, stereo panning only (no Steam Audio needed)",
+		"s_backend spatial s_spatialHRTF 0 s_occlusion 0 s_reflections 0" },
+	{ "hrtf", "3D positioning with HRTF, occlusion, no reflections",
+		"s_backend spatial s_spatialHRTF 1 s_occlusion 1 s_reflections 0" },
+	{ "reflections-low", "HRTF, occlusion, light reflections (fewer positions, shorter tails)",
+		"s_backend spatial s_spatialHRTF 1 s_occlusion 1 s_reflections 1 s_reflectionType convolution "
+		"s_reflectionRays 1024 s_reflectionBounces 4 s_reflectionDuration 0.8 s_reflectionInterval 150 s_reflectionSources 6" },
+	{ "reflections", "HRTF, occlusion, reflections (default balance)",
+		"s_backend spatial s_spatialHRTF 1 s_occlusion 1 s_reflections 1 s_reflectionType convolution "
+		"s_reflectionRays 2048 s_reflectionBounces 8 s_reflectionDuration 1.0 s_reflectionInterval 100 s_reflectionSources 12" },
+	{ "reflections-high", "HRTF, occlusion, detailed reflections and long tails (heavy)",
+		"s_backend spatial s_spatialHRTF 1 s_occlusion 1 s_reflections 1 s_reflectionType convolution "
+		"s_reflectionRays 4096 s_reflectionBounces 16 s_reflectionDuration 1.5 s_reflectionInterval 50 s_reflectionSources 24" },
+};
+
+
+static qboolean S_ProfileMatches( const soundProfile_t *p ) {
+	char buf[512];
+	const char *s, *name, *value;
+	Q_strncpyz( buf, p->cvars, sizeof( buf ) );
+	s = buf;
+	while ( ( name = COM_ParseExt( &s, qfalse ) ) != NULL && name[0] ) {
+		char n[MAX_CVAR_VALUE_STRING];
+		Q_strncpyz( n, name, sizeof( n ) );
+		value = COM_ParseExt( &s, qfalse );
+		// a latched value waiting for snd_restart counts as set
+		if ( Q_stricmp( Cvar_VariableString( n ), value ) ) {
+			cvar_t *cv;
+			if ( Cvar_Flags( n ) == CVAR_NONEXISTENT )
+				return qfalse;
+			cv = Cvar_Get( n, "", 0 );		// exists: just looks it up
+			if ( !cv->latchedString || Q_stricmp( cv->latchedString, value ) )
+				return qfalse;
+		}
+	}
+	return qtrue;
+}
+
+
+static void S_Profile_f( void ) {
+	const soundProfile_t *p = NULL;
+	char buf[512];
+	const char *s, *name;
+	int i;
+
+	if ( Cmd_Argc() < 2 ) {
+		Com_Printf( "usage: s_profile <name>\n" );
+		for ( i = 0; i < ARRAY_LEN( s_profiles ); i++ )
+			Com_Printf( "%s %-17s %s\n", S_ProfileMatches( &s_profiles[i] ) ? "*" : " ",
+				s_profiles[i].name, s_profiles[i].description );
+		return;
+	}
+	for ( i = 0; i < ARRAY_LEN( s_profiles ); i++ ) {
+		if ( !Q_stricmp( Cmd_Argv( 1 ), s_profiles[i].name ) )
+			p = &s_profiles[i];
+	}
+	if ( !p ) {
+		Com_Printf( "unknown sound profile \"%s\"; s_profile lists them\n", Cmd_Argv( 1 ) );
+		return;
+	}
+
+	Q_strncpyz( buf, p->cvars, sizeof( buf ) );
+	s = buf;
+	while ( ( name = COM_ParseExt( &s, qfalse ) ) != NULL && name[0] ) {
+		char n[MAX_CVAR_VALUE_STRING];
+		Q_strncpyz( n, name, sizeof( n ) );
+		Cvar_Set( n, COM_ParseExt( &s, qfalse ) );
+	}
+	Com_Printf( "sound profile %s: %s\n", p->name, p->description );
+	Cbuf_InsertText( "snd_restart\n" );
+}
+
+
 void S_Init( void )
 {
 	cvar_t		*cv;
@@ -442,6 +533,7 @@ void S_Init( void )
 		Cmd_AddCommand( "s_list", S_SoundList );
 		Cmd_AddCommand( "s_stop", S_StopAllSounds );
 		Cmd_AddCommand( "s_info", S_SoundInfo );
+		Cmd_AddCommand( "s_profile", S_Profile_f );
 
 		cv = Cvar_Get( "s_backend", "base", CVAR_ARCHIVE_ND | CVAR_LATCH );
 		Cvar_SetDescription( cv, "Sound backend:\n"
@@ -499,6 +591,7 @@ void S_Shutdown( void )
 	Cmd_RemoveCommand( "s_list" );
 	Cmd_RemoveCommand( "s_stop" );
 	Cmd_RemoveCommand( "s_info" );
+	Cmd_RemoveCommand( "s_profile" );
 
 	S_CodecShutdown();
 
