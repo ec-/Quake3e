@@ -67,10 +67,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define SP_MASTER_VOL		127.0f
 #define SP_SPHERE_VOL		90.0f
 
-// HRTF mode gain, relative to masterVol * attenuation. Calibrated with
-// s_spatialTest so a sound straight ahead has the same per-ear RMS level as
-// with the classic pan law (Steam Audio 4.8.1 default HRTF, RMS normalised).
-#define SP_HRTF_GAIN		0.566f
+// In HRTF mode a sound straight ahead gets the same per-ear level as with
+// the classic pan law (0.5 per ear). The HRTF's own gain is measured at
+// startup (SPH_FrontResponse), since datasets are normalised differently.
+#define SP_HRTF_FRONT_LEVEL	0.5f
 
 #ifdef _WIN32
 #define SP_STEAMAUDIO_LIB	"phonon.dll"
@@ -187,6 +187,8 @@ static cvar_t		*s_spatialMixAhead;
 static cvar_t		*s_spatialShow;
 static cvar_t		*s_spatialHRTF;
 static cvar_t		*s_steamAudioLib;
+static cvar_t		*s_hrtfFile;
+static float		sp_hrtfGain = SP_HRTF_FRONT_LEVEL;
 extern cvar_t		*s_khz;
 extern cvar_t		*s_show;
 
@@ -497,7 +499,7 @@ static void SP_Spatialize( spSpatial_t *sp, const spListener_t *listener, const 
 
 		sp->target[0] = masterVol * atten * lscale / 256.0f;
 		sp->target[1] = masterVol * atten * rscale / 256.0f;
-		sp->monoTarget = masterVol * atten * SP_HRTF_GAIN / 256.0f;
+		sp->monoTarget = masterVol * atten * sp_hrtfGain / 256.0f;
 	}
 
 	if ( !sp->primed ) {
@@ -1649,6 +1651,8 @@ qboolean S_Spatial_Init( soundInterface_t *si ) {
 	Cvar_SetDescription( s_spatialHRTF, "Spatial backend: 1 = 3D sound with HRTF (headphones, needs Steam Audio), 0 = classic left/right panning." );
 	s_steamAudioLib = Cvar_Get( "s_steamAudioLib", SP_STEAMAUDIO_LIB, CVAR_ARCHIVE_ND | CVAR_LATCH );
 	Cvar_SetDescription( s_steamAudioLib, "Spatial backend: Steam Audio library to load for HRTF, a file name (searched by the system and next to the executable) or a full path. Requires snd_restart." );
+	s_hrtfFile = Cvar_Get( "s_hrtfFile", "", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	Cvar_SetDescription( s_hrtfFile, "Spatial backend: path to an HRTF in SOFA format (SimpleFreeFieldHRIR), e.g. a full-sphere dataset such as SADIE II. Empty uses Steam Audio's built-in HRTF, which has no data below about 45 degrees down. Requires snd_restart." );
 
 	// ask the device for a high rate and a small buffer; ignored by drivers that can't
 	dmaHints.minSpeed = 48000;
@@ -1678,8 +1682,11 @@ qboolean S_Spatial_Init( soundInterface_t *si ) {
 	sp_underruns = 0;
 	sp_clockValid = qfalse;
 
-	if ( dma.channels == 2 && SPH_Init( s_steamAudioLib->string, dma.speed, SP_BLOCK ) ) {
+	if ( dma.channels == 2 && SPH_Init( s_steamAudioLib->string, s_hrtfFile->string, dma.speed, SP_BLOCK ) ) {
+		const float response = SPH_FrontResponse();
 		int i;
+		sp_hrtfGain = ( response > 1e-6f ) ? SP_HRTF_FRONT_LEVEL / response : SP_HRTF_FRONT_LEVEL;
+		Com_Printf( "HRTF front response %.3f, gain %.3f\n", response, sp_hrtfGain );
 		for ( i = 0; i < MAX_CHANNELS; i++ )
 			sp_chanHRTF[i] = SPH_CreateVoice();
 	}

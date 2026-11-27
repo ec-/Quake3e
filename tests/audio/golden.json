@@ -1,7 +1,9 @@
 {
   "demo/base": "80c008474f2494e5d905bfc85cc11bf5",
   "demo/spatial": "b1f6a4bf0808434d66dda97bcc4c268f",
-  "demo/spatial-hrtf": "2c7c0011cf9a3bfcbd3ac2708bf75e40",
+  "demo/spatial-hrtf": "8efee26d67c29d0f787730bd017fecd5",
+  "demo/spatial-sofa": "f3f3d5cd8e859c2bc05033e2fa80627e",
   "positional/spatial": "e8920827626aa6797fd96341c9d3f176",
-  "positional/spatial-hrtf": "29ae4de3c53ac25bce86be087772e270"
+  "positional/spatial-hrtf": "b615e57cadbd2dc15e025da84e1d9eb1",
+  "positional/spatial-sofa": "0bffd62b99d9fd9040220879a979ad1f"
 }

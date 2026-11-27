@@ -238,7 +238,8 @@ qboolean S_Spatial_Init( soundInterface_t *si );
 
 // HRTF for the spatial backend (snd_steamaudio.c). A voice is one sound's
 // binaural filter state; blocks are frameSize frames of mono input.
-qboolean	SPH_Init( const char *libName, int rate, int frameSize );
+qboolean	SPH_Init( const char *libName, const char *sofaPath, int rate, int frameSize );
+float		SPH_FrontResponse( void );
 void		SPH_Shutdown( void );
 qboolean	SPH_Active( void );
 const char	*SPH_Describe( void );

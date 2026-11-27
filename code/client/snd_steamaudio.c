@@ -44,7 +44,7 @@ static struct {
 	IPLContext			context;
 	IPLHRTF				hrtf;
 	IPLAudioSettings	audio;
-	char				desc[128];
+	char				desc[MAX_OSPATH + 64];
 
 	pContextCreate_t	ContextCreate;
 	pContextRelease_t	ContextRelease;
@@ -68,15 +68,26 @@ static void *SA_Load( const char *name ) {
 }
 
 
+static qboolean SA_FileExists( const char *path ) {
+	FILE *f = Sys_FOpen( path, "rb" );
+	if ( !f )
+		return qfalse;
+	fclose( f );
+	return qtrue;
+}
+
+
 /*
 ================
 SPH_Init
 
-Loads Steam Audio and creates the default HRTF for the given output rate
-and block size. Returns qfalse (and leaves HRTF disabled) on any failure.
+Loads Steam Audio and creates an HRTF for the given output rate and block
+size: from sofaPath (an OS path to a SimpleFreeFieldHRIR .sofa file) when
+given, otherwise Steam Audio's built-in one. Returns qfalse (and leaves
+HRTF disabled) on any failure.
 ================
 */
-qboolean SPH_Init( const char *libName, int rate, int frameSize ) {
+qboolean SPH_Init( const char *libName, const char *sofaPath, int rate, int frameSize ) {
 	IPLContextSettings cs;
 	IPLHRTFSettings hs;
 	IPLerror err;
@@ -124,18 +135,38 @@ qboolean SPH_Init( const char *libName, int rate, int frameSize ) {
 	sa.audio.frameSize = frameSize;
 
 	Com_Memset( &hs, 0, sizeof( hs ) );
-	hs.type = IPL_HRTFTYPE_DEFAULT;
 	hs.volume = 1.0f;
 	hs.normType = IPL_HRTFNORMTYPE_RMS;		// similar loudness from every direction
-	err = sa.HRTFCreate( sa.context, &sa.audio, &hs, &sa.hrtf );
+
+	err = IPL_STATUS_FAILURE;
+	if ( sofaPath && sofaPath[0] ) {
+		if ( !SA_FileExists( sofaPath ) ) {
+			Com_Printf( S_COLOR_YELLOW "Steam Audio: HRTF file %s not found, using the built-in HRTF\n", sofaPath );
+		} else {
+			hs.type = IPL_HRTFTYPE_SOFA;
+			hs.sofaFileName = sofaPath;
+			err = sa.HRTFCreate( sa.context, &sa.audio, &hs, &sa.hrtf );
+			if ( err != IPL_STATUS_SUCCESS ) {
+				Com_Printf( S_COLOR_YELLOW "Steam Audio: couldn't load HRTF file %s (%i), using the built-in HRTF\n", sofaPath, err );
+				sa.hrtf = NULL;
+			}
+		}
+	}
+	if ( err != IPL_STATUS_SUCCESS ) {
+		hs.type = IPL_HRTFTYPE_DEFAULT;
+		hs.sofaFileName = NULL;
+		sofaPath = NULL;
+		err = sa.HRTFCreate( sa.context, &sa.audio, &hs, &sa.hrtf );
+	}
 	if ( err != IPL_STATUS_SUCCESS ) {
 		Com_Printf( S_COLOR_YELLOW "Steam Audio: HRTF creation failed (%i)\n", err );
 		SPH_Shutdown();
 		return qfalse;
 	}
 
-	Com_sprintf( sa.desc, sizeof( sa.desc ), "Steam Audio %i.%i.%i, default HRTF, %i Hz, %i-frame blocks",
-		STEAMAUDIO_VERSION_MAJOR, STEAMAUDIO_VERSION_MINOR, STEAMAUDIO_VERSION_PATCH, rate, frameSize );
+	Com_sprintf( sa.desc, sizeof( sa.desc ), "Steam Audio %i.%i.%i, %s HRTF, %i Hz, %i-frame blocks",
+		STEAMAUDIO_VERSION_MAJOR, STEAMAUDIO_VERSION_MINOR, STEAMAUDIO_VERSION_PATCH,
+		sofaPath ? COM_SkipPath( (char *)sofaPath ) : "built-in", rate, frameSize );
 	Com_Printf( "%s\n", sa.desc );
 	return qtrue;
 }
@@ -244,4 +275,69 @@ qboolean SPH_Tail( void *voice, float *outL, float *outR ) {
 	out.numSamples = sa.audio.frameSize;
 	out.data = outData;
 	return sa.BinauralGetTail( (IPLBinauralEffect)voice, &out ) == IPL_AUDIOEFFECTSTATE_TAILREMAINING;
+}
+
+
+/*
+================
+SPH_FrontResponse
+
+Measures how loud the loaded HRTF makes a sound straight ahead: the average
+per-ear RMS of the output divided by the RMS of the input, for pink noise
+(game audio has most of its energy in the low and mid range). Datasets are
+normalised differently, so the mixer uses this to keep loudness consistent.
+Deterministic. Returns 0 if HRTF is not active.
+================
+*/
+float SPH_FrontResponse( void ) {
+	const int blocks = 64, warmup = 4, n = sa.audio.frameSize;
+	const vec3_t front = { 1.0f, 0.0f, 0.0f };
+	unsigned int seed = 12345;
+	float b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+	double inSum = 0.0, outSum = 0.0;
+	float *in, *l, *r;
+	void *voice;
+	int b, i;
+
+	if ( !sa.hrtf || n <= 0 )
+		return 0.0f;
+
+	voice = SPH_CreateVoice();
+	if ( !voice )
+		return 0.0f;
+
+	in = malloc( n * 3 * sizeof( float ) );
+	l = in + n;
+	r = l + n;
+
+	for ( b = 0; b < blocks; b++ ) {
+		for ( i = 0; i < n; i++ ) {
+			float white;
+			seed = seed * 1664525u + 1013904223u;
+			white = ( (int)( seed >> 8 ) - ( 1 << 23 ) ) / (float)( 1 << 23 );
+			// Paul Kellet's pink noise filter
+			b0 = 0.99886f * b0 + white * 0.0555179f;
+			b1 = 0.99332f * b1 + white * 0.0750759f;
+			b2 = 0.96900f * b2 + white * 0.1538520f;
+			b3 = 0.86650f * b3 + white * 0.3104856f;
+			b4 = 0.55000f * b4 + white * 0.5329522f;
+			b5 = -0.7616f * b5 - white * 0.0168980f;
+			in[i] = ( b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362f ) * 0.1f;
+			b6 = white * 0.115926f;
+		}
+		if ( b >= warmup ) {
+			for ( i = 0; i < n; i++ )
+				inSum += in[i] * in[i];
+		}
+		SPH_Process( voice, in, front, l, r );
+		if ( b >= warmup ) {
+			for ( i = 0; i < n; i++ )
+				outSum += 0.5 * ( l[i] * l[i] + r[i] * r[i] );
+		}
+	}
+
+	free( in );
+	SPH_ReleaseVoice( &voice );
+
+	return ( inSum > 0.0 ) ? (float)sqrt( outSum / inSum ) : 0.0f;
 }

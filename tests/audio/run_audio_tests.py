@@ -20,7 +20,9 @@ The determinism and A/B checks are portable.
 
 With --steamaudio (or STEAMAUDIO_LIB) pointing at libphonon.so, the
 spatial backend is also tested with HRTF ("spatial-hrtf"), and height must
-then be audible.
+then be audible. Adding --hrtf-file (or HRTF_FILE) with a full-sphere SOFA
+file (e.g. SADIE II D1_48K_24bit_256tap_FIR_SOFA.sofa) adds "spatial-sofa",
+where directly below must also differ from 45 degrees below.
 
 Needs: python3, numpy, retail Quake 3 data (pak0.pk3 ... pak8.pk3).
 
@@ -182,7 +184,7 @@ def check_golden(results, golden, key, digest, update):
 # tests
 
 def test_positional(args, work, results, golden, variant):
-    hrtf = variant.endswith("hrtf")
+    hrtf = variant in ("spatial-hrtf", "spatial-sofa")
     print(f"positional test ({variant})")
     home = os.path.join(work, f"positional-{variant}")
     shutil.rmtree(home, ignore_errors=True)
@@ -193,6 +195,9 @@ def test_positional(args, work, results, golden, variant):
     ])
     if hrtf and "HRTF)" not in out:
         results.add(f"[{variant}] HRTF active", "FAIL", "Steam Audio did not load; engine log:\n" + out[-2000:])
+        return
+    if variant == "spatial-sofa" and "built-in HRTF" in out:
+        results.add(f"[{variant}] HRTF file loaded", "FAIL", "fell back to the built-in HRTF; engine log:\n" + out[-2000:])
         return
     rms = {}
     for line in out.splitlines():
@@ -235,6 +240,14 @@ def test_positional(args, work, results, golden, variant):
     if hrtf:
         ok("height is audible (above/below/level differ)", height_ok, detail)
         ok("front/back differ", differs("front", "back") > 1e-4, "rms diff %.5f" % differs("front", "back"))
+        # the built-in HRTF has no data below about -45 degrees
+        d_low = differs("below", "front_down")
+        if variant == "spatial-sofa":
+            ok("directly below differs from 45 degrees below", d_low > 1e-4, "rms diff %.5f" % d_low)
+        else:
+            results.add(f"[{variant}] directly below differs from 45 degrees below",
+                        "PASS" if d_low > 1e-4 else "XFAIL",
+                        "rms diff %.6f" % d_low + ("" if d_low > 1e-4 else " (expected: built-in HRTF stops near -45 degrees)"))
     else:
         results.add(f"[{variant}] height is audible (above/below/level differ)",
                     "PASS" if height_ok else "XFAIL", detail + ("" if height_ok else " (expected: stereo panning)"))
@@ -287,7 +300,7 @@ def test_demo(args, work, results, golden):
         b, rb = captures[other]
         # HRTF legitimately changes per-ear levels and spectra; only the
         # stereo-pan variant is held to the tight A/B limits
-        corr_min, level_max = (AB_HRTF_MIN_ENVELOPE_CORR, AB_HRTF_MAX_LEVEL_DIFF_DB) if other.endswith("hrtf") \
+        corr_min, level_max = (AB_HRTF_MIN_ENVELOPE_CORR, AB_HRTF_MAX_LEVEL_DIFF_DB) if other != "spatial" \
             else (AB_MIN_ENVELOPE_CORR, AB_MAX_LEVEL_DIFF_DB)
         ea, eb = envelope(a, ra), envelope(b, rb)
         m = min(len(ea), len(eb))
@@ -315,6 +328,8 @@ def main():
     ap.add_argument("--update-golden", action="store_true", help="record current outputs as golden")
     ap.add_argument("--steamaudio", default=os.environ.get("STEAMAUDIO_LIB"),
                     help="path to libphonon.so; adds the spatial-hrtf variant (env STEAMAUDIO_LIB)")
+    ap.add_argument("--hrtf-file", default=os.environ.get("HRTF_FILE"),
+                    help="full-sphere SOFA file; adds the spatial-sofa variant (needs --steamaudio, env HRTF_FILE)")
     ap.add_argument("--keep", action="store_true", help="keep AVI captures")
     ap.add_argument("--timeout", type=int, default=600)
     args = ap.parse_args()
@@ -332,7 +347,12 @@ def main():
         if not os.path.exists(args.steamaudio):
             sys.exit(f"Steam Audio library not found: {args.steamaudio}")
         VARIANTS["spatial-hrtf"] = ["+set", "s_backend", "spatial", "+set", "s_spatialHRTF", "1",
-                                    "+set", "s_steamAudioLib", os.path.abspath(args.steamaudio)]
+                                    "+set", "s_steamAudioLib", os.path.abspath(args.steamaudio),
+                                    "+set", "s_hrtfFile", ""]
+        if args.hrtf_file:
+            if not os.path.exists(args.hrtf_file):
+                sys.exit(f"HRTF file not found: {args.hrtf_file}")
+            VARIANTS["spatial-sofa"] = VARIANTS["spatial-hrtf"][:-1] + [os.path.abspath(args.hrtf_file)]
     else:
         print("note: no --steamaudio given, HRTF not tested")
 
