@@ -238,6 +238,8 @@ qboolean SNDDMA_Init( void )
 	desired.freq = SNDDMA_KHzToHz( s_khz->integer );
 	if ( desired.freq == 0 )
 		desired.freq = 22050;
+	if ( desired.freq < dmaHints.minSpeed )
+		desired.freq = dmaHints.minSpeed;
 
 	tmp = s_sdlBits->integer;
 	if ( tmp < 16 )
@@ -249,6 +251,8 @@ qboolean SNDDMA_Init( void )
 	//  should probably check a cvar for this...
 	if ( s_sdlDevSamps->integer )
 		desired.samples = s_sdlDevSamps->value;
+	else if ( dmaHints.deviceSamples )
+		desired.samples = dmaHints.deviceSamples;
 	else
 	{
 		// just pick a sane default.
