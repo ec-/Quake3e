@@ -76,10 +76,24 @@ redistribute them.
 ## Options and details
 
 ```
-bandwidth_extend.py <dir> zz-hd-sounds.pk3 [--work dir] [--no-sr] [--no-bass] [--steps 50]
+bandwidth_extend.py <dir> zz-hd-sounds.pk3 [--work dir] [--no-sr] [--no-bass] [--device cpu] [--steps 50]
 ```
 
 Each result is cached in the
 work directory (default `<pk3 name>-work`), so an interrupted run picks up
 where it stopped; delete it to reprocess. Rerunning with a warm cache only
-redoes bass and peaks (seconds). `--no-sr` skips AudioSR entirely. A CSV report is written next to the pk3.
+redoes bass and peaks (seconds). `--no-sr` doesn't run AudioSR: it uses whatever earlier runs cached and plain
+48 kHz for the rest, so you can build a playable pack now and fill in the top end later.
+
+A CSV report is written next to the pk3.
+
+Long sounds are given to AudioSR in 5.12 s windows that overlap by 0.5 s and are
+crossfaded. Its cost grows much faster than the clip length, and one huge job
+on an integrated GPU (e.g. Strix Halo) starves the desktop's graphics queue: the
+kernel logs `ring gfx_0.0.0 timeout` and the desktop can freeze. If a window has
+too little high-frequency content for AudioSR, that window keeps the original.
+
+If the desktop still stutters while it runs, leave some of the GPU free with
+`HSA_CU_MASK=0:0-27` (ROCm; uses 28 of 40 compute units, ≈15% slower), or run it
+while you're away from the desktop. `--device cpu` avoids the GPU but is about
+50 times slower (≈14 min per sound on 32 threads).

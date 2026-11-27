@@ -31,7 +31,7 @@ interrupted run resumes and the bass can be retuned without the GPU.
 
 Needs a Python environment with torch and audiosr (see tools/audio/README.md).
 
-usage: bandwidth_extend.py <input dir of sound/...wav> <output.pk3> [--work dir] [--no-sr] [--no-bass]
+usage: bandwidth_extend.py <input dir of sound/...wav> <output.pk3> [--work dir] [--no-sr] [--no-bass] [--device cpu]
 """
 
 import argparse
@@ -50,6 +50,7 @@ from scipy.ndimage import minimum_filter1d
 
 OUT_RATE = 48000
 CHUNK = int(5.12 * OUT_RATE)    # AudioSR works in 5.12 s windows
+OVERLAP = int(0.5 * OUT_RATE)   # crossfade between windows of long sounds
 
 
 def read_wav(path):
@@ -237,16 +238,58 @@ def combine(orig48, sr_out, rate, cutoff):
     return out, gain, corr, added_db
 
 
+def run_audiosr(audiosr, model, x, tmp, args):
+    """AudioSR over x (48 kHz) in single 5.12 s windows that overlap by
+    OVERLAP and are crossfaded. AudioSR's cost grows much faster than the
+    length (attention over the whole clip), and on an integrated GPU one
+    huge job starves the desktop's graphics queue, so long sounds are never
+    given to it whole. Each window is normalised for the model and scaled
+    back, so levels line up across windows."""
+    hop = CHUNK - OVERLAP
+    starts = [0] if len(x) <= CHUNK else list(range(0, len(x) - OVERLAP, hop))
+    out = np.zeros(starts[-1] + CHUNK)
+    fade = 0.5 - 0.5 * np.cos(np.linspace(0, np.pi, OVERLAP))
+    for k, start in enumerate(starts):
+        seg = x[start:start + CHUNK]
+        # hand AudioSR a 48 kHz input of exactly one window: its own
+        # resampling and padding are off by a frame for some lengths
+        seg = np.pad(seg, (0, CHUNK - len(seg)))
+        peak = np.max(np.abs(seg))
+        if peak < 1e-5:
+            continue                    # silence stays silence
+        write_wav(tmp, seg * (0.5 / peak), OUT_RATE)
+        try:
+            sr = audiosr.super_resolution(model, tmp, seed=args.seed, ddim_steps=args.steps,
+                                          guidance_scale=args.guidance)
+            sr = np.asarray(sr, dtype=np.float64).reshape(-1)[:CHUNK] * (peak / 0.5)
+            sr = np.pad(sr, (0, CHUNK - len(sr)))
+        except Exception:               # noqa: BLE001
+            if len(starts) == 1:
+                raise
+            # AudioSR rejects windows with almost nothing above a few hundred
+            # Hz; keep the original there and extend the rest
+            sr = seg.copy()
+        if k > 0:
+            sr[:OVERLAP] *= fade
+        if k < len(starts) - 1:
+            sr[-OVERLAP:] *= fade[::-1]
+        out[start:start + CHUNK] += sr
+    return out[:len(x)]
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("indir")
     ap.add_argument("pk3")
     ap.add_argument("--work", help="cache directory for per-sound results (resumes an interrupted run)")
-    ap.add_argument("--no-sr", action="store_true", help="skip AudioSR (bass only, resampled to 48 kHz)")
+    ap.add_argument("--no-sr", action="store_true", help="don't run AudioSR: use results cached by earlier runs, plain 48 kHz for the rest")
     ap.add_argument("--no-bass", action="store_true", help="skip bass extension")
     ap.add_argument("--steps", type=int, default=50, help="DDIM steps (AudioSR default 200)")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--guidance", type=float, default=3.5)
+    ap.add_argument("--device", default="auto",
+                    help="auto, cpu or cuda (ROCm GPUs appear as cuda). On an integrated GPU, cpu keeps "
+                         "the desktop responsive: long GPU jobs can starve the compositor")
     args = ap.parse_args()
 
     files = []
@@ -280,8 +323,9 @@ def main():
     tmp = os.path.join(work, "_input.wav")
     srdir = os.path.join(work, "sr")
 
-    # pass 1: top end (slow, cached per sound)
-    for i, rel in enumerate(files):
+    # pass 1: top end (slow, cached per sound); --no-sr skips it and uses
+    # whatever an earlier run cached
+    for i, rel in enumerate([] if args.no_sr else files):
         cached = os.path.join(srdir, rel + ".npy")
         cached_row = os.path.join(srdir, rel + ".json")
         if os.path.exists(cached) and os.path.exists(cached_row):
@@ -299,15 +343,9 @@ def main():
         out = orig48
         if not args.no_sr:
             if model is None:
-                model = audiosr.build_model(model_name="basic", device="auto")
-            # hand AudioSR a 48 kHz input padded to whole windows: its own
-            # resampling and padding are off by a frame for some lengths
-            padded = np.pad(orig48, (0, -len(orig48) % CHUNK))
-            write_wav(tmp, padded * (0.5 / max(np.max(np.abs(padded)), 1e-9)), OUT_RATE)
+                model = audiosr.build_model(model_name="basic", device=args.device)
             try:
-                sr = audiosr.super_resolution(model, tmp, seed=args.seed, ddim_steps=args.steps,
-                                              guidance_scale=args.guidance)
-                sr = np.asarray(sr, dtype=np.float64).reshape(-1)
+                sr = run_audiosr(audiosr, model, orig48, tmp, args)
                 result, gain, corr, added = combine(orig48, sr, OUT_RATE, cutoff)
                 row["match_corr"] = "%.3f" % corr
                 if corr < 0.9:
@@ -329,10 +367,20 @@ def main():
     with zipfile.ZipFile(args.pk3 + ".tmp", "w", zipfile.ZIP_DEFLATED) as z:
         for rel in files:
             cached = os.path.join(srdir, rel)
-            if not os.path.exists(cached + ".json"):
-                continue
-            row = dict(json.load(open(cached + ".json")), bass_band="", bass_added_db="", peak_limited_db="")
-            out = np.load(cached + ".npy").astype(np.float64)
+            if os.path.exists(cached + ".json") and os.path.exists(cached + ".npy"):
+                row = dict(json.load(open(cached + ".json")), bass_band="", bass_added_db="", peak_limited_db="")
+                out = np.load(cached + ".npy").astype(np.float64)
+            else:
+                # no AudioSR result (--no-sr, or it failed to read): original, resampled
+                try:
+                    x, rate = read_wav(os.path.join(args.indir, rel))
+                except Exception as e:      # noqa: BLE001
+                    print("%s  SKIPPED: %s" % (rel, e), flush=True)
+                    continue
+                out = signal.resample_poly(x, OUT_RATE, rate)
+                row = dict(file=rel, seconds="%.2f" % (len(x) / rate), cutoff_hz="", match_corr="",
+                           sr_added_db="", note="top end not extended (no AudioSR result)",
+                           bass_band="", bass_added_db="", peak_limited_db="")
             if not args.no_bass:
                 out, bass, band = add_bass(out, OUT_RATE, bass_amount(rel))
                 row["bass_band"] = band
