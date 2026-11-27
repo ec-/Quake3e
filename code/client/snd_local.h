@@ -234,3 +234,13 @@ extern sfx_t *sfxScratchPointer;
 extern int	   sfxScratchIndex;
 
 qboolean S_Base_Init( soundInterface_t *si );
+qboolean S_Spatial_Init( soundInterface_t *si );
+
+// Optional requests from the active backend to the device layer, read by
+// SNDDMA_Init. Zero means "no preference". Drivers may ignore them.
+typedef struct {
+	int		minSpeed;			// lowest acceptable sample rate in Hz
+	int		deviceSamples;		// preferred device buffer size in frames
+} dmaHints_t;
+
+extern dmaHints_t dmaHints;

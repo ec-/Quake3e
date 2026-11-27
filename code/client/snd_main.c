@@ -34,6 +34,8 @@ cvar_t *s_muteWhenUnfocused;
 
 static soundInterface_t si;
 
+dmaHints_t dmaHints;
+
 /*
 =================
 S_ValidateInterface
@@ -440,6 +442,19 @@ void S_Init( void )
 		Cmd_AddCommand( "s_list", S_SoundList );
 		Cmd_AddCommand( "s_stop", S_StopAllSounds );
 		Cmd_AddCommand( "s_info", S_SoundInfo );
+
+		cv = Cvar_Get( "s_backend", "base", CVAR_ARCHIVE_ND | CVAR_LATCH );
+		Cvar_SetDescription( cv, "Sound backend:\n"
+			" base    - classic Quake 3 mixer\n"
+			" spatial - new mixer that 3D sound processing is being built on (headphones)\n"
+			"Requires snd_restart." );
+
+		if ( !Q_stricmp( cv->string, "spatial" ) ) {
+			started = S_Spatial_Init( &si );
+			if ( !started ) {
+				Com_Printf( S_COLOR_YELLOW "Spatial sound backend failed to start, falling back to base\n" );
+			}
+		}
 
 		if ( !started ) {
 			started = S_Base_Init( &si );
