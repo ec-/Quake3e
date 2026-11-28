@@ -2200,7 +2200,6 @@ R_LoadLightGrid
 */
 static void R_LoadLightGrid( const lump_t *l ) {
 	int		i;
-	vec3_t	maxs;
 	unsigned bounds[3];
 	unsigned numGridPoints;
 	world_t	*w;
@@ -2221,9 +2220,20 @@ static void R_LoadLightGrid( const lump_t *l ) {
 	wMaxs = w->bmodels[0].bounds[1];
 
 	for ( i = 0 ; i < 3 ; i++ ) {
-		w->lightGridOrigin[i] = w->lightGridSize[i] * ceil( wMins[i] / w->lightGridSize[i] );
-		maxs[i] = w->lightGridSize[i] * floor( wMaxs[i] / w->lightGridSize[i] );
-		bounds[i] = (maxs[i] - w->lightGridOrigin[i])/w->lightGridSize[i] + 1;
+		const double size = w->lightGridSize[i];
+		const double first = ceil( (double)wMins[i] / size );
+		const double last = floor( (double)wMaxs[i] / size );
+		const double count = last - first + 1.0;
+
+		if ( !( count >= 1.0 && count <= INT_MAX ) ) {
+			ri.Printf( PRINT_WARNING, "WARNING: bad light grid bounds\n" );
+			w->lightGridData = NULL;
+			return;
+		}
+
+		// Rounding the world coordinates can reduce the sample count.
+		w->lightGridOrigin[i] = first * size;
+		bounds[i] = (unsigned)count;
 	}
 
 	if ( (uint64_t)bounds[0] * bounds[1] > INT_MAX ||
