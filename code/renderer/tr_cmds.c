@@ -208,6 +208,43 @@ void RE_SetColor( const float *rgba ) {
 
 /*
 =============
+RE_DrawBlurPic
+=============
+*/
+void RE_DrawBlurPic( float x, float y, float w, float h, float s1, float t1, float s2, float t2, qhandle_t hShader, float radius, float alpha ) {
+	blurPicCommand_t	*cmd;
+	const shader_t		*shader;
+
+	if ( !tr.registered || radius <= 0.0f || alpha <= 0.0f || w <= 0.0f || h <= 0.0f ) {
+		return;
+	}
+	cmd = R_GetCommandBuffer( sizeof( *cmd ) );
+	if ( !cmd ) {
+		return;
+	}
+	cmd->commandId = RC_BLUR_PIC;
+	cmd->x = x;
+	cmd->y = y;
+	cmd->w = w;
+	cmd->h = h;
+	cmd->s1 = s1;
+	cmd->t1 = t1;
+	cmd->s2 = s2;
+	cmd->t2 = t2;
+	cmd->radius = radius;
+	cmd->alpha = alpha > 1.0f ? 1.0f : alpha;
+	cmd->mask = NULL;
+	if ( hShader ) {
+		shader = R_GetShaderByHandle( hShader );
+		if ( shader != tr.defaultShader && shader->stages[0] ) {
+			cmd->mask = shader->stages[0]->bundle[0].image[0];
+		}
+	}
+}
+
+
+/*
+=============
 RE_StretchPic
 =============
 */

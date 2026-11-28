@@ -1207,6 +1207,33 @@ static const void *RB_StretchPic( const void *data ) {
 }
 
 
+/*
+=============
+RB_BlurPic
+=============
+*/
+static const void *RB_BlurPic( const void *data ) {
+	const blurPicCommand_t *cmd = (const blurPicCommand_t *)data;
+
+	RB_EndSurface();
+
+#ifdef USE_VBO
+	VBO_UnBind();
+#endif
+
+	RB_SetGL2D();
+
+#ifdef USE_VULKAN
+	if ( r_bloom->integer ) {
+		vk_bloom();
+	}
+	vk_blur_pic( cmd->x, cmd->y, cmd->w, cmd->h, cmd->s1, cmd->t1, cmd->s2, cmd->t2, cmd->mask, cmd->radius, cmd->alpha );
+#endif
+
+	return (const void *)(cmd + 1);
+}
+
+
 #ifdef USE_PMLIGHT
 static void RB_LightingPass( void )
 {
@@ -1372,6 +1399,10 @@ RB_DrawSurfs
 */
 static const void *RB_DrawSurfs( const void *data ) {
 	const drawSurfsCommand_t *cmd;
+
+#ifdef USE_VULKAN
+	vk_blur_pic_invalidate();
+#endif
 
 	// finish any 2D drawing if needed
 	RB_EndSurface();
@@ -1817,6 +1848,9 @@ void RB_ExecuteRenderCommands( const void *data ) {
 			break;
 		case RC_CLEARCOLOR:
 			data = RB_ClearColor(data);
+			break;
+		case RC_BLUR_PIC:
+			data = RB_BlurPic(data);
 			break;
 		case RC_END_OF_LIST:
 		default:

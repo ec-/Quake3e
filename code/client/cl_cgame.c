@@ -452,6 +452,11 @@ static qboolean CL_GetValue( char* value, int valueSize, const char* key ) {
 		return qtrue;
 	}
 
+	if ( !Q_stricmp( key, "trap_R_DrawBlurPic_Q3E" ) && re.DrawBlurPic ) {
+		Com_sprintf( value, valueSize, "%i", CG_R_DRAWBLURPIC );
+		return qtrue;
+	}
+
 	if ( !Q_stricmp( key, "trap_Key_CapsLockOn_Q3E" ) ) {
 		Com_sprintf( value, valueSize, "%i", CG_KEY_CAPSLOCK_ON );
 		return qtrue;
@@ -809,6 +814,11 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 
 	case CG_KEY_CAPSLOCK_ON:
 		return Key_CapsLockOn();
+
+	case CG_R_DRAWBLURPIC:
+		if ( re.DrawBlurPic )
+			re.DrawBlurPic( VMF(1), VMF(2), VMF(3), VMF(4), VMF(5), VMF(6), VMF(7), VMF(8), args[9], VMF(10), VMF(11) );
+		return 0;
 
 	case CG_TRAP_GETVALUE:
 		VM_CHECKBOUNDS( cgvm, args[1], args[2] );

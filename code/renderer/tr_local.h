@@ -1834,6 +1834,17 @@ typedef struct {
 
 typedef struct {
 	int		commandId;
+	float	x, y;
+	float	w, h;
+	float	s1, t1;
+	float	s2, t2;
+	float	radius;
+	float	alpha;
+	image_t	*mask;	// NULL - rectangle
+} blurPicCommand_t;
+
+typedef struct {
+	int		commandId;
 	trRefdef_t	refdef;
 	viewParms_t	viewParms;
 	drawSurf_t *drawSurfs;
@@ -1872,7 +1883,8 @@ typedef enum {
 #endif
 	RC_COLORMASK,
 	RC_CLEARDEPTH,
-	RC_CLEARCOLOR
+	RC_CLEARCOLOR,
+	RC_BLUR_PIC
 } renderCommand_t;
 
 
@@ -1914,6 +1926,7 @@ void R_IssuePendingRenderCommands( void );
 void R_AddDrawSurfCmd( drawSurf_t *drawSurfs, int numDrawSurfs );
 
 void RE_SetColor( const float *rgba );
+void RE_DrawBlurPic( float x, float y, float w, float h, float s1, float t1, float s2, float t2, qhandle_t hShader, float radius, float alpha );
 void RE_StretchPic ( float x, float y, float w, float h, 
 					  float s1, float t1, float s2, float t2, qhandle_t hShader );
 void RE_BeginFrame( stereoFrame_t stereoFrame );
@@ -1935,6 +1948,8 @@ void RE_VertexLighting( qboolean allowed );
 #define MAX_BLUR_PASSES MAX_TEXTURE_UNITS
 
 void R_BloomScreen( void );
+void FBO_BlurPic( float x, float y, float w, float h, float ms1, float mt1, float ms2, float mt2, const image_t *mask, float radius, float alpha );
+void FBO_BlurPicInvalidate( void );
 
 #define GLE( ret, name, ... ) extern ret ( APIENTRY * q##name )( __VA_ARGS__ );
 	QGL_Core_PROCS;
@@ -2003,6 +2018,7 @@ typedef enum {
 	BLENDX_FRAGMENT,
 	BLEND2_FRAGMENT,
 	BLEND2_GAMMA_FRAGMENT,
+	BLURMASK_FRAGMENT,
 #endif
 	PROGRAM_COUNT
 
